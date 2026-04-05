@@ -1,19 +1,22 @@
-# README
+# Moondust
 
-## About
+## Install and run
 
-This is the official Wails React-TS template.
+Requires [Node.js](https://nodejs.org/) 22+
 
-You can configure the project by editing `wails.json`. More information about the project settings can be found
-here: https://wails.io/docs/reference/project-config
+```bash
+npx moondust
+```
 
-## Live Development
+The CLI installs the latest release for your OS/arch, caches it under `~/.cache/moondust/`, and runs it. If you want an older version, you can enter it when prompted.
 
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
+## Linux
 
-## Building
+The desktop app links against **WebKit2GTK** at runtime. Install it first (names vary by distro). On Debian/Ubuntu:
 
-To build a redistributable, production mode package, use `wails build`.
+```bash
+sudo apt update
+sudo apt install libwebkit2gtk-4.1-0
+```
+
+If that package is missing, search for the one that provides `libwebkit2gtk-4.1.so.0` (e.g. `apt-cache search libwebkit2gtk`).
