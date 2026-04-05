@@ -4,20 +4,21 @@ sidebar_position: 1
 
 # Installation
 
-[Node.js](https://nodejs.org/) 22 or newer is required.
+On **[GitHub Releases](https://github.com/zackarysantana/moondust/releases)** you can **download the binary** for your machine: there is a **single binary per OS and CPU** (pick the matching asset, make it executable if needed, and run it).
 
-## npx
+## Quick launch
+
+The [`moondust`](https://www.npmjs.com/package/moondust) package on npm is a small **launcher** that downloads the same kind of binary for your platform, caches it under `~/.cache/moondust/`, and starts the app. You can run it with **either** [Bun](https://bun.sh/) or Node.js (npm)—pick one:
+
+```bash
+bunx moondust
+```
 
 ```bash
 npx moondust
 ```
 
-Downloads a release for your OS and CPU, caches under `~/.cache/moondust/`, and starts the app. Follow prompts to pick a version.
-
-## What you get
-
-- Windows, macOS, or Linux: native build from [GitHub Releases](https://github.com/zackarysantana/moondust/releases).
-- npm package [`moondust`](https://www.npmjs.com/package/moondust): launcher only; the app binary is fetched per platform.
+Both commands behave the same. Follow the prompts if you want a specific version instead of the default.
 
 ## Linux
 

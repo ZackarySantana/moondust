@@ -31,12 +31,12 @@ const FeatureList: FeatureItem[] = [
         ),
     },
     {
-        title: "Run from npx",
+        title: "Quick launch",
         Svg: require("@site/static/img/undraw_docusaurus_react.svg").default,
         description: (
             <>
-                <code>npx moondust</code> installs the launcher and fetches a
-                build for your OS, then you code.
+                <code>bunx moondust</code> or <code>npx moondust</code> runs the
+                same launcher and fetches a build for your OS.
             </>
         ),
     },

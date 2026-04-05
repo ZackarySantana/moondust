@@ -2,13 +2,19 @@
 
 ## Install and run
 
-Requires [Node.js](https://nodejs.org/) 22+
+On **[GitHub Releases](https://github.com/zackarysantana/moondust/releases)** you can read the notes and **download the binary** for your OS and CPU—**one binary per platform** (then run it locally; chmod +x on Unix if needed).
+
+**Quick launch** via npm’s launcher (same binaries—use Bun or Node):
+
+```bash
+bunx moondust
+```
 
 ```bash
 npx moondust
 ```
 
-The CLI installs the latest release for your OS/arch, caches it under `~/.cache/moondust/`, and runs it. If you want an older version, you can enter it when prompted.
+The CLI picks a build for your OS/arch, caches it under `~/.cache/moondust/`, and runs it. Follow prompts if you want a different version.
 
 ## Linux
 

@@ -35,7 +35,7 @@ export default function Home(): ReactNode {
     return (
         <Layout
             title={siteConfig.title}
-            description="Desktop hub for AI coding agents. Install with npx moondust."
+            description="Desktop hub for AI coding agents. GitHub Releases for downloads; quick launch with bunx or npx moondust."
         >
             <HomepageHeader />
             <main>
