@@ -1,6 +1,12 @@
+name: Docs Deploy
+
 on:
   push:
     branches: [main]
+    paths:
+      - "packages/docs/**"
+      - ".github/workflows/docs-deploy.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
