@@ -141,7 +141,7 @@ jobs:
       - name: Pack
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          tar -czvf "moondust_${VERSION}_darwin_arm64.tar.gz" -C build/bin moondust
+          tar -czvf "moondust_${VERSION}_darwin_arm64.tar.gz" -C build/bin/moondust.app/Contents/MacOS moondust
       - uses: actions/upload-artifact@v4
         with:
           name: asset-darwin-arm64
