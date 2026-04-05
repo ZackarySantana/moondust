@@ -1,41 +1,42 @@
-# Website
+# Moondust docs
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+This site is built with [Docusaurus](https://docusaurus.io/). Use **Bun** for installs and scripts (same as the rest of the repo).
 
-## Installation
-
-```bash
-yarn
-```
-
-## Local Development
+## Install
 
 ```bash
-yarn start
+cd packages/docs
+bun install
 ```
 
-This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
+## Local dev
+
+```bash
+bun run start
+```
+
+Opens a dev server; most edits hot-reload.
 
 ## Build
 
 ```bash
-yarn build
+bun run build
 ```
 
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
+Output goes to `build/` for static hosting.
 
-## Deployment
+## Deploy (Docusaurus GitHub Pages helper)
 
-Using SSH:
+With SSH:
 
 ```bash
-USE_SSH=true yarn deploy
+USE_SSH=true bun run deploy
 ```
 
-Not using SSH:
+Without SSH (set your GitHub username):
 
 ```bash
-GIT_USER=<Your GitHub username> yarn deploy
+GIT_USER=<username> bun run deploy
 ```
 
-If you are using GitHub pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+CI on `main` also builds with Bun; see `.github/workflows/docs-deploy.yml`.
