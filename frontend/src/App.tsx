@@ -1,20 +1,54 @@
-import { createSignal } from "solid-js";
-import { AppSidebar } from "@/components/app-sidebar";
-import { CreateProjectModal } from "@/components/create-project-modal";
+import { Navigate, Route, Router } from "@solidjs/router";
+import { AppShell } from "@/layouts/app-shell";
+import { HomePage } from "@/pages/home";
+import { SettingsAboutPage } from "@/pages/settings/about";
+import { SettingsEnvironmentsPage } from "@/pages/settings/environments";
+import { SettingsFeaturesPage } from "@/pages/settings/features";
+import { SettingsGitPage } from "@/pages/settings/git";
+import { SettingsLayout } from "@/pages/settings/layout";
+import { SettingsProjectsPage } from "@/pages/settings/projects";
+import { SettingsProvidersPage } from "@/pages/settings/providers";
 
-function App() {
-    const [createProjectOpen, setCreateProjectOpen] = createSignal(false);
-
+export default function App() {
     return (
-        <div class="flex h-full w-full bg-[rgb(20,26,35)] text-slate-200">
-            <AppSidebar onNewProject={() => setCreateProjectOpen(true)} />
-            <main class="min-w-0 flex-1" />
-            <CreateProjectModal
-                open={createProjectOpen()}
-                onOpenChange={setCreateProjectOpen}
+        <Router root={AppShell}>
+            <Route
+                path="/"
+                component={HomePage}
             />
-        </div>
+            <Route
+                path="/settings"
+                component={SettingsLayout}
+            >
+                <Route
+                    path="/"
+                    component={() => <Navigate href="/settings/projects" />}
+                />
+                <Route
+                    path="/projects"
+                    component={SettingsProjectsPage}
+                />
+                <Route
+                    path="/providers"
+                    component={SettingsProvidersPage}
+                />
+                <Route
+                    path="/git"
+                    component={SettingsGitPage}
+                />
+                <Route
+                    path="/environments"
+                    component={SettingsEnvironmentsPage}
+                />
+                <Route
+                    path="/features"
+                    component={SettingsFeaturesPage}
+                />
+                <Route
+                    path="/about"
+                    component={SettingsAboutPage}
+                />
+            </Route>
+        </Router>
     );
 }
-
-export default App;

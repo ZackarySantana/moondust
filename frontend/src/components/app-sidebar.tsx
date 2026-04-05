@@ -1,3 +1,4 @@
+import { A } from "@solidjs/router";
 import ArrowUpDown from "lucide-solid/icons/arrow-up-down";
 import Folder from "lucide-solid/icons/folder";
 import Plus from "lucide-solid/icons/plus";
@@ -21,14 +22,23 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             )}
         >
             <header class="flex items-center gap-2 border-b border-slate-700/60 px-4 py-3">
-                <h1 class="flex min-w-0 flex-1 items-center gap-2 truncate text-base font-semibold tracking-tight">
+                <A
+                    href="/"
+                    end
+                    class={cn(
+                        "flex min-w-0 flex-1 items-center gap-2 truncate rounded-md text-base font-semibold tracking-tight outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400/60",
+                        "text-slate-200 hover:text-slate-100",
+                    )}
+                    activeClass="text-slate-100"
+                    inactiveClass="text-slate-200 hover:text-slate-100"
+                >
                     <Folder
                         class="size-4.5 shrink-0 text-slate-400"
                         stroke-width={2}
                         aria-hidden
                     />
                     <span class="truncate">Projects</span>
-                </h1>
+                </A>
                 <div class="flex shrink-0 items-center gap-0.5">
                     <Button
                         variant="icon"
@@ -65,16 +75,21 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             </header>
             <div class="min-h-0 flex-1" />
             <footer class="mt-auto space-y-3 border-t border-slate-700/60 px-4 py-3">
-                <Button
-                    variant="ghost"
-                    class="w-full justify-start px-2 py-2 text-left font-medium"
+                <A
+                    href="/settings"
+                    class={cn(
+                        "flex w-full items-center gap-2 rounded-md border border-transparent px-2 py-2 text-left text-sm font-medium outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400/60",
+                        "text-slate-300 hover:bg-slate-700/45 hover:text-slate-100",
+                    )}
+                    activeClass="bg-slate-700/50 text-slate-100"
+                    inactiveClass="text-slate-300 hover:bg-slate-700/45 hover:text-slate-100"
                 >
                     <Settings
                         class="size-4 shrink-0"
                         stroke-width={2}
                     />
                     <span>Settings</span>
-                </Button>
+                </A>
                 <div class="space-y-1.5">
                     <div class="flex items-baseline gap-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-500">
                         <span>Usage</span>

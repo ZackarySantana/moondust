@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "@solidjs/router": "^0.16.1",
     "clsx": "^2.1.1",
     "lucide-solid": "^1.7.0",
     "solid-js": "^1.9.12",
