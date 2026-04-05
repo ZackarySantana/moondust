@@ -1,16 +1,15 @@
 /**
- * Resolve download URL for a release asset from GitHub's API.
+ * Resolve download URL for a release asset from GitHub's API (public repos).
  */
-export async function getReleaseAssetUrl(repo, tag, assetName, token) {
+export async function getReleaseAssetUrl(repo, tag, assetName) {
   const url = `https://api.github.com/repos/${repo}/releases/tags/${encodeURIComponent(tag)}`;
-  const headers = {
-    Accept: "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-    "User-Agent": "moondust-npm-cli",
-  };
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  const res = await fetch(url, { headers });
+  const res = await fetch(url, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      "User-Agent": "moondust-npm-cli",
+    },
+  });
   if (res.status === 404) {
     throw new Error(
       `Release ${tag} not found for ${repo}. Publish a GitHub Release with that tag and matching assets.`,

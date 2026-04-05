@@ -7,10 +7,10 @@ import { randomBytes } from "node:crypto";
 import extractZip from "extract-zip";
 import { x as extractTar } from "tar";
 
-export async function downloadToFile(url, destPath, token) {
-  const headers = { "User-Agent": "moondust-npm-cli" };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(url, { headers });
+export async function downloadToFile(url, destPath) {
+  const res = await fetch(url, {
+    headers: { "User-Agent": "moondust-npm-cli" },
+  });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Download failed ${res.status}: ${text.slice(0, 300)}`);
