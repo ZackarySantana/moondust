@@ -1,0 +1,165 @@
+# Archives must match packages/cli naming: moondust_<semver>_<os>_<arch>.tar.gz | .zip
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  linux-amd64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+      - uses: oven-sh/setup-bun@v2
+      - name: Linux deps (WebKitGTK)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libgtk-3-dev libwebkit2gtk-4.1-dev
+      - name: Frontend
+        run: cd frontend && bun install && bun run build
+      - name: Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+      - name: Build
+        run: |
+          export PATH="$PATH:$(go env GOPATH)/bin"
+          wails build -tags webkit2_41 -o moondust
+      - name: Pack
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          tar -czvf "moondust_${VERSION}_linux_amd64.tar.gz" -C build/bin moondust
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asset-linux-amd64
+          path: moondust_*_linux_amd64.tar.gz
+
+  # Requires a repo with GitHub arm64 hosted runners (public repos: generally available).
+  linux-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+      - uses: oven-sh/setup-bun@v2
+      - name: Linux deps (WebKitGTK)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libgtk-3-dev libwebkit2gtk-4.1-dev
+      - name: Frontend
+        run: cd frontend && bun install && bun run build
+      - name: Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+      - name: Build
+        run: |
+          export PATH="$PATH:$(go env GOPATH)/bin"
+          wails build -tags webkit2_41 -o moondust
+      - name: Pack
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          tar -czvf "moondust_${VERSION}_linux_arm64.tar.gz" -C build/bin moondust
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asset-linux-arm64
+          path: moondust_*_linux_arm64.tar.gz
+
+  windows-amd64:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+      - uses: oven-sh/setup-bun@v2
+      - name: Frontend
+        run: cd frontend; bun install; bun run build
+      - name: Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+      - name: Build
+        shell: pwsh
+        run: |
+          $env:PATH += ";" + (go env GOPATH) + "\bin"
+          wails build -o moondust.exe
+      - name: Pack
+        shell: pwsh
+        run: |
+          $v = "${{ github.ref_name }}".TrimStart("v")
+          Compress-Archive -Path "build\bin\moondust.exe" -DestinationPath "moondust_${v}_windows_amd64.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asset-windows-amd64
+          path: moondust_*_windows_amd64.zip
+
+  windows-arm64:
+    runs-on: windows-11-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+      - uses: oven-sh/setup-bun@v2
+      - name: Frontend
+        run: cd frontend; bun install; bun run build
+      - name: Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+      - name: Build
+        shell: pwsh
+        run: |
+          $env:PATH += ";" + (go env GOPATH) + "\bin"
+          wails build -o moondust.exe
+      - name: Pack
+        shell: pwsh
+        run: |
+          $v = "${{ github.ref_name }}".TrimStart("v")
+          Compress-Archive -Path "build\bin\moondust.exe" -DestinationPath "moondust_${v}_windows_arm64.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asset-windows-arm64
+          path: moondust_*_windows_arm64.zip
+
+  darwin-arm64:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+      - uses: oven-sh/setup-bun@v2
+      - name: Frontend
+        run: cd frontend && bun install && bun run build
+      - name: Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+      - name: Build
+        run: |
+          export PATH="$PATH:$(go env GOPATH)/bin"
+          wails build -o moondust
+      - name: Pack
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          tar -czvf "moondust_${VERSION}_darwin_arm64.tar.gz" -C build/bin moondust
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asset-darwin-arm64
+          path: moondust_*_darwin_arm64.tar.gz
+
+  publish:
+    needs:
+      - linux-amd64
+      - linux-arm64
+      - windows-amd64
+      - windows-arm64
+      - darwin-arm64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
