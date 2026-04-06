@@ -12,6 +12,9 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+const initialWindowScreenFractionNumerator = 8
+const initialWindowScreenFractionDenominator = 10
+
 var errAppNotReady = errors.New("app: project service not initialized")
 
 type cancelToken struct {
@@ -19,19 +22,56 @@ type cancelToken struct {
 }
 
 type App struct {
-	ctx       context.Context
-	projects  *project.Service
-	createOp  atomic.Pointer[cancelToken]
+	ctx      context.Context
+	projects *project.Service
+	createOp atomic.Pointer[cancelToken]
 }
 
 func NewApp() *App {
 	return &App{}
 }
 
+func pickScreen(screens []runtime.Screen) runtime.Screen {
+	var primary, current *runtime.Screen
+	for i := range screens {
+		sc := &screens[i]
+		if sc.IsPrimary {
+			primary = sc
+		}
+		if sc.IsCurrent {
+			current = sc
+		}
+	}
+	switch {
+	case primary != nil:
+		return *primary
+	case current != nil:
+		return *current
+	default:
+		return screens[0]
+	}
+}
+
+func (*App) setInitialWindowSize(ctx context.Context) {
+	screens, err := runtime.ScreenGetAll(ctx)
+	if err != nil || len(screens) == 0 {
+		return
+	}
+	s := pickScreen(screens)
+	w := s.Size.Width * initialWindowScreenFractionNumerator / initialWindowScreenFractionDenominator
+	h := s.Size.Height * initialWindowScreenFractionNumerator / initialWindowScreenFractionDenominator
+	if w < 1 || h < 1 {
+		return
+	}
+	runtime.WindowSetSize(ctx, w, h)
+	runtime.WindowCenter(ctx)
+}
+
 // startup stores ctx because Wails runtime APIs (e.g. directory dialogs) require the
 // lifecycle context; generated bindings do not pass it per call.
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	a.setInitialWindowSize(ctx)
 	st, err := store.Open()
 	if err != nil {
 		runtime.LogErrorf(ctx, "store open: %v", err)
