@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"unicode"
 
@@ -158,4 +159,51 @@ func (s *Store) GetProject(name string) (*Project, error) {
 		return nil, err
 	}
 	return out, nil
+}
+
+func (s *Store) ListProjects() ([]Project, error) {
+	if s == nil || s.db == nil {
+		return nil, fmt.Errorf("store: nil store")
+	}
+	var out []Project
+	err := s.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(bucketProjects)
+		if b == nil {
+			return nil
+		}
+		return b.ForEach(func(_, v []byte) error {
+			var p Project
+			if err := json.Unmarshal(v, &p); err != nil {
+				return fmt.Errorf("store: decode project: %w", err)
+			}
+			out = append(out, p)
+			return nil
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out, nil
+}
+
+// DeleteProject only removes the bolt key; callers remove files when rolling back.
+func (s *Store) DeleteProject(name string) error {
+	if s == nil || s.db == nil {
+		return fmt.Errorf("store: nil store")
+	}
+	key := []byte(strings.TrimSpace(name))
+	if len(key) == 0 {
+		return ErrInvalidName
+	}
+	return s.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(bucketProjects)
+		if b == nil {
+			return fmt.Errorf("store: projects bucket missing")
+		}
+		if b.Get(key) == nil {
+			return ErrProjectNotFound
+		}
+		return b.Delete(key)
+	})
 }

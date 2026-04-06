@@ -7,7 +7,13 @@ import {
     Show,
     type Component,
 } from "solid-js";
-import { SelectProjectFolder } from "../../wailsjs/go/main/App";
+import {
+    CancelCreateProject,
+    CreateProjectFromFolder,
+    CreateProjectFromRemote,
+    SelectProjectFolder,
+} from "@wails/go/main/App";
+import Loader2 from "lucide-solid/icons/loader-2";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -22,6 +28,7 @@ import { cn } from "@/lib/utils";
 export interface CreateProjectModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onCreated?: () => void;
 }
 
 type CreateProjectTab = "url" | "folder";
@@ -78,6 +85,11 @@ function deriveNameFromFolderPath(path: string): string {
     return parts[parts.length - 1] ?? "";
 }
 
+function isUserCanceled(err: unknown): boolean {
+    const msg = err instanceof Error ? err.message : String(err);
+    return /context canceled|context cancelled/i.test(msg);
+}
+
 export const CreateProjectModal: Component<CreateProjectModalProps> = (
     props,
 ) => {
@@ -85,6 +97,7 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
     const [urlDraft, setUrlDraft] = createSignal("");
     const [folderPath, setFolderPath] = createSignal("");
     const [nameOverride, setNameOverride] = createSignal<string | null>(null);
+    const [submitting, setSubmitting] = createSignal(false);
 
     let urlInputRef: HTMLInputElement | undefined;
 
@@ -102,9 +115,13 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
         setFolderPath("");
         setNameOverride(null);
         setCreateTab("url");
+        setSubmitting(false);
     }
 
     function close() {
+        if (submitting()) {
+            void CancelCreateProject();
+        }
         props.onOpenChange(false);
     }
 
@@ -117,7 +134,7 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
         }
     }
 
-    function submitCreateProject() {
+    async function submitCreateProject() {
         const name = resolvedName().trim();
         if (createTab() === "url") {
             const raw = urlDraft().trim();
@@ -127,8 +144,18 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
                 alert("That doesn’t look like a valid repository URL.");
                 return;
             }
-            props.onOpenChange(false);
-            alert(`create project: ${name} from ${parsed.cloneUrl}`);
+            setSubmitting(true);
+            try {
+                await CreateProjectFromRemote(name, parsed.cloneUrl);
+                props.onCreated?.();
+                props.onOpenChange(false);
+            } catch (e) {
+                if (!isUserCanceled(e)) {
+                    alert(e instanceof Error ? e.message : String(e));
+                }
+            } finally {
+                setSubmitting(false);
+            }
             return;
         }
         const fp = folderPath().trim();
@@ -136,11 +163,21 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
             alert("Choose a folder first.");
             return;
         }
-        props.onOpenChange(false);
-        alert(`create project: ${name} from folder ${fp}`);
+        setSubmitting(true);
+        try {
+            await CreateProjectFromFolder(name, fp);
+            props.onCreated?.();
+            props.onOpenChange(false);
+        } catch (e) {
+            if (!isUserCanceled(e)) {
+                alert(e instanceof Error ? e.message : String(e));
+            }
+        } finally {
+            setSubmitting(false);
+        }
     }
 
-    function canSubmit(): boolean {
+    function canSubmitForm(): boolean {
         if (!resolvedName().trim()) return false;
         if (createTab() === "url") {
             return urlDraft().trim().length > 0;
@@ -172,7 +209,7 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
             if (createTab() === "url") urlInputRef?.focus();
         });
         const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape") props.onOpenChange(false);
+            if (e.key === "Escape") close();
         };
         document.addEventListener("keydown", onKey);
         onCleanup(() => {
@@ -197,9 +234,10 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
                 </DialogTitle>
                 <form
                     class="space-y-4"
+                    aria-busy={submitting()}
                     onSubmit={(e) => {
                         e.preventDefault();
-                        submitCreateProject();
+                        void submitCreateProject();
                     }}
                 >
                     <div
@@ -212,11 +250,12 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
                             role="tab"
                             aria-selected={createTab() === "url"}
                             class={cn(
-                                "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                                "flex-1 cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed",
                                 createTab() === "url"
                                     ? "bg-slate-700 text-slate-100 shadow-sm"
                                     : "text-slate-400 hover:text-slate-200",
                             )}
+                            disabled={submitting()}
                             onClick={() => {
                                 setNameOverride(null);
                                 setCreateTab("url");
@@ -228,8 +267,9 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
                             type="button"
                             role="tab"
                             aria-selected={createTab() === "folder"}
+                            disabled={submitting()}
                             class={cn(
-                                "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                                "flex-1 cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed",
                                 createTab() === "folder"
                                     ? "bg-slate-700 text-slate-100 shadow-sm"
                                     : "text-slate-400 hover:text-slate-200",
@@ -258,6 +298,7 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
                                 placeholder="https://github.com/org/repo or git@github.com:org/repo.git"
                                 class="border-slate-600/80 focus-visible:border-sky-500/80"
                                 value={urlDraft()}
+                                disabled={submitting()}
                                 onInput={(e) =>
                                     setUrlDraft(e.currentTarget.value)
                                 }
@@ -273,6 +314,7 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
                             <Button
                                 type="button"
                                 variant="outline"
+                                disabled={submitting()}
                                 class="h-auto w-full cursor-pointer justify-start border-slate-600/80 bg-slate-900/50 py-2 text-left font-normal text-slate-200 hover:bg-slate-800/80"
                                 onClick={() => void pickFolder()}
                             >
@@ -291,6 +333,7 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
                             class="border-slate-600/50 focus-visible:border-sky-500/80"
                             value={resolvedName()}
                             placeholder="Autogenerated from URL or folder"
+                            disabled={submitting()}
                             onInput={onNameInput}
                         />
                     </div>
@@ -305,9 +348,23 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
                         </Button>
                         <Button
                             type="submit"
-                            disabled={!canSubmit()}
+                            class="inline-flex min-w-[10.5rem] items-center justify-center gap-2"
+                            disabled={submitting() || !canSubmitForm()}
+                            aria-busy={submitting()}
                         >
-                            Create project
+                            <Show
+                                when={submitting()}
+                                fallback={<>Create project</>}
+                            >
+                                <>
+                                    <Loader2
+                                        class="size-4 shrink-0 animate-spin"
+                                        stroke-width={2}
+                                        aria-hidden
+                                    />
+                                    <span>Creating…</span>
+                                </>
+                            </Show>
                         </Button>
                     </div>
                 </form>

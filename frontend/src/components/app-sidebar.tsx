@@ -4,12 +4,14 @@ import Folder from "lucide-solid/icons/folder";
 import Plus from "lucide-solid/icons/plus";
 import Search from "lucide-solid/icons/search";
 import Settings from "lucide-solid/icons/settings";
-import type { Component } from "solid-js";
+import { For, type Component } from "solid-js";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { store } from "@wails/go/models";
 
 export interface AppSidebarProps {
     onNewProject: () => void;
+    projects: store.Project[];
     class?: string;
 }
 
@@ -73,7 +75,25 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                     </Button>
                 </div>
             </header>
-            <div class="min-h-0 flex-1" />
+            <div class="min-h-0 flex-1 overflow-y-auto px-2 py-2">
+                <ul class="space-y-1">
+                    <For each={props.projects}>
+                        {(p) => (
+                            <li class="rounded-md border border-transparent px-2 py-1.5 text-left hover:bg-slate-700/40">
+                                <div class="truncate font-medium text-slate-100">
+                                    {p.name}
+                                </div>
+                                <div
+                                    class="truncate font-mono text-[11px] text-slate-500"
+                                    title={p.directory}
+                                >
+                                    {p.directory}
+                                </div>
+                            </li>
+                        )}
+                    </For>
+                </ul>
+            </div>
             <footer class="mt-auto space-y-3 border-t border-slate-700/60 px-4 py-3">
                 <A
                     href="/settings"

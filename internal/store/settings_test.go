@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestStore_GetSettings(t *testing.T) {
+func TestGetSettings(t *testing.T) {
 	t.Run("nil store returns zero settings", func(t *testing.T) {
 		var s *Store
 		got, err := s.GetSettings()
@@ -32,7 +32,7 @@ func TestStore_GetSettings(t *testing.T) {
 	})
 }
 
-func TestStore_PutSettings(t *testing.T) {
+func TestPutSettings(t *testing.T) {
 	t.Run("nil store returns error", func(t *testing.T) {
 		var s *Store
 		err := s.PutSettings(Settings{})

@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestStore_CreateProject(t *testing.T) {
+func TestCreateProject(t *testing.T) {
 	t.Run("nil store returns error", func(t *testing.T) {
 		var s *Store
 		p, err := s.CreateProject(CreateProjectParams{Name: "x", RemoteURL: "https://example.com/r.git"})
@@ -103,7 +103,7 @@ func TestStore_CreateProject(t *testing.T) {
 	})
 }
 
-func TestStore_GetProject(t *testing.T) {
+func TestGetProject(t *testing.T) {
 	t.Run("nil store returns error", func(t *testing.T) {
 		var s *Store
 		p, err := s.GetProject("x")
@@ -140,5 +140,110 @@ func TestStore_GetProject(t *testing.T) {
 		assert.Equal(t, created.Name, got.Name)
 		assert.Equal(t, created.Directory, got.Directory)
 		assert.Equal(t, created.RemoteURL, got.RemoteURL)
+	})
+}
+
+func TestDeleteProject(t *testing.T) {
+	t.Run("nil store returns error", func(t *testing.T) {
+		var s *Store
+		err := s.DeleteProject("x")
+		require.Error(t, err)
+	})
+
+	t.Run("empty name returns ErrInvalidName", func(t *testing.T) {
+		st := openTestStore(t)
+		err := st.DeleteProject("  ")
+		require.ErrorIs(t, err, ErrInvalidName)
+	})
+
+	t.Run("missing project returns ErrProjectNotFound", func(t *testing.T) {
+		st := openTestStore(t)
+		err := st.DeleteProject("missing")
+		require.ErrorIs(t, err, ErrProjectNotFound)
+	})
+
+	t.Run("removes existing project record", func(t *testing.T) {
+		st := openTestStore(t)
+		_, err := st.CreateProject(CreateProjectParams{
+			Name:      "gone",
+			RemoteURL: "https://example.com/g.git",
+		})
+		require.NoError(t, err)
+		require.NoError(t, st.DeleteProject("gone"))
+		p, err := st.GetProject("gone")
+		require.NoError(t, err)
+		assert.Nil(t, p)
+	})
+
+	t.Run("does not remove project directory", func(t *testing.T) {
+		st := openTestStore(t)
+		p, err := st.CreateProject(CreateProjectParams{
+			Name:      "disk",
+			RemoteURL: "https://example.com/d.git",
+		})
+		require.NoError(t, err)
+		require.NoError(t, st.DeleteProject("disk"))
+		_, err = os.Stat(p.Directory)
+		require.NoError(t, err)
+	})
+
+	t.Run("delete trims name like CreateProject", func(t *testing.T) {
+		st := openTestStore(t)
+		_, err := st.CreateProject(CreateProjectParams{
+			Name:      "trimmed",
+			RemoteURL: "https://example.com/t.git",
+		})
+		require.NoError(t, err)
+		require.NoError(t, st.DeleteProject("  trimmed  "))
+		p, err := st.GetProject("trimmed")
+		require.NoError(t, err)
+		assert.Nil(t, p)
+	})
+
+	t.Run("second delete returns ErrProjectNotFound", func(t *testing.T) {
+		st := openTestStore(t)
+		_, err := st.CreateProject(CreateProjectParams{
+			Name:      "twice",
+			RemoteURL: "https://example.com/tw.git",
+		})
+		require.NoError(t, err)
+		require.NoError(t, st.DeleteProject("twice"))
+		err = st.DeleteProject("twice")
+		require.ErrorIs(t, err, ErrProjectNotFound)
+	})
+}
+
+func TestListProjects(t *testing.T) {
+	t.Run("nil store returns error", func(t *testing.T) {
+		var s *Store
+		list, err := s.ListProjects()
+		require.Error(t, err)
+		assert.Nil(t, list)
+	})
+
+	t.Run("empty database returns empty slice", func(t *testing.T) {
+		st := openTestStore(t)
+		list, err := st.ListProjects()
+		require.NoError(t, err)
+		assert.Empty(t, list)
+	})
+
+	t.Run("returns projects sorted by name", func(t *testing.T) {
+		st := openTestStore(t)
+		_, err := st.CreateProject(CreateProjectParams{
+			Name:      "zebra",
+			RemoteURL: "https://example.com/z.git",
+		})
+		require.NoError(t, err)
+		_, err = st.CreateProject(CreateProjectParams{
+			Name:      "alpha",
+			RemoteURL: "https://example.com/a.git",
+		})
+		require.NoError(t, err)
+		list, err := st.ListProjects()
+		require.NoError(t, err)
+		require.Len(t, list, 2)
+		assert.Equal(t, "alpha", list[0].Name)
+		assert.Equal(t, "zebra", list[1].Name)
 	})
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestStore_CacheRoot(t *testing.T) {
+func TestCacheRoot(t *testing.T) {
 	t.Run("nil store returns empty string", func(t *testing.T) {
 		var s *Store
 		assert.Equal(t, "", s.CacheRoot())

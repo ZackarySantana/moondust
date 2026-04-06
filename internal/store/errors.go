@@ -13,4 +13,7 @@ var (
 	// ErrInvalidParams: remote URL and local Directory are mutually exclusive on purpose
 	// so we never merge two different sources of truth for one project path.
 	ErrInvalidParams = errors.New("store: invalid create project parameters")
+
+	// ErrProjectNotFound: no row for that name (e.g. delete or get).
+	ErrProjectNotFound = errors.New("store: project not found")
 )

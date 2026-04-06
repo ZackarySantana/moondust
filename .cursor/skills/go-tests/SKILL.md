@@ -9,7 +9,7 @@ These rules are **absolute** for this codebase.
 
 ## Structure
 
-- **At most one root `Test…` function per function under test.** Do not attach multiple top-level `Test` functions to the same function (e.g. one `TestStore_Foo` for `(*Store).Foo`, not several).
+- **At most one root `Test…` function per function under test.** Do not attach multiple top-level `Test` functions to the same function (e.g. one `TestCreateProject` for `CreateProject`, not several).
 - Use **`t.Run("subtest name", func(t *testing.T) { … })`** for all cases inside that single test function.
 
 ## Assertions
@@ -20,7 +20,7 @@ These rules are **absolute** for this codebase.
 
 ## Naming
 
-- Name tests after what they exercise, e.g. `TestOpenFile`, `TestStore_CreateProject` for methods.
+- Root test name is **`Test` + the exported function or method name** under test (e.g. `TestOpenFile`, `TestCreateProject`, `TestNewService`, `TestClose`). Do **not** use a `Type_` prefix such as `TestStore_CreateProject`.
 
 ## Checklist
 

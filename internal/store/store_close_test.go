@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestStore_Close(t *testing.T) {
+func TestClose(t *testing.T) {
 	t.Run("nil receiver returns nil error", func(t *testing.T) {
 		var s *Store
 		assert.NoError(t, s.Close())
