@@ -26,21 +26,48 @@ export interface CreateProjectModalProps {
 
 type CreateProjectTab = "url" | "folder";
 
+/** SCP-style remote: git@host:path/to/repo.git (no scheme). */
+const GIT_SCP_REMOTE_RE = /^[^@\s]+@[^:\s]+:(.+)$/;
+
+function repoNameFromPathSegment(lastSegment: string): string {
+    return lastSegment.replace(/\.git$/i, "").trim();
+}
+
 function deriveNameFromUrl(raw: string): string {
     const t = raw.trim();
     if (!t) return "";
+
+    const scp = t.match(GIT_SCP_REMOTE_RE);
+    if (scp) {
+        const segments = scp[1].split("/").filter(Boolean);
+        const last = segments[segments.length - 1] ?? "";
+        return repoNameFromPathSegment(last);
+    }
+
     try {
         const u = new URL(t.includes("://") ? t : `https://${t}`);
         const parts = u.pathname.split("/").filter(Boolean);
         if (parts.length >= 1) {
             return (
-                parts[parts.length - 1].replace(/\.git$/i, "") ||
+                repoNameFromPathSegment(parts[parts.length - 1] ?? "") ||
                 u.hostname.replace(/^www\./, "")
             );
         }
         return u.hostname.replace(/^www\./, "") || "";
     } catch {
         return "";
+    }
+}
+
+function parseGitRemoteUrl(raw: string): { cloneUrl: string } | null {
+    const t = raw.trim();
+    if (!t) return null;
+    if (GIT_SCP_REMOTE_RE.test(t)) return { cloneUrl: t };
+    try {
+        const u = new URL(t.includes("://") ? t : `https://${t}`);
+        return { cloneUrl: u.href };
+    } catch {
+        return null;
     }
 }
 
@@ -95,16 +122,13 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
         if (createTab() === "url") {
             const raw = urlDraft().trim();
             if (!raw) return;
-            let href: string;
-            try {
-                const u = new URL(raw.includes("://") ? raw : `https://${raw}`);
-                href = u.href;
-            } catch {
-                alert("That doesn’t look like a valid URL.");
+            const parsed = parseGitRemoteUrl(raw);
+            if (!parsed) {
+                alert("That doesn’t look like a valid repository URL.");
                 return;
             }
             props.onOpenChange(false);
-            alert(`create project: ${name} from ${href}`);
+            alert(`create project: ${name} from ${parsed.cloneUrl}`);
             return;
         }
         const fp = folderPath().trim();
@@ -229,9 +253,9 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
                                 ref={(el) => {
                                     urlInputRef = el;
                                 }}
-                                type="url"
-                                autocomplete="url"
-                                placeholder="https://github.com/org/repo"
+                                type="text"
+                                autocomplete="off"
+                                placeholder="https://github.com/org/repo or git@github.com:org/repo.git"
                                 class="border-slate-600/80 focus-visible:border-sky-500/80"
                                 value={urlDraft()}
                                 onInput={(e) =>
