@@ -131,9 +131,23 @@ func (a *App) CreateProjectFromFolder(name, directory string) (*store.Project, e
 	return a.projects.CreateProjectFromFolder(ctx, name, directory)
 }
 
+func (a *App) GetProject(id string) (*store.Project, error) {
+	if a.projects == nil {
+		return nil, errAppNotReady
+	}
+	return a.projects.GetProject(id)
+}
+
 func (a *App) ListProjects() ([]store.Project, error) {
 	if a.projects == nil {
 		return nil, errAppNotReady
 	}
 	return a.projects.ListProjects()
+}
+
+func (a *App) UpdateProject(p *store.Project) error {
+	if a.projects == nil {
+		return errAppNotReady
+	}
+	return a.projects.UpdateProject(p)
 }

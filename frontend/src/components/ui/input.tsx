@@ -10,7 +10,7 @@ export const Input: Component<InputProps> = (props) => {
     return (
         <input
             class={cn(
-                "flex h-9 w-full rounded-md border border-slate-600/80 bg-slate-900/50 px-3 py-2 text-sm text-slate-200 ring-offset-slate-950 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sky-500/50 disabled:cursor-not-allowed disabled:opacity-50",
+                "flex h-9 w-full rounded-lg border border-slate-700/50 bg-slate-950/50 px-3 py-2 text-sm text-slate-200 transition-colors duration-150 placeholder:text-slate-600 focus-visible:border-emerald-700/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-600/30 disabled:cursor-not-allowed disabled:opacity-50",
                 local.class,
             )}
             {...rest}

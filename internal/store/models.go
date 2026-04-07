@@ -3,6 +3,9 @@ package store
 type Settings struct{}
 
 type Project struct {
+	// ID is an immutable random hex string assigned at creation, used as the bolt key
+	// and in URLs so the display name can change freely.
+	ID        string `json:"id"`
 	Name      string `json:"name"`
 	Directory string `json:"directory"`
 	RemoteURL string `json:"remote_url,omitempty"`

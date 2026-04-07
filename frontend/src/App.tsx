@@ -1,6 +1,7 @@
 import { Navigate, Route, Router } from "@solidjs/router";
 import { AppShell } from "@/layouts/app-shell";
 import { HomePage } from "@/pages/home";
+import { ProjectSettingsPage } from "@/pages/project-settings";
 import { SettingsAboutPage } from "@/pages/settings/about";
 import { SettingsEnvironmentsPage } from "@/pages/settings/environments";
 import { SettingsFeaturesPage } from "@/pages/settings/features";
@@ -15,6 +16,10 @@ export default function App() {
             <Route
                 path="/"
                 component={HomePage}
+            />
+            <Route
+                path="/project/:id/settings"
+                component={ProjectSettingsPage}
             />
             <Route
                 path="/settings"

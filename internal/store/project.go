@@ -1,6 +1,8 @@
 package store
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +14,14 @@ import (
 
 	bolt "go.etcd.io/bbolt"
 )
+
+func generateProjectID() (string, error) {
+	b := make([]byte, 6)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("store: generate project id: %w", err)
+	}
+	return hex.EncodeToString(b), nil
+}
 
 // CreateProjectParams: RemoteURL means we allocate under CacheRoot so we never write
 // into arbitrary paths without a user-chosen folder; omit it when Directory comes from
@@ -32,19 +42,25 @@ func (s *Store) CreateProject(p CreateProjectParams) (*Project, error) {
 		return nil, ErrInvalidName
 	}
 
+	id, err := generateProjectID()
+	if err != nil {
+		return nil, err
+	}
+
 	dir, err := s.resolveProjectDirectory(name, p.RemoteURL, p.Directory)
 	if err != nil {
 		return nil, err
 	}
 
 	proj := Project{
+		ID:        id,
 		Name:      name,
 		Directory: dir,
 		RemoteURL: strings.TrimSpace(p.RemoteURL),
 		Meta:      cloneMeta(p.InitialMeta),
 	}
 
-	key := []byte(name)
+	key := []byte(id)
 	data, err := json.Marshal(&proj)
 	if err != nil {
 		return nil, fmt.Errorf("store: encode project: %w", err)
@@ -130,11 +146,11 @@ func cloneMeta(m map[string]string) map[string]string {
 
 // GetProject returns nil when missing so callers can branch on nil instead of
 // importing a sentinel "not found" error for the common lookup case.
-func (s *Store) GetProject(name string) (*Project, error) {
+func (s *Store) GetProject(id string) (*Project, error) {
 	if s == nil || s.db == nil {
 		return nil, fmt.Errorf("store: nil store")
 	}
-	key := []byte(strings.TrimSpace(name))
+	key := []byte(strings.TrimSpace(id))
 	if len(key) == 0 {
 		return nil, ErrInvalidName
 	}
@@ -187,12 +203,40 @@ func (s *Store) ListProjects() ([]Project, error) {
 	return out, nil
 }
 
-// DeleteProject only removes the bolt key; callers remove files when rolling back.
-func (s *Store) DeleteProject(name string) error {
+// UpdateProject replaces the stored JSON for an existing project. The ID is immutable
+// and used as the bolt key; all other fields (including Name) can change.
+func (s *Store) UpdateProject(p *Project) error {
 	if s == nil || s.db == nil {
 		return fmt.Errorf("store: nil store")
 	}
-	key := []byte(strings.TrimSpace(name))
+	id := strings.TrimSpace(p.ID)
+	if id == "" {
+		return ErrInvalidName
+	}
+	key := []byte(id)
+
+	data, err := json.Marshal(p)
+	if err != nil {
+		return fmt.Errorf("store: encode project: %w", err)
+	}
+	return s.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(bucketProjects)
+		if b == nil {
+			return fmt.Errorf("store: projects bucket missing")
+		}
+		if b.Get(key) == nil {
+			return ErrProjectNotFound
+		}
+		return b.Put(key, data)
+	})
+}
+
+// DeleteProject only removes the bolt key; callers remove files when rolling back.
+func (s *Store) DeleteProject(id string) error {
+	if s == nil || s.db == nil {
+		return fmt.Errorf("store: nil store")
+	}
+	key := []byte(strings.TrimSpace(id))
 	if len(key) == 0 {
 		return ErrInvalidName
 	}
@@ -205,5 +249,60 @@ func (s *Store) DeleteProject(name string) error {
 			return ErrProjectNotFound
 		}
 		return b.Delete(key)
+	})
+}
+
+// migrateProjectIDs assigns hex IDs to any legacy projects that were keyed by name.
+// Called once during store Open; idempotent.
+func (s *Store) migrateProjectIDs() error {
+	type migration struct {
+		oldKey []byte
+		proj   Project
+	}
+
+	var pending []migration
+	err := s.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(bucketProjects)
+		if b == nil {
+			return nil
+		}
+		return b.ForEach(func(k, v []byte) error {
+			var p Project
+			if err := json.Unmarshal(v, &p); err != nil {
+				return nil
+			}
+			if p.ID == "" {
+				pending = append(pending, migration{oldKey: append([]byte{}, k...), proj: p})
+			}
+			return nil
+		})
+	})
+	if err != nil || len(pending) == 0 {
+		return err
+	}
+
+	return s.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(bucketProjects)
+		if b == nil {
+			return nil
+		}
+		for _, m := range pending {
+			id, err := generateProjectID()
+			if err != nil {
+				return err
+			}
+			m.proj.ID = id
+			data, err := json.Marshal(&m.proj)
+			if err != nil {
+				return err
+			}
+			if err := b.Delete(m.oldKey); err != nil {
+				return err
+			}
+			if err := b.Put([]byte(id), data); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }

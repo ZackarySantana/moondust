@@ -12,7 +12,7 @@ import (
 )
 
 type Service struct {
-	store    *store.Store
+	store     *store.Store
 	gitClient git.Client
 }
 
@@ -59,6 +59,13 @@ func (s *Service) CreateProjectFromFolder(ctx context.Context, name, directory s
 	})
 }
 
+func (s *Service) GetProject(id string) (*store.Project, error) {
+	if s == nil {
+		return nil, fmt.Errorf("project: nil service")
+	}
+	return s.store.GetProject(id)
+}
+
 func (s *Service) ListProjects() ([]store.Project, error) {
 	if s == nil {
 		return nil, fmt.Errorf("project: nil service")
@@ -66,9 +73,16 @@ func (s *Service) ListProjects() ([]store.Project, error) {
 	return s.store.ListProjects()
 }
 
+func (s *Service) UpdateProject(p *store.Project) error {
+	if s == nil {
+		return fmt.Errorf("project: nil service")
+	}
+	return s.store.UpdateProject(p)
+}
+
 func (s *Service) rollbackRemoteCreate(p *store.Project) error {
 	return errors.Join(
-		s.store.DeleteProject(p.Name),
+		s.store.DeleteProject(p.ID),
 		os.RemoveAll(p.Directory),
 	)
 }

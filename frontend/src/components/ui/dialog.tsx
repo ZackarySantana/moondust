@@ -28,7 +28,10 @@ export const DialogOverlay: Component<DialogOverlayProps> = (props) => {
     return (
         <button
             type="button"
-            class={cn("absolute inset-0 bg-black/55", local.class)}
+            class={cn(
+                "absolute inset-0 bg-black/65 backdrop-blur-xs animate-overlay-in",
+                local.class,
+            )}
             {...rest}
         />
     );
@@ -43,7 +46,7 @@ export const DialogContent: Component<DialogContentProps> = (props) => {
     return (
         <div
             class={cn(
-                "relative z-10 w-full max-w-md rounded-lg border border-slate-700/80 bg-[rgb(24,31,42)] p-4 shadow-xl ring-1 ring-black/20",
+                "relative z-10 w-full max-w-md rounded-xl border border-slate-800/60 bg-app-panel p-5 shadow-2xl shadow-black/40 ring-1 ring-white/3 animate-dialog-in",
                 local.class,
             )}
             {...rest}
@@ -60,7 +63,7 @@ export const DialogTitle: Component<DialogTitleProps> = (props) => {
     return (
         <h2
             class={cn(
-                "mb-4 text-base font-semibold text-slate-100",
+                "mb-5 text-base font-semibold tracking-tight text-slate-100",
                 local.class,
             )}
             {...rest}

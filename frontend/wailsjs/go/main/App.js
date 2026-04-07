@@ -14,10 +14,18 @@ export function CreateProjectFromRemote(arg1, arg2) {
   return window['go']['main']['App']['CreateProjectFromRemote'](arg1, arg2);
 }
 
+export function GetProject(arg1) {
+  return window['go']['main']['App']['GetProject'](arg1);
+}
+
 export function ListProjects() {
   return window['go']['main']['App']['ListProjects']();
 }
 
 export function SelectProjectFolder() {
   return window['go']['main']['App']['SelectProjectFolder']();
+}
+
+export function UpdateProject(arg1) {
+  return window['go']['main']['App']['UpdateProject'](arg1);
 }

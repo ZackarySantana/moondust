@@ -33,7 +33,6 @@ export interface CreateProjectModalProps {
 
 type CreateProjectTab = "url" | "folder";
 
-/** SCP-style remote: git@host:path/to/repo.git (no scheme). */
 const GIT_SCP_REMOTE_RE = /^[^@\s]+@[^:\s]+:(.+)$/;
 
 function repoNameFromPathSegment(lastSegment: string): string {
@@ -141,7 +140,7 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
             if (!raw) return;
             const parsed = parseGitRemoteUrl(raw);
             if (!parsed) {
-                alert("That doesn’t look like a valid repository URL.");
+                alert("That doesn't look like a valid repository URL.");
                 return;
             }
             setSubmitting(true);
@@ -230,18 +229,19 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
                 aria-labelledby="create-project-title"
             >
                 <DialogTitle id="create-project-title">
-                    Creating project
+                    Create project
                 </DialogTitle>
                 <form
-                    class="space-y-4"
+                    class="space-y-5"
                     aria-busy={submitting()}
                     onSubmit={(e) => {
                         e.preventDefault();
                         void submitCreateProject();
                     }}
                 >
+                    {/* Tab switcher */}
                     <div
-                        class="flex rounded-lg bg-slate-900/60 p-0.5"
+                        class="flex rounded-lg bg-slate-950/60 p-1"
                         role="tablist"
                         aria-label="Project source"
                     >
@@ -250,10 +250,10 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
                             role="tab"
                             aria-selected={createTab() === "url"}
                             class={cn(
-                                "flex-1 cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed",
+                                "flex-1 cursor-pointer rounded-md px-3 py-1.5 text-[13px] font-medium transition-all duration-150 disabled:cursor-not-allowed",
                                 createTab() === "url"
-                                    ? "bg-slate-700 text-slate-100 shadow-sm"
-                                    : "text-slate-400 hover:text-slate-200",
+                                    ? "bg-slate-800/80 text-slate-100 shadow-sm"
+                                    : "text-slate-500 hover:text-slate-300",
                             )}
                             disabled={submitting()}
                             onClick={() => {
@@ -269,10 +269,10 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
                             aria-selected={createTab() === "folder"}
                             disabled={submitting()}
                             class={cn(
-                                "flex-1 cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed",
+                                "flex-1 cursor-pointer rounded-md px-3 py-1.5 text-[13px] font-medium transition-all duration-150 disabled:cursor-not-allowed",
                                 createTab() === "folder"
-                                    ? "bg-slate-700 text-slate-100 shadow-sm"
-                                    : "text-slate-400 hover:text-slate-200",
+                                    ? "bg-slate-800/80 text-slate-100 shadow-sm"
+                                    : "text-slate-500 hover:text-slate-300",
                             )}
                             onClick={() => {
                                 setNameOverride(null);
@@ -284,7 +284,7 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
                     </div>
 
                     <Show when={createTab() === "url"}>
-                        <div>
+                        <div class="space-y-1.5">
                             <Label for="create-project-url">
                                 Repository URL
                             </Label>
@@ -295,8 +295,7 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
                                 }}
                                 type="text"
                                 autocomplete="off"
-                                placeholder="https://github.com/org/repo or git@github.com:org/repo.git"
-                                class="border-slate-600/80 focus-visible:border-sky-500/80"
+                                placeholder="https://github.com/org/repo"
                                 value={urlDraft()}
                                 disabled={submitting()}
                                 onInput={(e) =>
@@ -307,15 +306,13 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
                     </Show>
 
                     <Show when={createTab() === "folder"}>
-                        <div class="space-y-2">
-                            <span class="block text-xs font-medium uppercase tracking-wide text-slate-500">
-                                Local folder
-                            </span>
+                        <div class="space-y-1.5">
+                            <Label>Local folder</Label>
                             <Button
                                 type="button"
                                 variant="outline"
                                 disabled={submitting()}
-                                class="h-auto w-full cursor-pointer justify-start border-slate-600/80 bg-slate-900/50 py-2 text-left font-normal text-slate-200 hover:bg-slate-800/80"
+                                class="h-auto w-full cursor-pointer justify-start bg-slate-950/40 py-2.5 text-left font-normal text-slate-300 hover:bg-slate-900/60"
                                 onClick={() => void pickFolder()}
                             >
                                 {folderPath().trim()
@@ -325,20 +322,19 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
                         </div>
                     </Show>
 
-                    <div>
+                    <div class="space-y-1.5">
                         <Label for="create-project-name">Name</Label>
                         <Input
                             id="create-project-name"
                             type="text"
-                            class="border-slate-600/50 focus-visible:border-sky-500/80"
                             value={resolvedName()}
-                            placeholder="Autogenerated from URL or folder"
+                            placeholder="Derived from source"
                             disabled={submitting()}
                             onInput={onNameInput}
                         />
                     </div>
 
-                    <div class="flex justify-end gap-2 pt-1">
+                    <div class="flex justify-end gap-2 pt-2">
                         <Button
                             type="button"
                             variant="ghost"
@@ -348,13 +344,13 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
                         </Button>
                         <Button
                             type="submit"
-                            class="inline-flex min-w-[10.5rem] items-center justify-center gap-2"
+                            class="inline-flex min-w-36 items-center justify-center gap-2"
                             disabled={submitting() || !canSubmitForm()}
                             aria-busy={submitting()}
                         >
                             <Show
                                 when={submitting()}
-                                fallback={<>Create project</>}
+                                fallback={<>Create</>}
                             >
                                 <>
                                     <Loader2

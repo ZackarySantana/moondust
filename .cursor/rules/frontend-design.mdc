@@ -1,0 +1,142 @@
+---
+description: Frontend design system conventions for the Moondust UI
+globs:
+    - frontend/src/**/*.tsx
+    - frontend/src/**/*.css
+---
+
+# Frontend Design System
+
+## Stack
+
+- **Framework**: SolidJS (not React — no hooks, use `createSignal`, `createMemo`, `createEffect`)
+- **Styling**: Tailwind CSS v4 (CSS-first config via `@theme` in `style.css`, no `tailwind.config.*`)
+- **Icons**: `lucide-solid` with `stroke-width={1.75}` for body icons, `{2}` or `{2.5}` for small/UI-dense icons
+- **Class merging**: Always use `cn()` from `@/lib/utils` (wraps `clsx` + `tailwind-merge`)
+
+## Color System
+
+All colors live in `src/style.css` under `@theme`. The palette uses neutral-dark grays with a subtle green undertone.
+
+### Surface Hierarchy (darkest → lightest)
+
+| Token          | Usage                                    |
+| -------------- | ---------------------------------------- |
+| `app-bg`       | Page/window background                   |
+| `app-panel`    | Sidebar, modal panels                    |
+| `app-surface`  | Cards, elevated containers within panels |
+| `app-elevated` | Popovers, dropdowns, tooltips            |
+
+### Slate Scale
+
+`slate-50` through `slate-950`. Use relative to surface:
+
+- **Text**: `slate-100` (primary), `slate-300`–`slate-400` (secondary), `slate-500`–`slate-600` (muted/labels)
+- **Borders**: `slate-800/40` to `slate-800/60` (subtle), `slate-700/50` (inputs, stronger dividers)
+- **Hover surfaces**: `slate-800/30` to `slate-800/50`
+
+### Accent
+
+Emerald is the accent color. Usage pattern:
+
+- **Buttons**: `emerald-700/90` bg, `emerald-600/90` hover
+- **Focus rings**: `emerald-500/55` outline, `emerald-600/30` ring
+- **Active indicators**: `emerald-500/80` for icons, `emerald-700/80` for progress bars
+- **Links**: `emerald-400/95`
+
+## Spacing Rhythm
+
+Follow an 4px grid. Key patterns:
+
+- **Padding inside containers**: `p-3` to `p-5` (12–20px)
+- **Gap between items in a list**: `gap-0.5` to `gap-1` (2–4px)
+- **Section spacing**: `gap-8` to `gap-10` (32–40px)
+- **Label to input**: `space-y-1.5` (6px)
+- **Form fields**: `space-y-5` (20px)
+
+## Typography
+
+- **Page titles**: `text-xl font-semibold tracking-tight text-slate-100`
+- **Section labels**: `text-[11px] font-semibold uppercase tracking-widest text-slate-500`
+- **Body text**: `text-[13px]` or `text-sm` (13–14px), `text-slate-300`–`slate-400`
+- **Muted helper text**: `text-xs text-slate-600`
+- **Nav items**: `text-[13px] font-medium`
+
+## Component Conventions
+
+### Buttons
+
+Defined in `components/ui/button.tsx`. Variants: `default`, `destructive`, `outline`, `secondary`, `ghost`, `link`, `icon`.
+
+- All buttons include `active:scale-[0.97]` for press feedback
+- Use `transition-all duration-150` for smooth state changes
+- Icon-only buttons use `size="icon"` (32×32) and `variant="icon"`
+
+### Dialogs
+
+- Overlay uses `backdrop-blur-xs` and `animate-overlay-in`
+- Content uses `animate-dialog-in` (slide-up + scale + fade)
+- Rounded corners: `rounded-xl`
+- Always include `role="dialog"`, `aria-modal="true"`, `aria-labelledby`
+
+### Inputs
+
+- Height: `h-9`
+- Rounded: `rounded-lg`
+- Border: `border-slate-700/50` default, `border-emerald-700/50` focus
+- Background: `bg-slate-950/50`
+
+### Separator
+
+`components/ui/separator.tsx` — use instead of ad-hoc `<div class="h-px ...">`.
+
+### Navigation
+
+- **Sidebar nav**: Native `<button>` or `<A>` with `rounded-lg px-2.5 py-2` and `transition-colors duration-100`
+- **Settings nav** (`vertical-nav.tsx`): Supports optional `icon` prop per item. Active state shows accent-colored icon.
+
+## Animations
+
+Defined as `@keyframes` in `style.css`, exposed via `@theme` as `--animate-*`:
+
+| Class                | Duration | Use                                |
+| -------------------- | -------- | ---------------------------------- |
+| `animate-fade-in`    | 150ms    | Page transitions, content reveal   |
+| `animate-slide-up`   | 200ms    | List items, cards appearing        |
+| `animate-scale-in`   | 200ms    | Popovers, menus                    |
+| `animate-dialog-in`  | 250ms    | Modal content (combines y + scale) |
+| `animate-overlay-in` | 200ms    | Modal backdrop                     |
+
+All use `ease-out` or `cubic-bezier(0.16, 1, 0.3, 1)` (spring-like decel).
+
+## Adding New Components
+
+1. Place shared UI primitives in `components/ui/` — keep them unstyled except for structural + interaction styles
+2. Place composed/feature components in `components/`
+3. Every component should accept a `class?: string` prop and merge it with `cn()`
+4. Use `splitProps` to separate local props from spread rest
+5. Type with `Component<Props>` from `solid-js`
+
+## Adding New Pages
+
+1. Create the page component in `pages/` (flat file or nested folder)
+2. Register the route in `App.tsx`
+3. Apply `animate-fade-in` to the page root for entrance transitions
+4. Settings sub-pages go under `pages/settings/` and are registered as children of the `/settings` route
+
+## Iconography
+
+- Import icons individually: `import Foo from "lucide-solid/icons/foo"`
+- Default stroke width: `1.75` for 16px icons, `2` for 14px icons, `1.5` for larger decorative icons
+- Always add `aria-hidden` on decorative icons
+- Size: `size-4` (16px) for inline, `size-3.5` (14px) for compact UI, `size-7` for empty states
+
+## Dark Mode Principles
+
+This is a dark-only app. Key rules:
+
+- Never use white or near-white backgrounds
+- Borders should be semi-transparent (`/30` to `/60`) to blend with any surface
+- Shadows use `shadow-black/40` — dark enough to register, not so harsh they pop
+- Hover states lighten surfaces, never darken them
+- Text contrast: primary content ≥ `slate-200`, interactive elements start at `slate-400`–`slate-500` and brighten on hover

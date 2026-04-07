@@ -1,6 +1,7 @@
 export namespace store {
 	
 	export class Project {
+	    id: string;
 	    name: string;
 	    directory: string;
 	    remote_url?: string;
@@ -12,6 +13,7 @@ export namespace store {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.directory = source["directory"];
 	        this.remote_url = source["remote_url"];

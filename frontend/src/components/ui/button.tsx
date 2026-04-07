@@ -15,22 +15,23 @@ export interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement>
 
 const variantStyles: Record<NonNullable<ButtonProps["variant"]>, string> = {
     default:
-        "bg-sky-600 text-white hover:bg-sky-500 focus-visible:outline-sky-300/80",
+        "bg-emerald-700/90 text-white shadow-sm shadow-emerald-950/30 hover:bg-emerald-600/90 active:bg-emerald-700 focus-visible:outline-emerald-400/65",
     destructive:
-        "bg-red-600 text-white hover:bg-red-500 focus-visible:outline-red-400/60",
+        "bg-red-600/90 text-white shadow-sm shadow-red-950/30 hover:bg-red-500/90 active:bg-red-600 focus-visible:outline-red-400/60",
     outline:
-        "border border-slate-600 bg-transparent text-slate-200 hover:bg-slate-800/80",
-    secondary: "bg-slate-700 text-slate-100 hover:bg-slate-600",
-    ghost: "bg-transparent text-slate-300 hover:bg-slate-700/55 hover:text-slate-100",
-    link: "bg-transparent text-sky-400 underline-offset-4 hover:underline",
-    icon: "bg-transparent text-slate-300 hover:bg-slate-700/55 hover:text-slate-100",
+        "border border-slate-700/60 bg-transparent text-slate-200 hover:bg-slate-800/50 hover:border-slate-600/60 active:bg-slate-800/70",
+    secondary:
+        "bg-slate-800/80 text-slate-100 hover:bg-slate-700/80 active:bg-slate-800",
+    ghost: "bg-transparent text-slate-300 hover:bg-slate-800/50 hover:text-slate-100 active:bg-slate-800/70",
+    link: "bg-transparent text-emerald-400/95 underline-offset-4 hover:text-emerald-300 hover:underline",
+    icon: "bg-transparent text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 active:bg-slate-800/70",
 };
 
 const sizeStyles: Record<NonNullable<ButtonProps["size"]>, string> = {
     default: "h-9 px-4 py-2",
     sm: "h-8 rounded-md px-3 text-xs",
     lg: "h-10 rounded-md px-8",
-    icon: "size-9 rounded-md p-1.5",
+    icon: "size-8 rounded-md p-1.5",
 };
 
 export const Button: Component<ButtonProps> = (props) => {
@@ -48,7 +49,7 @@ export const Button: Component<ButtonProps> = (props) => {
         <button
             type={local.type ?? "button"}
             class={cn(
-                "inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400/60 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-40",
+                "inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-150 focus-visible:outline-2 focus-visible:outline-emerald-500/55 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-40 active:scale-[0.97]",
                 variantStyles[v()],
                 v() !== "link" ? sizeStyles[s()] : "h-auto p-0",
                 local.class,

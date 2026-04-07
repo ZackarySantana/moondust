@@ -10,7 +10,7 @@ export const Label: Component<LabelProps> = (props) => {
     return (
         <label
             class={cn(
-                "mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500",
+                "mb-1.5 block text-xs font-medium text-slate-400",
                 local.class,
             )}
             {...rest}

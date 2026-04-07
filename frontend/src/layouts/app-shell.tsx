@@ -22,7 +22,7 @@ export const AppShell: Component<RouteSectionProps> = (props) => {
     onMount(() => void loadProjects());
 
     return (
-        <div class="flex h-full w-full bg-[rgb(20,26,35)] text-slate-200">
+        <div class="flex h-full w-full bg-app-bg text-slate-200">
             <AppSidebar
                 onNewProject={() => setCreateProjectOpen(true)}
                 projects={projects()}
