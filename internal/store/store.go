@@ -59,10 +59,6 @@ func OpenFile(cacheRoot, dbPath string) (*Store, error) {
 		_ = db.Close()
 		return nil, err
 	}
-	if err := s.migrateProjectIDs(); err != nil {
-		_ = db.Close()
-		return nil, fmt.Errorf("store: migrate project ids: %w", err)
-	}
 	return s, nil
 }
 
