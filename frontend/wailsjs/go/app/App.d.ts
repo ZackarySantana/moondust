@@ -8,6 +8,8 @@ export function CreateProjectFromFolder(arg1:string,arg2:string):Promise<store.P
 
 export function CreateProjectFromRemote(arg1:string,arg2:string):Promise<store.Project>;
 
+export function DeleteProject(arg1:string):Promise<void>;
+
 export function GetProject(arg1:string):Promise<store.Project>;
 
 export function ListProjects():Promise<Array<store.Project>>;

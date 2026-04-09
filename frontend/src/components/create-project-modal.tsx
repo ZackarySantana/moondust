@@ -12,7 +12,7 @@ import {
     CreateProjectFromFolder,
     CreateProjectFromRemote,
     SelectProjectFolder,
-} from "@wails/go/main/App";
+} from "@wails/go/app/App";
 import Loader2 from "lucide-solid/icons/loader-2";
 import { Button } from "@/components/ui/button";
 import {
@@ -127,6 +127,7 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
     async function pickFolder() {
         try {
             const p = await SelectProjectFolder();
+            SelectProjectFolder;
             if (p) setFolderPath(p);
         } catch {
             /* dialog failed */

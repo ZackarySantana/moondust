@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { GetProject, UpdateProject } from "@wails/go/main/App";
+import { GetProject, UpdateProject } from "@wails/go/app/App";
 import { store } from "@wails/go/models";
 
 interface FieldRowProps {
@@ -146,17 +146,17 @@ export const ProjectSettingsPage: Component = () => {
         setDirectory(p.directory);
         setRemoteUrl(p.remote_url ?? "");
 
-        const m = p.meta ?? {};
-        setDefaultBranch(m["default_branch"] ?? "");
-        setAutoPull(m["auto_pull"] ?? "");
-        setCommitSigning(m["commit_signing"] ?? "");
-        setModel(m["model"] ?? "");
-        setSystemPrompt(m["system_prompt"] ?? "");
-        setMaxTokens(m["max_tokens"] ?? "");
-        setTemperature(m["temperature"] ?? "");
-        setRuntime(m["runtime"] ?? "");
-        setShell(m["shell"] ?? "");
-        setWorkingDir(m["working_dir"] ?? "");
+        // const m = p.meta ?? {};
+        // setDefaultBranch(m["default_branch"] ?? "");
+        // setAutoPull(m["auto_pull"] ?? "");
+        // setCommitSigning(m["commit_signing"] ?? "");
+        // setModel(m["model"] ?? "");
+        // setSystemPrompt(m["system_prompt"] ?? "");
+        // setMaxTokens(m["max_tokens"] ?? "");
+        // setTemperature(m["temperature"] ?? "");
+        // setRuntime(m["runtime"] ?? "");
+        // setShell(m["shell"] ?? "");
+        // setWorkingDir(m["working_dir"] ?? "");
     }
 
     createEffect(

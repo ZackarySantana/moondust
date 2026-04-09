@@ -3,7 +3,7 @@ import type { Component } from "solid-js";
 import { createSignal, onMount } from "solid-js";
 import { AppSidebar } from "@/components/app-sidebar";
 import { CreateProjectModal } from "@/components/create-project-modal";
-import { ListProjects } from "@wails/go/main/App";
+import { ListProjects } from "@wails/go/app/App";
 import { store } from "@wails/go/models";
 
 export const AppShell: Component<RouteSectionProps> = (props) => {

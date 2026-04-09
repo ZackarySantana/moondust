@@ -4,8 +4,7 @@ export namespace store {
 	    id: string;
 	    name: string;
 	    directory: string;
-	    remote_url?: string;
-	    meta?: Record<string, string>;
+	    remote_url: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Project(source);
@@ -17,7 +16,6 @@ export namespace store {
 	        this.name = source["name"];
 	        this.directory = source["directory"];
 	        this.remote_url = source["remote_url"];
-	        this.meta = source["meta"];
 	    }
 	}
 

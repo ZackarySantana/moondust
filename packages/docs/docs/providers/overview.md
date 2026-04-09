@@ -14,3 +14,4 @@ Nothing here ranks one vendor over another. Pick what fits your workflow and bil
 | Cursor     | No          | [Cursor](cursor)         |
 | Claude     | No          | [Claude](claude)         |
 | Codex      | No          | [Codex](codex)           |
+| Pi         | No          | [Pi](pi)                 |
