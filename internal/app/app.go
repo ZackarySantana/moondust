@@ -32,6 +32,7 @@ func (a *App) Startup(ctx context.Context) {
 	if _, err := runtime.RequestNotificationAuthorization(ctx); err != nil {
 		slog.DebugContext(ctx, "notification authorization", "error", err)
 	}
+	applyWindowsToastDisplayName()
 }
 
 func (a *App) Shutdown(ctx context.Context) {
