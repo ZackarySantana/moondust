@@ -17,7 +17,7 @@ type Service struct {
 	projectStore store.ProjectStore
 }
 
-func NewService(projectStore store.ProjectStore) *Service {
+func New(projectStore store.ProjectStore) *Service {
 	return &Service{
 		projectStore: &store.ValidateProjectStore{
 			ProjectStore: projectStore,

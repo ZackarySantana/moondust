@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"moondust/internal/app"
+	"moondust/internal/notify"
 	"moondust/internal/service"
 	"moondust/internal/store/bbolt"
 	"os"
@@ -36,11 +38,12 @@ func main() {
 		panic(err)
 	}
 
-	store := bbolt.NewProject(db)
+	projectStore := bbolt.NewProject(db)
+	service := service.New(projectStore)
 
-	service := service.NewService(store)
+	notify := notify.Chain(notify.NewPushChannel())
 
-	app := app.New(service)
+	app := app.New(service, notify)
 
 	err = wails.Run(&options.App{
 		Title:  "Moondust",
@@ -50,8 +53,13 @@ func main() {
 			Assets: assets,
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.Startup,
-		OnShutdown:       app.Shutdown,
+		OnStartup: func(ctx context.Context) {
+			app.Ctx = ctx
+			notify.Setup(ctx)
+		},
+		OnShutdown: func(ctx context.Context) {
+			notify.Shutdown(ctx)
+		},
 		Bind: []interface{}{
 			app,
 		},

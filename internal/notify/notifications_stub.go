@@ -1,6 +1,6 @@
 //go:build !windows
 
-package app
+package notify
 
 // applyWindowsToastDisplayName is implemented on Windows only.
 func applyWindowsToastDisplayName() {}
