@@ -4,7 +4,9 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"log/slog"
 	"moondust/internal/app"
+	"moondust/internal/logstream"
 	"moondust/internal/notify"
 	"moondust/internal/service"
 	"moondust/internal/store/bbolt"
@@ -43,7 +45,10 @@ func main() {
 
 	notify := notify.Chain(notify.NewPushChannel())
 
-	app := app.New(service, notify)
+	logStream := logstream.New()
+	logStream.Install()
+
+	app := app.New(service, notify, logStream)
 
 	err = wails.Run(&options.App{
 		Title:  "Moondust",
@@ -54,11 +59,16 @@ func main() {
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup: func(ctx context.Context) {
+			slog.InfoContext(ctx, "startup started...")
 			app.Ctx = ctx
 			notify.Setup(ctx)
+			slog.InfoContext(ctx, "startup completed...")
 		},
 		OnShutdown: func(ctx context.Context) {
+			slog.InfoContext(ctx, "shutdown started...")
 			notify.Shutdown(ctx)
+			logStream.Shutdown()
+			slog.InfoContext(ctx, "shutdown completed...")
 		},
 		Bind: []interface{}{
 			app,

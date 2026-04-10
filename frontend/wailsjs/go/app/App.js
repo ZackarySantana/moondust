@@ -26,8 +26,16 @@ export function ListProjects() {
   return window['go']['app']['App']['ListProjects']();
 }
 
+export function LogSnapshot() {
+  return window['go']['app']['App']['LogSnapshot']();
+}
+
 export function SelectProjectFolder() {
   return window['go']['app']['App']['SelectProjectFolder']();
+}
+
+export function SetLogStreaming(arg1) {
+  return window['go']['app']['App']['SetLogStreaming'](arg1);
 }
 
 export function UpdateProject(arg1) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"moondust/internal/logstream"
 	"moondust/internal/notify"
 	"moondust/internal/service"
 	"moondust/internal/store"
@@ -16,13 +17,15 @@ type App struct {
 
 	service *service.Service
 	notify  notify.Channel
+	stream  *logstream.Stream
 }
 
-func New(service *service.Service, notify notify.Channel) *App {
+func New(service *service.Service, notify notify.Channel, stream *logstream.Stream) *App {
 	return &App{
 		Ctx:     context.Background(),
 		service: service,
 		notify:  notify,
+		stream:  stream,
 	}
 }
 
@@ -69,6 +72,20 @@ func (a *App) DeleteProject(id string) error {
 }
 
 func (a *App) CancelCreateProject() {
+}
+
+func (a *App) SetLogStreaming(enabled bool) {
+	if a.stream == nil {
+		return
+	}
+	a.stream.SetEnabled(a.Ctx, enabled)
+}
+
+func (a *App) LogSnapshot() []logstream.LogLine {
+	if a.stream == nil {
+		return nil
+	}
+	return a.stream.Snapshot()
 }
 
 func (a *App) notifyProjectCreated(p *store.Project) error {

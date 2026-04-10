@@ -5,6 +5,7 @@ import GitBranch from "lucide-solid/icons/git-branch";
 import Layers from "lucide-solid/icons/layers";
 import Sparkles from "lucide-solid/icons/sparkles";
 import Info from "lucide-solid/icons/info";
+import ScrollText from "lucide-solid/icons/scroll-text";
 
 export type IconComponent = Component<
     JSX.SvgSVGAttributes<SVGSVGElement> & { "stroke-width"?: number }
@@ -22,6 +23,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     { id: "git", label: "Git", icon: GitBranch },
     { id: "environments", label: "Environments", icon: Layers },
     { id: "features", label: "Features", icon: Sparkles },
+    { id: "logs", label: "Logs", icon: ScrollText },
     { id: "about", label: "About", icon: Info },
 ];
 
