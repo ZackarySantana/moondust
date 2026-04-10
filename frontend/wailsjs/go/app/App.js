@@ -6,6 +6,10 @@ export function CancelCreateProject() {
   return window['go']['app']['App']['CancelCreateProject']();
 }
 
+export function ClearLogs() {
+  return window['go']['app']['App']['ClearLogs']();
+}
+
 export function CreateProjectFromFolder(arg1, arg2) {
   return window['go']['app']['App']['CreateProjectFromFolder'](arg1, arg2);
 }
@@ -18,16 +22,20 @@ export function DeleteProject(arg1) {
   return window['go']['app']['App']['DeleteProject'](arg1);
 }
 
+export function DownloadLogs() {
+  return window['go']['app']['App']['DownloadLogs']();
+}
+
 export function GetProject(arg1) {
   return window['go']['app']['App']['GetProject'](arg1);
 }
 
-export function ListProjects() {
-  return window['go']['app']['App']['ListProjects']();
+export function ListLogs() {
+  return window['go']['app']['App']['ListLogs']();
 }
 
-export function LogSnapshot() {
-  return window['go']['app']['App']['LogSnapshot']();
+export function ListProjects() {
+  return window['go']['app']['App']['ListProjects']();
 }
 
 export function SelectProjectFolder() {

@@ -1,23 +1,24 @@
 package logstream
 
 import (
+	"moondust/internal/store"
 	"sync"
 )
 
 type ringBuffer struct {
 	mu sync.Mutex
 
-	buf []LogLine
+	buf []store.LogLine
 	cap int
 
 	nextSeq uint64
 }
 
-func newRingBuffer(capacity int) *ringBuffer {
-	return &ringBuffer{cap: capacity}
+func newRingBuffer(capacity int, maxSeqFromDB uint64) *ringBuffer {
+	return &ringBuffer{cap: capacity, nextSeq: maxSeqFromDB}
 }
 
-func (b *ringBuffer) append(line LogLine) {
+func (b *ringBuffer) append(line store.LogLine) store.LogLine {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -28,22 +29,31 @@ func (b *ringBuffer) append(line LogLine) {
 		b.buf = b.buf[1:]
 	}
 	b.buf = append(b.buf, line)
+	return line
 }
 
-func (b *ringBuffer) snapshot() []LogLine {
+func (b *ringBuffer) reset() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	out := make([]LogLine, len(b.buf))
+	b.buf = nil
+	b.nextSeq = 0
+}
+
+func (b *ringBuffer) snapshot() []store.LogLine {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	out := make([]store.LogLine, len(b.buf))
 	copy(out, b.buf)
 	return out
 }
 
-func (b *ringBuffer) snapshotAfter(seq uint64) []LogLine {
+func (b *ringBuffer) snapshotAfter(seq uint64) []store.LogLine {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	var out []LogLine
+	var out []store.LogLine
 	for _, line := range b.buf {
 		if line.Seq > seq {
 			out = append(out, line)

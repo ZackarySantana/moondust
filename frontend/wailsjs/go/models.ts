@@ -1,4 +1,4 @@
-export namespace logstream {
+export namespace store {
 	
 	export class LogLine {
 	    seq: number;
@@ -39,11 +39,6 @@ export namespace logstream {
 		    return a;
 		}
 	}
-
-}
-
-export namespace store {
-	
 	export class Project {
 	    id: string;
 	    name: string;

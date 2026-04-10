@@ -40,12 +40,11 @@ func main() {
 		panic(err)
 	}
 
-	projectStore := bbolt.NewProject(db)
-	service := service.New(projectStore)
+	service := service.New(bbolt.NewProject(db))
 
 	notify := notify.Chain(notify.NewPushChannel())
 
-	logStream := logstream.New()
+	logStream := logstream.New(bbolt.NewLog(db))
 	logStream.Install()
 
 	app := app.New(service, notify, logStream)

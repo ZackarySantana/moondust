@@ -2,7 +2,9 @@ package logstream
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"moondust/internal/store"
 	"os"
 	"sync"
 	"time"
@@ -12,18 +14,11 @@ import (
 
 const EventBatch = "log:batch"
 
-type LogLine struct {
-	Seq     uint64    `json:"seq"`
-	Time    time.Time `json:"time"`
-	Level   string    `json:"level"`
-	Message string    `json:"message"`
-	Extra   string    `json:"extra,omitempty"`
-}
-
 type Stream struct {
 	mu sync.Mutex
 
-	buf *ringBuffer
+	buf   *ringBuffer
+	store store.LogStore
 
 	emitCtx context.Context
 
@@ -32,15 +27,29 @@ type Stream struct {
 	lastEmittedSeq uint64
 }
 
-func New() *Stream {
+func New(st store.LogStore) *Stream {
+	maxSeq, _ := st.MaxSeq(context.Background())
 	return &Stream{
-		buf: newRingBuffer(500),
+		buf:   newRingBuffer(500, maxSeq),
+		store: st,
 	}
 }
 
 func (s *Stream) Install() {
 	inner := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})
-	slog.SetDefault(slog.New(&teeHandler{inner: inner, buf: s.buf}))
+	appendFn := func(ctx context.Context, line store.LogLine) {
+		if s.store == nil {
+			return
+		}
+		if err := s.store.Append(ctx, line); err != nil {
+			fmt.Fprintf(os.Stderr, "logstream: persist log: %v\n", err)
+		}
+	}
+	slog.SetDefault(slog.New(&teeHandler{
+		inner:      inner,
+		buf:        s.buf,
+		appendLine: appendFn,
+	}))
 }
 
 func (s *Stream) SetEnabled(ctx context.Context, enabled bool) {
@@ -68,8 +77,25 @@ func (s *Stream) Shutdown() {
 	s.SetEnabled(context.Background(), false)
 }
 
-func (s *Stream) Snapshot() []LogLine {
-	return s.buf.snapshot()
+func (s *Stream) ListLogs(ctx context.Context) ([]store.LogLine, error) {
+	if s.store == nil {
+		return nil, nil
+	}
+	return s.store.List(ctx)
+}
+
+func (s *Stream) ClearLogs(ctx context.Context) error {
+	if s.store == nil {
+		return nil
+	}
+	if err := s.store.Clear(ctx); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	s.buf.reset()
+	s.lastEmittedSeq = 0
+	s.mu.Unlock()
+	return nil
 }
 
 func (s *Stream) run(stop <-chan struct{}) {
