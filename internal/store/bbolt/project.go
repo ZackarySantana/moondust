@@ -3,7 +3,6 @@ package bbolt
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"moondust/internal/store"
 
@@ -76,9 +75,6 @@ func (s *projectStore) Update(ctx context.Context, project *store.Project) error
 			if err != nil {
 				return fmt.Errorf("create bucket: %w", err)
 			}
-		}
-		if bucket.Get([]byte(project.ID)) != nil {
-			return errors.New("project already exists")
 		}
 		return bucket.Put([]byte(project.ID), data)
 	})
