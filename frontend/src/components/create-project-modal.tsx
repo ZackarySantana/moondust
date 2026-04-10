@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/solid-query";
 import {
     createEffect,
     createMemo,
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { queryKeys } from "@/lib/query-client";
 import { cn } from "@/lib/utils";
 
 export interface CreateProjectModalProps {
@@ -92,6 +94,7 @@ function isUserCanceled(err: unknown): boolean {
 export const CreateProjectModal: Component<CreateProjectModalProps> = (
     props,
 ) => {
+    const queryClient = useQueryClient();
     const [createTab, setCreateTab] = createSignal<CreateProjectTab>("url");
     const [urlDraft, setUrlDraft] = createSignal("");
     const [folderPath, setFolderPath] = createSignal("");
@@ -127,7 +130,6 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
     async function pickFolder() {
         try {
             const p = await SelectProjectFolder();
-            SelectProjectFolder;
             if (p) setFolderPath(p);
         } catch {
             /* dialog failed */
@@ -147,6 +149,9 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
             setSubmitting(true);
             try {
                 await CreateProjectFromRemote(name, parsed.cloneUrl);
+                await queryClient.invalidateQueries({
+                    queryKey: queryKeys.projects.all,
+                });
                 props.onCreated?.();
                 props.onOpenChange(false);
             } catch (e) {
@@ -166,6 +171,9 @@ export const CreateProjectModal: Component<CreateProjectModalProps> = (
         setSubmitting(true);
         try {
             await CreateProjectFromFolder(name, fp);
+            await queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.all,
+            });
             props.onCreated?.();
             props.onOpenChange(false);
         } catch (e) {

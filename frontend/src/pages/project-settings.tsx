@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import { A, useParams } from "@solidjs/router";
 import ArrowLeft from "lucide-solid/icons/arrow-left";
 import Check from "lucide-solid/icons/check";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { queryKeys } from "@/lib/query-client";
 import { GetProject, UpdateProject } from "@wails/go/app/App";
 import { store } from "@wails/go/models";
 
@@ -125,9 +127,8 @@ const CopyableReadonlyField: Component<CopyableReadonlyFieldProps> = (
 
 export const ProjectSettingsPage: Component = () => {
     const params = useParams<{ id: string }>();
+    const queryClient = useQueryClient();
 
-    const [loaded, setLoaded] = createSignal(false);
-    const [saving, setSaving] = createSignal(false);
     const [saved, setSaved] = createSignal(false);
     const [error, setError] = createSignal("");
 
@@ -148,6 +149,30 @@ export const ProjectSettingsPage: Component = () => {
     const [runtime, setRuntime] = createSignal("");
     const [shell, setShell] = createSignal("");
     const [workingDir, setWorkingDir] = createSignal("");
+
+    const projectQuery = useQuery(() => ({
+        queryKey: queryKeys.projects.detail(params.id),
+        queryFn: async () => {
+            const p = await GetProject(params.id);
+            if (!p) {
+                throw new Error("Project not found");
+            }
+            return p;
+        },
+        enabled: !!params.id,
+    }));
+
+    const updateMutation = useMutation(() => ({
+        mutationFn: (p: store.Project) => UpdateProject(p),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.all,
+            });
+            await queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.detail(params.id),
+            });
+        },
+    }));
 
     function populateFromProject(p: store.Project) {
         setProjectId(p.id);
@@ -171,18 +196,18 @@ export const ProjectSettingsPage: Component = () => {
     createEffect(
         on(
             () => params.id,
-            async (id) => {
-                setLoaded(false);
+            () => {
                 setError("");
                 setSaved(false);
-                try {
-                    const p = await GetProject(id);
-                    if (p) populateFromProject(p);
-                } catch {
-                    setError("Failed to load project.");
-                } finally {
-                    setLoaded(true);
-                }
+            },
+        ),
+    );
+
+    createEffect(
+        on(
+            () => projectQuery.data,
+            (p) => {
+                if (p) populateFromProject(p);
             },
         ),
     );
@@ -204,7 +229,6 @@ export const ProjectSettingsPage: Component = () => {
 
     async function save() {
         setError("");
-        setSaving(true);
         setSaved(false);
         try {
             const p = new store.Project({
@@ -214,12 +238,10 @@ export const ProjectSettingsPage: Component = () => {
                 remote_url: remoteUrl() || undefined,
                 meta: buildMeta(),
             });
-            await UpdateProject(p);
+            await updateMutation.mutateAsync(p);
             setSaved(true);
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e));
-        } finally {
-            setSaving(false);
         }
     }
 
@@ -257,11 +279,14 @@ export const ProjectSettingsPage: Component = () => {
                         </div>
                         <Button
                             onClick={() => void save()}
-                            disabled={saving() || !loaded()}
+                            disabled={
+                                updateMutation.isPending ||
+                                !projectQuery.isSuccess
+                            }
                             class="min-w-24"
                         >
                             <Show
-                                when={!saving()}
+                                when={!updateMutation.isPending}
                                 fallback={
                                     <>
                                         <Loader2
@@ -291,6 +316,11 @@ export const ProjectSettingsPage: Component = () => {
                             </Show>
                         </Button>
                     </div>
+                    <Show when={projectQuery.isError}>
+                        <p class="mt-3 rounded-lg border border-red-900/30 bg-red-950/15 px-3 py-2 text-xs text-red-400">
+                            Failed to load project.
+                        </p>
+                    </Show>
                     <Show when={error()}>
                         <p class="mt-3 rounded-lg border border-red-900/30 bg-red-950/15 px-3 py-2 text-xs text-red-400">
                             {error()}
