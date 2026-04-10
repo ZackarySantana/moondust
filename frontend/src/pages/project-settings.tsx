@@ -59,7 +59,16 @@ const Section: Component<SectionProps> = (props) => (
     </section>
 );
 
-const CopyableId: Component<{ value: string }> = (props) => {
+interface CopyableReadonlyFieldProps {
+    label: string;
+    value: string;
+    description?: string;
+    copyAriaLabel: string;
+}
+
+const CopyableReadonlyField: Component<CopyableReadonlyFieldProps> = (
+    props,
+) => {
     const [copied, setCopied] = createSignal(false);
 
     async function copy() {
@@ -75,7 +84,7 @@ const CopyableId: Component<{ value: string }> = (props) => {
     return (
         <div class="grid grid-cols-[11rem_1fr] items-start gap-4">
             <Label class="mb-0 pt-2 text-right text-[13px] text-slate-400">
-                ID
+                {props.label}
             </Label>
             <div class="space-y-1">
                 <div class="flex items-center gap-2">
@@ -85,7 +94,7 @@ const CopyableId: Component<{ value: string }> = (props) => {
                     <button
                         type="button"
                         class="shrink-0 cursor-pointer rounded-lg border border-slate-800/40 p-2 text-slate-500 transition-colors duration-100 hover:bg-slate-800/40 hover:text-slate-300"
-                        aria-label="Copy ID"
+                        aria-label={props.copyAriaLabel}
                         onClick={() => void copy()}
                     >
                         <Show
@@ -106,9 +115,9 @@ const CopyableId: Component<{ value: string }> = (props) => {
                         </Show>
                     </button>
                 </div>
-                <p class="text-xs text-slate-600">
-                    Immutable identifier used internally. Cannot be changed.
-                </p>
+                {props.description && (
+                    <p class="text-xs text-slate-600">{props.description}</p>
+                )}
             </div>
         </div>
     );
@@ -294,7 +303,12 @@ export const ProjectSettingsPage: Component = () => {
                 <div class="space-y-10">
                     {/* ── General ── */}
                     <Section title="General">
-                        <CopyableId value={projectId()} />
+                        <CopyableReadonlyField
+                            label="ID"
+                            value={projectId()}
+                            copyAriaLabel="Copy ID"
+                            description="Immutable identifier used internally. Cannot be changed."
+                        />
                         <FieldRow
                             label="Name"
                             value={name()}
@@ -302,11 +316,10 @@ export const ProjectSettingsPage: Component = () => {
                             description="Display name shown in the sidebar and thread headers."
                             onInput={(e) => setName(e.currentTarget.value)}
                         />
-                        <FieldRow
+                        <CopyableReadonlyField
                             label="Directory"
                             value={directory()}
-                            placeholder="/path/to/project"
-                            disabled
+                            copyAriaLabel="Copy directory path"
                             description="Local path where the project files are stored."
                         />
                         <FieldRow
