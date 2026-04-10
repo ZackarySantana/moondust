@@ -1,6 +1,9 @@
 package notify
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 var _ Channel = (*chain)(nil)
 var _ ChannelSetup = (*chain)(nil)
@@ -28,13 +31,14 @@ type chain struct {
 }
 
 func (c *chain) Send(ctx context.Context, event Event) error {
+	kind := event.Kind()
 	for _, channel := range c.channels {
-		if event.Kind != KindAll && channel.Kind() != event.Kind {
+		if kind != KindAll && kind != channel.Kind() {
 			continue
 		}
 
 		if err := channel.Send(ctx, event); err != nil {
-			return err
+			return fmt.Errorf("sending '%s' notification to '%s' channel: %w", kind, channel.Kind(), err)
 		}
 	}
 	return nil

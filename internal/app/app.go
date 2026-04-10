@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"moondust/internal/notify"
 	"moondust/internal/service"
@@ -71,9 +72,12 @@ func (a *App) CancelCreateProject() {
 }
 
 func (a *App) notifyProjectCreated(p *store.Project) error {
-	return a.notify.Send(a.Ctx, notify.NewPushEvent(
-		"Project Created",
-		fmt.Sprintf("Project %q is ready.", p.Name),
+	return a.notify.Send(a.Ctx, notify.NewPushNotification(
 		notify.LevelInfo,
+		&runtime.NotificationOptions{
+			ID:    rand.Text(),
+			Title: "Project Created",
+			Body:  fmt.Sprintf("Project %q is ready.", p.Name),
+		},
 	))
 }

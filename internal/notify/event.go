@@ -16,43 +16,7 @@ const (
 	LevelError   Level = "error"
 )
 
-type Event struct {
-	Title string
-	Body  string
-
-	Kind  Kind
-	Level Level
-}
-
-func newEvent(title, body string, level Level, kind Kind) Event {
-	return Event{
-		Title: title,
-		Body:  body,
-		Level: level,
-		Kind:  kind,
-	}
-}
-
-func NewEvent(title, body string, level Level) Event {
-	return newEvent(title, body, level, KindAll)
-}
-
-func NewPushEvent(title, body string, level Level) Event {
-	return newEvent(title, body, level, KindPush)
-}
-
-func NewEmailEvent(title, body string, level Level) Event {
-	return newEvent(title, body, level, KindEmail)
-}
-
-func NewSMSEvent(title, body string, level Level) Event {
-	return newEvent(title, body, level, KindSMS)
-}
-
-func NewSlackEvent(title, body string, level Level) Event {
-	return newEvent(title, body, level, KindSlack)
-}
-
-func NewWebhookEvent(title, body string, level Level) Event {
-	return newEvent(title, body, level, KindWebhook)
+type Event interface {
+	Level() Level
+	Kind() Kind
 }
