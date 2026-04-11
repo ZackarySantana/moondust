@@ -171,7 +171,7 @@ export const ThreadPage: Component = () => {
                     <Show
                         when={
                             params.threadId && projectQuery.data?.directory
-                                ? `${params.threadId}|${projectQuery.data.directory}`
+                                ? `${params.threadId}|${threadQuery.data?.worktree_dir || projectQuery.data.directory}`
                                 : ""
                         }
                         keyed

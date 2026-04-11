@@ -5,6 +5,7 @@ import type { Component } from "solid-js";
 import { createEffect, createMemo, createSignal } from "solid-js";
 import { AppSidebar } from "@/components/app-sidebar";
 import { CreateProjectModal } from "@/components/create-project-modal";
+import { CreateThreadModal } from "@/components/create-thread-modal";
 import { queryKeys } from "@/lib/query-client";
 import { GetProject, ListProjects, ListThreads } from "@wails/go/app/App";
 import { store } from "@wails/go/models";
@@ -13,6 +14,7 @@ import { WindowSetTitle } from "@wails/runtime/runtime";
 export const AppShell: Component<RouteSectionProps> = (props) => {
     const location = useLocation();
     const [createProjectOpen, setCreateProjectOpen] = createSignal(false);
+    const [newThreadProjectID, setNewThreadProjectID] = createSignal("");
 
     const projectsQuery = useQuery(() => ({
         queryKey: queryKeys.projects.all,
@@ -76,6 +78,7 @@ export const AppShell: Component<RouteSectionProps> = (props) => {
         <div class="flex h-full w-full bg-app-bg text-slate-200">
             <AppSidebar
                 onNewProject={() => setCreateProjectOpen(true)}
+                onNewThread={(id) => setNewThreadProjectID(id)}
                 projects={projectsQuery.data ?? []}
                 threads={threadsQuery.data ?? []}
             />
@@ -83,6 +86,13 @@ export const AppShell: Component<RouteSectionProps> = (props) => {
             <CreateProjectModal
                 open={createProjectOpen()}
                 onOpenChange={setCreateProjectOpen}
+            />
+            <CreateThreadModal
+                open={!!newThreadProjectID()}
+                onOpenChange={(open) => {
+                    if (!open) setNewThreadProjectID("");
+                }}
+                projectID={newThreadProjectID()}
             />
         </div>
     );

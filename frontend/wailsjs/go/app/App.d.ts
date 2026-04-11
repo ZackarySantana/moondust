@@ -10,7 +10,7 @@ export function CreateProjectFromFolder(arg1:string,arg2:string):Promise<store.P
 
 export function CreateProjectFromRemote(arg1:string,arg2:string):Promise<store.Project>;
 
-export function CreateThread(arg1:string):Promise<store.Thread>;
+export function CreateThread(arg1:string,arg2:boolean):Promise<store.Thread>;
 
 export function DeleteProject(arg1:string,arg2:boolean):Promise<void>;
 

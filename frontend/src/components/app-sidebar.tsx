@@ -1,5 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/solid-query";
-import { A, useLocation, useNavigate } from "@solidjs/router";
+import { A, useLocation } from "@solidjs/router";
 import ChevronRight from "lucide-solid/icons/chevron-right";
 import Plus from "lucide-solid/icons/plus";
 import Settings from "lucide-solid/icons/settings";
@@ -10,15 +9,14 @@ import {
     onCleanup,
     type Component,
 } from "solid-js";
-import { CreateThread } from "@wails/go/app/App";
 import { Separator } from "@/components/ui/separator";
-import { queryKeys } from "@/lib/query-client";
 import { relativeTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { store } from "@wails/go/models";
 
 export interface AppSidebarProps {
     onNewProject: () => void;
+    onNewThread: (projectID: string) => void;
     projects: store.Project[];
     threads: store.Thread[];
     class?: string;
@@ -39,23 +37,11 @@ function threadTimestamp(t: store.Thread): number {
 }
 
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
-    const queryClient = useQueryClient();
-    const navigate = useNavigate();
     const location = useLocation();
 
     const [tick, setTick] = createSignal(0);
     const timer = setInterval(() => setTick((t) => t + 1), 60_000);
     onCleanup(() => clearInterval(timer));
-
-    const createThreadMutation = useMutation(() => ({
-        mutationFn: (projectID: string) => CreateThread(projectID),
-        onSuccess: async (thread) => {
-            await queryClient.invalidateQueries({
-                queryKey: queryKeys.threads.all,
-            });
-            await navigate(`/project/${thread.project_id}/thread/${thread.id}`);
-        },
-    }));
 
     const sortedProjects = createMemo(() => {
         const threads = props.threads;
@@ -127,9 +113,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                                 id={p.id}
                                 name={p.name}
                                 title={p.directory}
-                                onNewThread={() =>
-                                    createThreadMutation.mutate(p.id)
-                                }
+                                onNewThread={() => props.onNewThread(p.id)}
                             >
                                 <For each={sortedThreadsFor(p.id)}>
                                     {(thread) => (

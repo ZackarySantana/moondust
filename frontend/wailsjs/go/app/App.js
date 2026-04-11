@@ -18,8 +18,8 @@ export function CreateProjectFromRemote(arg1, arg2) {
   return window['go']['app']['App']['CreateProjectFromRemote'](arg1, arg2);
 }
 
-export function CreateThread(arg1) {
-  return window['go']['app']['App']['CreateThread'](arg1);
+export function CreateThread(arg1, arg2) {
+  return window['go']['app']['App']['CreateThread'](arg1, arg2);
 }
 
 export function DeleteProject(arg1, arg2) {

@@ -196,6 +196,7 @@ export namespace store {
 	}
 	export class Settings {
 	    ssh_auth_sock: string;
+	    default_worktree: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Settings(source);
@@ -204,6 +205,7 @@ export namespace store {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.ssh_auth_sock = source["ssh_auth_sock"];
+	        this.default_worktree = source["default_worktree"];
 	    }
 	}
 	export class Thread {
@@ -214,6 +216,7 @@ export namespace store {
 	    created_at: any;
 	    // Go type: time
 	    updated_at: any;
+	    worktree_dir: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Thread(source);
@@ -226,6 +229,7 @@ export namespace store {
 	        this.title = source["title"];
 	        this.created_at = this.convertValues(source["created_at"], null);
 	        this.updated_at = this.convertValues(source["updated_at"], null);
+	        this.worktree_dir = source["worktree_dir"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

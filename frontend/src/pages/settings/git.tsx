@@ -52,6 +52,7 @@ export const SettingsGitPage: Component = () => {
     }));
 
     const [sshAuthSock, setSSHAuthSock] = createSignal("");
+    const [defaultWorktree, setDefaultWorktree] = createSignal("ask");
     const [dirty, setDirty] = createSignal(false);
 
     createEffect(
@@ -60,6 +61,7 @@ export const SettingsGitPage: Component = () => {
             (data) => {
                 if (data) {
                     setSSHAuthSock(data.ssh_auth_sock ?? "");
+                    setDefaultWorktree(data.default_worktree || "ask");
                     setDirty(false);
                 }
             },
@@ -78,6 +80,7 @@ export const SettingsGitPage: Component = () => {
             await SaveSettings(
                 new store.Settings({
                     ssh_auth_sock: sshAuthSock() || "",
+                    default_worktree: defaultWorktree(),
                 }),
             );
         },
@@ -107,6 +110,49 @@ export const SettingsGitPage: Component = () => {
                     Save
                 </Button>
             </div>
+
+            <Separator />
+
+            <section class="space-y-5">
+                <div>
+                    <h2 class="text-sm font-medium text-slate-200">
+                        Worktrees
+                    </h2>
+                    <p class="mt-0.5 text-xs text-slate-600">
+                        Control whether new threads create a Git worktree for
+                        isolated changes.
+                    </p>
+                </div>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-[11rem_1fr] items-start gap-4">
+                        <Label
+                            for="settings-default-worktree"
+                            class="mb-0 pt-2 text-right text-[13px] text-slate-400"
+                        >
+                            New thread default
+                        </Label>
+                        <div class="space-y-1">
+                            <select
+                                id="settings-default-worktree"
+                                class="flex h-9 w-full rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 text-sm text-slate-200 outline-none transition-colors focus:border-emerald-600/60"
+                                value={defaultWorktree()}
+                                onChange={(e) => {
+                                    setDefaultWorktree(e.currentTarget.value);
+                                    setDirty(true);
+                                }}
+                            >
+                                <option value="ask">Ask every time</option>
+                                <option value="on">Always use worktree</option>
+                                <option value="off">Never use worktree</option>
+                            </select>
+                            <p class="text-xs text-slate-600">
+                                "Ask every time" shows a prompt when creating
+                                each new thread.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             <Separator />
 

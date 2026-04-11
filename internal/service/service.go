@@ -155,7 +155,7 @@ func (s *Service) DeleteProject(ctx context.Context, id string, deleteFiles bool
 	return nil
 }
 
-func (s *Service) CreateThread(ctx context.Context, projectID string) (*store.Thread, error) {
+func (s *Service) CreateThread(ctx context.Context, projectID string, useWorktree bool) (*store.Thread, error) {
 	project, err := s.projectStore.Get(ctx, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("get project: %w", err)
@@ -169,6 +169,16 @@ func (s *Service) CreateThread(ctx context.Context, projectID string) (*store.Th
 		Title:     "New thread",
 		CreatedAt: time.Now().UTC(),
 	}
+
+	if useWorktree && project.Directory != "" {
+		branchName := fmt.Sprintf("moondust/%s", thread.ID[:16])
+		worktreeDir := filepath.Join(project.Directory, ".moondust-worktrees", thread.ID[:16])
+		if _, err := runGit(ctx, project.Directory, "worktree", "add", "-b", branchName, worktreeDir); err != nil {
+			return nil, fmt.Errorf("create worktree: %w", err)
+		}
+		thread.WorktreeDir = worktreeDir
+	}
+
 	if err := thread.Validate(); err != nil {
 		return nil, err
 	}

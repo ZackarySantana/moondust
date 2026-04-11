@@ -85,8 +85,8 @@ func (a *App) DeleteProject(id string, deleteFiles bool) error {
 	return a.service.DeleteProject(a.Ctx, id, deleteFiles)
 }
 
-func (a *App) CreateThread(projectID string) (*store.Thread, error) {
-	return a.service.CreateThread(a.Ctx, projectID)
+func (a *App) CreateThread(projectID string, useWorktree bool) (*store.Thread, error) {
+	return a.service.CreateThread(a.Ctx, projectID, useWorktree)
 }
 
 func (a *App) GetThread(id string) (*store.Thread, error) {
