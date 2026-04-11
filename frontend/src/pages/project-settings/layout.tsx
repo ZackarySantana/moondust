@@ -1,8 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import { useParams } from "@solidjs/router";
 import type { RouteSectionProps } from "@solidjs/router";
-import Check from "lucide-solid/icons/check";
-import Loader2 from "lucide-solid/icons/loader-2";
 import type { Component } from "solid-js";
 import {
     createContext,
@@ -12,7 +10,7 @@ import {
     Show,
     useContext,
 } from "solid-js";
-import { Button } from "@/components/ui/button";
+import { SaveButton } from "@/components/save-button";
 import { queryKeys } from "@/lib/query-client";
 import { GetProject, UpdateProject } from "@wails/go/app/App";
 import { store } from "@wails/go/models";
@@ -22,6 +20,7 @@ import { PROJECT_SETTINGS_SECTIONS } from "./sections";
 interface ProjectSettingsContextValue {
     project: () => store.Project | undefined;
     isLoading: () => boolean;
+    markDirty: () => void;
 }
 
 const ProjectSettingsContext = createContext<ProjectSettingsContextValue>();
@@ -39,8 +38,8 @@ export const ProjectSettingsLayout: Component<RouteSectionProps> = (props) => {
     const params = useParams<{ id: string }>();
     const queryClient = useQueryClient();
 
-    const [saved, setSaved] = createSignal(false);
     const [error, setError] = createSignal("");
+    const [dirty, setDirty] = createSignal(false);
 
     const [name, setName] = createSignal("");
     const [remoteUrl, setRemoteUrl] = createSignal("");
@@ -58,6 +57,7 @@ export const ProjectSettingsLayout: Component<RouteSectionProps> = (props) => {
     const updateMutation = useMutation(() => ({
         mutationFn: (p: store.Project) => UpdateProject(p),
         onSuccess: async () => {
+            setDirty(false);
             await queryClient.invalidateQueries({
                 queryKey: queryKeys.projects.all,
             });
@@ -74,22 +74,14 @@ export const ProjectSettingsLayout: Component<RouteSectionProps> = (props) => {
                 if (p) {
                     setName(p.name);
                     setRemoteUrl(p.remote_url ?? "");
+                    setDirty(false);
                 }
             },
         ),
     );
 
-    createEffect(
-        on(saved, (v) => {
-            if (!v) return;
-            const t = setTimeout(() => setSaved(false), 2000);
-            return () => clearTimeout(t);
-        }),
-    );
-
     async function save() {
         setError("");
-        setSaved(false);
         const p = projectQuery.data;
         if (!p) return;
         try {
@@ -101,7 +93,6 @@ export const ProjectSettingsLayout: Component<RouteSectionProps> = (props) => {
                     remote_url: remoteUrl() || undefined,
                 }),
             );
-            setSaved(true);
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e));
         }
@@ -110,6 +101,7 @@ export const ProjectSettingsLayout: Component<RouteSectionProps> = (props) => {
     const contextValue: ProjectSettingsContextValue = {
         project: () => projectQuery.data,
         isLoading: () => projectQuery.isLoading,
+        markDirty: () => setDirty(true),
     };
 
     return (
@@ -123,43 +115,12 @@ export const ProjectSettingsLayout: Component<RouteSectionProps> = (props) => {
                 baseHref={`/project/${params.id}/settings`}
                 navLabel="Project settings sections"
                 trailing={
-                    <Button
+                    <SaveButton
+                        dirty={dirty()}
+                        isPending={updateMutation.isPending}
+                        disabled={!projectQuery.isSuccess}
                         onClick={() => void save()}
-                        disabled={
-                            updateMutation.isPending || !projectQuery.isSuccess
-                        }
-                        class="min-w-24"
-                    >
-                        <Show
-                            when={!updateMutation.isPending}
-                            fallback={
-                                <>
-                                    <Loader2
-                                        class="size-4 animate-spin"
-                                        stroke-width={2}
-                                        aria-hidden
-                                    />
-                                    Saving…
-                                </>
-                            }
-                        >
-                            <Show
-                                when={!saved()}
-                                fallback={
-                                    <>
-                                        <Check
-                                            class="size-4"
-                                            stroke-width={2}
-                                            aria-hidden
-                                        />
-                                        Saved
-                                    </>
-                                }
-                            >
-                                Save
-                            </Show>
-                        </Show>
-                    </Button>
+                    />
                 }
             >
                 <Show when={projectQuery.isError}>

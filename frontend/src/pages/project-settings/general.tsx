@@ -8,7 +8,7 @@ import {
 import { useProjectSettings } from "./layout";
 
 export const ProjectGeneralPage: Component = () => {
-    const { project } = useProjectSettings();
+    const { project, markDirty } = useProjectSettings();
 
     const [name, setName] = createSignal("");
     const [directory, setDirectory] = createSignal("");
@@ -26,6 +26,13 @@ export const ProjectGeneralPage: Component = () => {
         }),
     );
 
+    function handleInput(setter: (v: string) => void) {
+        return (e: InputEvent & { currentTarget: HTMLInputElement }) => {
+            setter(e.currentTarget.value);
+            markDirty();
+        };
+    }
+
     return (
         <Section title="General">
             <CopyableReadonlyField
@@ -40,7 +47,7 @@ export const ProjectGeneralPage: Component = () => {
                 value={name()}
                 placeholder="Project name"
                 description="Display name shown in the sidebar and thread headers."
-                onInput={(e) => setName(e.currentTarget.value)}
+                onInput={handleInput(setName)}
             />
             <CopyableReadonlyField
                 label="Directory"
@@ -54,7 +61,7 @@ export const ProjectGeneralPage: Component = () => {
                 value={remoteUrl()}
                 placeholder="Not configured"
                 description="Git remote used for cloning and syncing."
-                onInput={(e) => setRemoteUrl(e.currentTarget.value)}
+                onInput={handleInput(setRemoteUrl)}
             />
         </Section>
     );

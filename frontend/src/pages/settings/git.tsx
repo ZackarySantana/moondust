@@ -1,13 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
-import Check from "lucide-solid/icons/check";
-import Loader2 from "lucide-solid/icons/loader-2";
 import type { Component } from "solid-js";
-import { createEffect, createSignal, on, Show } from "solid-js";
-import { Button } from "@/components/ui/button";
+import { createEffect, createSignal, on } from "solid-js";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { FieldRow, Section } from "@/components/settings-form";
+import { SaveButton } from "@/components/save-button";
 import { queryKeys } from "@/lib/query-client";
 import { GetSettings, SaveSettings } from "@wails/go/app/App";
 import { store } from "@wails/go/models";
@@ -63,21 +61,11 @@ export const SettingsGitPage: Component = () => {
         <div class="space-y-8">
             <div class="flex items-center justify-between">
                 <p class="text-base font-medium text-slate-200">Git</p>
-                <Button
-                    size="sm"
-                    disabled={!dirty() || saveMutation.isPending}
+                <SaveButton
+                    dirty={dirty()}
+                    isPending={saveMutation.isPending}
                     onClick={() => saveMutation.mutate()}
-                >
-                    <Show
-                        when={!saveMutation.isPending}
-                        fallback={
-                            <Loader2 class="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                        }
-                    >
-                        <Check class="mr-1.5 h-3.5 w-3.5" />
-                    </Show>
-                    Save
-                </Button>
+                />
             </div>
 
             <Separator />

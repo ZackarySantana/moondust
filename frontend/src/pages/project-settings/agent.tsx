@@ -1,12 +1,21 @@
 import type { Component } from "solid-js";
 import { createSignal } from "solid-js";
 import { FieldRow, Section } from "@/components/settings-form";
+import { useProjectSettings } from "./layout";
 
 export const ProjectAgentPage: Component = () => {
+    const { markDirty } = useProjectSettings();
     const [model, setModel] = createSignal("");
     const [systemPrompt, setSystemPrompt] = createSignal("");
     const [maxTokens, setMaxTokens] = createSignal("");
     const [temperature, setTemperature] = createSignal("");
+
+    function handleInput(setter: (v: string) => void) {
+        return (e: InputEvent & { currentTarget: HTMLInputElement }) => {
+            setter(e.currentTarget.value);
+            markDirty();
+        };
+    }
 
     return (
         <Section
@@ -19,7 +28,7 @@ export const ProjectAgentPage: Component = () => {
                 value={model()}
                 placeholder="Default"
                 description="LLM model used for new threads."
-                onInput={(e) => setModel(e.currentTarget.value)}
+                onInput={handleInput(setModel)}
             />
             <FieldRow
                 id="proj-system-prompt"
@@ -27,7 +36,7 @@ export const ProjectAgentPage: Component = () => {
                 value={systemPrompt()}
                 placeholder="None"
                 description="Prepended to every thread in this project."
-                onInput={(e) => setSystemPrompt(e.currentTarget.value)}
+                onInput={handleInput(setSystemPrompt)}
             />
             <FieldRow
                 id="proj-max-tokens"
@@ -35,7 +44,7 @@ export const ProjectAgentPage: Component = () => {
                 value={maxTokens()}
                 placeholder="8192"
                 description="Maximum response length per turn."
-                onInput={(e) => setMaxTokens(e.currentTarget.value)}
+                onInput={handleInput(setMaxTokens)}
             />
             <FieldRow
                 id="proj-temperature"
@@ -43,7 +52,7 @@ export const ProjectAgentPage: Component = () => {
                 value={temperature()}
                 placeholder="0.7"
                 description="Sampling temperature for model responses."
-                onInput={(e) => setTemperature(e.currentTarget.value)}
+                onInput={handleInput(setTemperature)}
             />
         </Section>
     );
