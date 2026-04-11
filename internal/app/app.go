@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"log/slog"
 	"moondust/internal/logstream"
 	"moondust/internal/notify"
 	"moondust/internal/service"
@@ -187,13 +188,22 @@ func formatLogLine(line store.LogLine) string {
 	return base
 }
 
-func (a *App) notifyProjectCreated(p *store.Project) error {
-	return a.notify.Send(a.Ctx, notify.NewPushNotification(
-		notify.LevelInfo,
-		&runtime.NotificationOptions{
-			ID:    rand.Text(),
-			Title: "Project Created",
-			Body:  fmt.Sprintf("Project %q is ready.", p.Name),
-		},
-	))
+func (a *App) notifyProjectCreated(p *store.Project) {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Debug("notifyProjectCreated panicked", "panic", r)
+			}
+		}()
+		if err := a.notify.Send(a.Ctx, notify.NewPushNotification(
+			notify.LevelInfo,
+			&runtime.NotificationOptions{
+				ID:    rand.Text(),
+				Title: "Project Created",
+				Body:  fmt.Sprintf("Project %q is ready.", p.Name),
+			},
+		)); err != nil {
+			slog.Debug("notifyProjectCreated failed", "error", err)
+		}
+	}()
 }
