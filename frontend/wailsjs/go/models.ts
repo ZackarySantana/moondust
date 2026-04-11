@@ -39,6 +39,24 @@ export namespace store {
 		    return a;
 		}
 	}
+	export class FileDiff {
+	    path: string;
+	    language: string;
+	    original: string;
+	    modified: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new FileDiff(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.language = source["language"];
+	        this.original = source["original"];
+	        this.modified = source["modified"];
+	    }
+	}
 	export class GitCommitSummary {
 	    hash: string;
 	    subject: string;

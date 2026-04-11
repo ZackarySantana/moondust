@@ -1,17 +1,33 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import { useParams } from "@solidjs/router";
+import ArrowLeft from "lucide-solid/icons/arrow-left";
+import ArrowUp from "lucide-solid/icons/arrow-up";
+import Bot from "lucide-solid/icons/bot";
+import ChevronDown from "lucide-solid/icons/chevron-down";
+import Columns2 from "lucide-solid/icons/columns-2";
+import FolderOpen from "lucide-solid/icons/folder-open";
+import Loader2 from "lucide-solid/icons/loader-2";
+import Rows2 from "lucide-solid/icons/rows-2";
+import Sparkles from "lucide-solid/icons/sparkles";
 import type { Component, JSX, ParentComponent } from "solid-js";
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
 import {
+    GetFileDiff,
     GetProject,
     GetThread,
     GetThreadGitReview,
     ListThreadMessages,
     SendThreadMessage,
 } from "@wails/go/app/App";
+import { DiffViewer } from "@/components/diff-viewer";
 import { TerminalPane } from "@/components/terminal-pane";
 import { queryKeys } from "@/lib/query-client";
 import type { store } from "@wails/go/models";
+
+interface DiffTarget {
+    path: string;
+    status: string;
+}
 
 export const ThreadPage: Component = () => {
     const params = useParams<{ projectId: string; threadId: string }>();
@@ -64,6 +80,31 @@ export const ThreadPage: Component = () => {
     const canSend = createMemo(
         () => !sendMutation.isPending && draft().trim().length > 0,
     );
+    const workingDir = createMemo(
+        () =>
+            threadQuery.data?.worktree_dir ||
+            projectQuery.data?.directory ||
+            "",
+    );
+
+    const [diffTarget, setDiffTarget] = createSignal<DiffTarget | null>(null);
+    const [sideBySide, setSideBySide] = createSignal(true);
+
+    const diffQuery = useQuery(() => ({
+        queryKey: [
+            "fileDiff",
+            params.threadId,
+            diffTarget()?.path ?? "",
+            diffTarget()?.status ?? "",
+        ] as const,
+        queryFn: () =>
+            GetFileDiff(
+                params.threadId,
+                diffTarget()!.path,
+                diffTarget()!.status,
+            ),
+        enabled: !!diffTarget() && !!params.threadId,
+    }));
 
     function submitMessage() {
         const text = draft().trim();
@@ -99,81 +140,302 @@ export const ThreadPage: Component = () => {
     return (
         <div class="flex h-full min-h-0 w-full overflow-hidden">
             <section class="flex min-h-0 flex-1 flex-col overflow-hidden border-r border-slate-800/40">
-                <header class="border-b border-slate-800/40 px-5 py-3">
-                    <div class="flex items-baseline gap-2">
-                        <p class="text-[11px] uppercase tracking-wider text-slate-600">
-                            {projectQuery.data?.name ?? "Project"}
-                        </p>
-                        <span class="min-w-0 truncate font-mono text-[10px] text-slate-600/60">
-                            {threadQuery.data?.worktree_dir ||
-                                projectQuery.data?.directory ||
-                                ""}
-                        </span>
+                {/* ── Header ── */}
+                <header class="flex items-center gap-3 border-b border-slate-800/40 px-4 py-2.5">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2">
+                            <h1 class="truncate text-sm font-medium text-slate-100">
+                                {threadQuery.data?.title ?? "Thread"}
+                            </h1>
+                            <span class="shrink-0 text-[10px] text-slate-600">
+                                in
+                            </span>
+                            <span class="truncate text-[11px] font-medium text-slate-400">
+                                {projectQuery.data?.name ?? "Project"}
+                            </span>
+                        </div>
+                        <Show when={workingDir()}>
+                            <div class="mt-0.5 flex items-center gap-1.5">
+                                <FolderOpen
+                                    class="size-3 shrink-0 text-slate-600"
+                                    stroke-width={1.5}
+                                    aria-hidden
+                                />
+                                <span class="min-w-0 truncate font-mono text-[10px] text-slate-600">
+                                    {workingDir()}
+                                </span>
+                            </div>
+                        </Show>
                     </div>
-                    <h1 class="text-sm font-medium text-slate-200">
-                        {threadQuery.data?.title ?? "Thread"}
-                    </h1>
                 </header>
 
-                <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-                    <div class="mx-auto flex w-full max-w-3xl flex-col gap-3">
-                        <For each={messages()}>
-                            {(msg) => (
-                                <div
-                                    class={
-                                        msg.role === "user"
-                                            ? "ml-auto max-w-[85%] rounded-lg border border-emerald-700/40 bg-emerald-950/20 px-3 py-2 text-sm text-slate-100"
-                                            : "mr-auto max-w-[85%] rounded-lg border border-slate-800/50 bg-slate-900/40 px-3 py-2 text-sm text-slate-200"
+                <Show
+                    when={diffTarget()}
+                    fallback={
+                        <>
+                            {/* ── Messages ── */}
+                            <div class="min-h-0 flex-1 overflow-y-auto">
+                                <div class="mx-auto flex w-full max-w-3xl flex-col gap-1 px-4 py-4">
+                                    <Show
+                                        when={messages().length > 0}
+                                        fallback={
+                                            <div class="flex flex-col items-center justify-center gap-3 py-16 text-center">
+                                                <div class="rounded-xl border border-slate-800/40 bg-slate-900/30 p-3">
+                                                    <Sparkles
+                                                        class="size-6 text-emerald-500/60"
+                                                        stroke-width={1.5}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <p class="text-sm font-medium text-slate-300">
+                                                        Start a conversation
+                                                    </p>
+                                                    <p class="mt-1 text-xs text-slate-600">
+                                                        Send a message to begin
+                                                        working with the agent.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        }
+                                    >
+                                        <For each={messages()}>
+                                            {(msg) => (
+                                                <div
+                                                    class={
+                                                        msg.role === "user"
+                                                            ? "flex justify-end py-1"
+                                                            : "flex justify-start py-1"
+                                                    }
+                                                >
+                                                    <div
+                                                        class={
+                                                            msg.role === "user"
+                                                                ? "max-w-[80%] rounded-2xl rounded-br-md bg-emerald-800/30 px-3.5 py-2.5 text-[13px] leading-relaxed text-slate-100"
+                                                                : "flex max-w-[85%] gap-2.5 py-1"
+                                                        }
+                                                    >
+                                                        <Show
+                                                            when={
+                                                                msg.role ===
+                                                                "assistant"
+                                                            }
+                                                        >
+                                                            <div class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-slate-800/60">
+                                                                <Bot
+                                                                    class="size-3.5 text-emerald-500/70"
+                                                                    stroke-width={
+                                                                        1.5
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        </Show>
+                                                        <div
+                                                            class={
+                                                                msg.role ===
+                                                                "assistant"
+                                                                    ? "min-w-0 text-[13px] leading-relaxed text-slate-300"
+                                                                    : ""
+                                                            }
+                                                        >
+                                                            <p class="whitespace-pre-wrap wrap-break-word">
+                                                                {msg.content}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </For>
+                                    </Show>
+                                </div>
+                            </div>
+
+                            {/* ── Input bar ── */}
+                            <div class="shrink-0 border-t border-slate-800/40 px-4 py-3">
+                                <div class="mx-auto w-full max-w-3xl">
+                                    <div class="rounded-xl border border-slate-800/50 bg-slate-900/40 transition-colors focus-within:border-emerald-700/40">
+                                        <textarea
+                                            ref={(el) => {
+                                                const resize = () => {
+                                                    el.style.height = "auto";
+                                                    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+                                                };
+                                                createEffect(() => {
+                                                    draft();
+                                                    resize();
+                                                });
+                                            }}
+                                            rows={1}
+                                            class="max-h-40 min-h-[36px] w-full resize-none bg-transparent px-3.5 pt-3 pb-2 text-[13px] leading-relaxed text-slate-200 outline-none placeholder:text-slate-600"
+                                            placeholder="Send a message…"
+                                            value={draft()}
+                                            onInput={(e) =>
+                                                setDraft(e.currentTarget.value)
+                                            }
+                                            onKeyDown={(e) => {
+                                                if (
+                                                    e.key === "Enter" &&
+                                                    !e.shiftKey
+                                                ) {
+                                                    e.preventDefault();
+                                                    submitMessage();
+                                                }
+                                            }}
+                                        />
+                                        <div class="flex items-center justify-between px-2.5 pb-2">
+                                            <div class="flex items-center gap-1">
+                                                <button
+                                                    type="button"
+                                                    class="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-slate-500 transition-colors hover:bg-slate-800/50 hover:text-slate-300"
+                                                >
+                                                    <Bot
+                                                        class="size-3"
+                                                        stroke-width={2}
+                                                        aria-hidden
+                                                    />
+                                                    Model
+                                                    <ChevronDown
+                                                        class="size-3 text-slate-600"
+                                                        stroke-width={2}
+                                                        aria-hidden
+                                                    />
+                                                </button>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                class="flex size-7 cursor-pointer items-center justify-center rounded-lg bg-emerald-700/80 text-white transition-all duration-100 hover:bg-emerald-600/90 disabled:cursor-not-allowed disabled:opacity-30"
+                                                disabled={!canSend()}
+                                                onClick={submitMessage}
+                                                aria-label="Send message"
+                                            >
+                                                <Show
+                                                    when={
+                                                        !sendMutation.isPending
+                                                    }
+                                                    fallback={
+                                                        <Loader2
+                                                            class="size-3.5 animate-spin"
+                                                            stroke-width={2}
+                                                            aria-hidden
+                                                        />
+                                                    }
+                                                >
+                                                    <ArrowUp
+                                                        class="size-4"
+                                                        stroke-width={2.5}
+                                                        aria-hidden
+                                                    />
+                                                </Show>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    }
+                >
+                    {(target) => (
+                        <>
+                            {/* ── Diff header ── */}
+                            <div class="flex items-center gap-2 border-b border-slate-800/40 px-4 py-2">
+                                <button
+                                    type="button"
+                                    class="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-slate-400 transition-colors hover:bg-slate-800/50 hover:text-slate-200"
+                                    onClick={() => setDiffTarget(null)}
+                                >
+                                    <ArrowLeft
+                                        class="size-3"
+                                        stroke-width={2}
+                                        aria-hidden
+                                    />
+                                    Chat
+                                </button>
+                                <span class="text-slate-700">·</span>
+                                <span
+                                    class={`font-mono text-[10px] font-bold ${statusColor(target().status)}`}
+                                >
+                                    {target().status === "untracked"
+                                        ? "?"
+                                        : target().status}
+                                </span>
+                                <span class="min-w-0 truncate font-mono text-xs text-slate-300">
+                                    {target().path}
+                                </span>
+                                <div class="ml-auto flex items-center gap-1">
+                                    <button
+                                        type="button"
+                                        class={`cursor-pointer rounded p-1 transition-colors ${sideBySide() ? "bg-slate-800/50 text-slate-200" : "text-slate-500 hover:text-slate-300"}`}
+                                        onClick={() => setSideBySide(true)}
+                                        title="Side by side"
+                                    >
+                                        <Columns2
+                                            class="size-3.5"
+                                            stroke-width={1.5}
+                                            aria-hidden
+                                        />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class={`cursor-pointer rounded p-1 transition-colors ${!sideBySide() ? "bg-slate-800/50 text-slate-200" : "text-slate-500 hover:text-slate-300"}`}
+                                        onClick={() => setSideBySide(false)}
+                                        title="Inline"
+                                    >
+                                        <Rows2
+                                            class="size-3.5"
+                                            stroke-width={1.5}
+                                            aria-hidden
+                                        />
+                                    </button>
+                                </div>
+                            </div>
+                            {/* ── Diff content ── */}
+                            <div class="min-h-0 flex-1 p-2">
+                                <Show
+                                    when={
+                                        !diffQuery.isLoading && diffQuery.data
+                                    }
+                                    fallback={
+                                        <div class="flex h-full items-center justify-center">
+                                            <Loader2
+                                                class="size-6 animate-spin text-slate-500"
+                                                stroke-width={1.5}
+                                            />
+                                        </div>
                                     }
                                 >
-                                    <p class="mb-1 text-[10px] uppercase tracking-wider text-slate-500">
-                                        {msg.role}
-                                    </p>
-                                    <p class="whitespace-pre-wrap wrap-break-word">
-                                        {msg.content}
-                                    </p>
-                                </div>
-                            )}
-                        </For>
-                    </div>
-                </div>
+                                    <Show
+                                        when={diffQuery.isError}
+                                        fallback={
+                                            <DiffViewer
+                                                original={
+                                                    diffQuery.data?.original ??
+                                                    ""
+                                                }
+                                                modified={
+                                                    diffQuery.data?.modified ??
+                                                    ""
+                                                }
+                                                language={
+                                                    diffQuery.data?.language ??
+                                                    "plaintext"
+                                                }
+                                                path={target().path}
+                                                sideBySide={sideBySide()}
+                                            />
+                                        }
+                                    >
+                                        <div class="flex h-full items-center justify-center">
+                                            <p class="text-xs text-red-400">
+                                                Failed to load diff.
+                                            </p>
+                                        </div>
+                                    </Show>
+                                </Show>
+                            </div>
+                        </>
+                    )}
+                </Show>
 
-                <div class="shrink-0 border-t border-slate-800/40 p-4">
-                    <div class="mx-auto flex w-full max-w-3xl items-end gap-2">
-                        <textarea
-                            ref={(el) => {
-                                const resize = () => {
-                                    el.style.height = "auto";
-                                    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
-                                };
-                                createEffect(() => {
-                                    draft();
-                                    resize();
-                                });
-                            }}
-                            rows={1}
-                            class="max-h-40 min-h-[36px] w-full resize-none rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 text-sm leading-snug text-slate-200 outline-none transition-colors focus:border-emerald-600/60"
-                            placeholder="Message thread..."
-                            value={draft()}
-                            onInput={(e) => setDraft(e.currentTarget.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" && !e.shiftKey) {
-                                    e.preventDefault();
-                                    submitMessage();
-                                }
-                            }}
-                        />
-                        <button
-                            type="button"
-                            class="shrink-0 cursor-pointer rounded-md border border-emerald-700/60 bg-emerald-800/50 px-3 py-2 text-xs font-medium text-emerald-100 transition-colors hover:bg-emerald-700/60 disabled:cursor-not-allowed disabled:opacity-50"
-                            disabled={!canSend()}
-                            onClick={submitMessage}
-                        >
-                            {sendMutation.isPending ? "Sending…" : "Send"}
-                        </button>
-                    </div>
-                </div>
-
+                {/* ── Terminal ── */}
                 <div class="flex h-52 min-h-0 shrink-0 border-t border-slate-800/40 p-3">
                     <Show
                         when={
@@ -208,6 +470,7 @@ export const ThreadPage: Component = () => {
                 onRefresh={() => void refreshGitSidebar()}
                 onCopySummary={() => void copyReviewSummary()}
                 onCopyPatch={() => void copyPatchPreview()}
+                onFileClick={(path, status) => setDiffTarget({ path, status })}
             />
         </div>
     );
@@ -326,12 +589,13 @@ function statusColor(status: string): string {
 const FileChangeRow: Component<{
     path: string;
     status: string;
+    onClick?: (path: string, status: string) => void;
 }> = (props) => {
     return (
         <button
             type="button"
             class="flex w-full cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-left transition-colors hover:bg-slate-800/40"
-            onClick={() => alert(`Diff for: ${props.path}`)}
+            onClick={() => props.onClick?.(props.path, props.status)}
         >
             <span
                 class={`w-4 shrink-0 text-center font-mono text-[10px] font-bold ${statusColor(props.status)}`}
@@ -424,6 +688,7 @@ const ReviewSidebar: Component<{
     onRefresh: () => void;
     onCopySummary: () => void;
     onCopyPatch: () => void;
+    onFileClick?: (path: string, status: string) => void;
 }> = (props) => {
     const [commitTab, setCommitTab] = createSignal<"local" | "main">("local");
 
@@ -530,6 +795,7 @@ const ReviewSidebar: Component<{
                                     <FileChangeRow
                                         path={f.path}
                                         status={f.status}
+                                        onClick={props.onFileClick}
                                     />
                                 )}
                             </For>
@@ -558,6 +824,7 @@ const ReviewSidebar: Component<{
                                     <FileChangeRow
                                         path={f.path}
                                         status={f.status}
+                                        onClick={props.onFileClick}
                                     />
                                 )}
                             </For>
@@ -586,6 +853,7 @@ const ReviewSidebar: Component<{
                                     <FileChangeRow
                                         path={f.path}
                                         status={f.status}
+                                        onClick={props.onFileClick}
                                     />
                                 )}
                             </For>

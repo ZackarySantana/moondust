@@ -356,6 +356,137 @@ func (s *Service) GetThreadGitReview(ctx context.Context, threadID string) (*sto
 	return review, nil
 }
 
+func (s *Service) GetFileDiff(ctx context.Context, threadID, filePath, status string) (*store.FileDiff, error) {
+	thread, project, err := s.resolveThreadProject(ctx, threadID)
+	if err != nil {
+		return nil, err
+	}
+
+	dir := project.Directory
+	if thread.WorktreeDir != "" {
+		dir = thread.WorktreeDir
+	}
+
+	result := &store.FileDiff{
+		Path:     filePath,
+		Language: langFromExt(filePath),
+	}
+
+	fullPath := filepath.Join(dir, filePath)
+
+	switch status {
+	case "untracked":
+		content, err := os.ReadFile(fullPath)
+		if err != nil {
+			return nil, fmt.Errorf("read file: %w", err)
+		}
+		result.Modified = string(content)
+		return result, nil
+
+	case "A":
+		// Staged new file: show from index
+		indexed, err := runGit(ctx, dir, "show", ":"+filePath)
+		if err != nil {
+			// Fall back to reading from disk
+			content, readErr := os.ReadFile(fullPath)
+			if readErr != nil {
+				return nil, fmt.Errorf("read file: %w", readErr)
+			}
+			result.Modified = string(content)
+			return result, nil
+		}
+		result.Modified = indexed
+		return result, nil
+
+	case "D":
+		original, err := runGit(ctx, dir, "show", "HEAD:"+filePath)
+		if err != nil {
+			return nil, fmt.Errorf("get original: %w", err)
+		}
+		result.Original = original
+		return result, nil
+
+	default:
+		// M, R, C or any other status: show HEAD vs working copy (or index)
+		original, err := runGit(ctx, dir, "show", "HEAD:"+filePath)
+		if err != nil {
+			original = ""
+		}
+		result.Original = original
+
+		content, err := os.ReadFile(fullPath)
+		if err != nil {
+			// Might be staged only - try from index
+			indexed, idxErr := runGit(ctx, dir, "show", ":"+filePath)
+			if idxErr != nil {
+				return nil, fmt.Errorf("read file: %w", err)
+			}
+			result.Modified = indexed
+		} else {
+			result.Modified = string(content)
+		}
+		return result, nil
+	}
+}
+
+func langFromExt(path string) string {
+	ext := strings.ToLower(filepath.Ext(path))
+	switch ext {
+	case ".go":
+		return "go"
+	case ".ts", ".tsx":
+		return "typescript"
+	case ".js", ".jsx", ".mjs", ".cjs":
+		return "javascript"
+	case ".py":
+		return "python"
+	case ".rs":
+		return "rust"
+	case ".java":
+		return "java"
+	case ".rb":
+		return "ruby"
+	case ".css":
+		return "css"
+	case ".html", ".htm":
+		return "html"
+	case ".json":
+		return "json"
+	case ".yaml", ".yml":
+		return "yaml"
+	case ".toml":
+		return "toml"
+	case ".md", ".markdown":
+		return "markdown"
+	case ".sh", ".bash", ".zsh":
+		return "shell"
+	case ".sql":
+		return "sql"
+	case ".xml":
+		return "xml"
+	case ".c", ".h":
+		return "c"
+	case ".cpp", ".hpp", ".cc":
+		return "cpp"
+	case ".swift":
+		return "swift"
+	case ".kt", ".kts":
+		return "kotlin"
+	case ".lua":
+		return "lua"
+	case ".dockerfile":
+		return "dockerfile"
+	default:
+		if strings.HasSuffix(strings.ToLower(filepath.Base(path)), "dockerfile") {
+			return "dockerfile"
+		}
+		if strings.HasSuffix(strings.ToLower(filepath.Base(path)), "makefile") {
+			return "makefile"
+		}
+		return "plaintext"
+	}
+}
+
 func (s *Service) resolveThreadProject(ctx context.Context, threadID string) (*store.Thread, *store.Project, error) {
 	thread, err := s.threadStore.Get(ctx, threadID)
 	if err != nil {

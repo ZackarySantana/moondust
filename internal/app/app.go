@@ -113,6 +113,10 @@ func (a *App) GetThreadGitReview(threadID string) (*store.GitReview, error) {
 	return a.service.GetThreadGitReview(a.Ctx, threadID)
 }
 
+func (a *App) GetFileDiff(threadID, filePath, status string) (*store.FileDiff, error) {
+	return a.service.GetFileDiff(a.Ctx, threadID, filePath, status)
+}
+
 func (a *App) CancelCreateProject() {
 }
 

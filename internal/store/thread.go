@@ -81,6 +81,13 @@ type GitReview struct {
 	PatchPreview string             `json:"patch_preview"`
 }
 
+type FileDiff struct {
+	Path     string `json:"path"`
+	Language string `json:"language"`
+	Original string `json:"original"`
+	Modified string `json:"modified"`
+}
+
 type ThreadStore interface {
 	Get(ctx context.Context, id string) (*Thread, error)
 	List(ctx context.Context) ([]*Thread, error)

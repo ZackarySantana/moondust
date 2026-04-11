@@ -16,6 +16,8 @@ export function DeleteProject(arg1:string,arg2:boolean):Promise<void>;
 
 export function DownloadLogs():Promise<void>;
 
+export function GetFileDiff(arg1:string,arg2:string,arg3:string):Promise<store.FileDiff>;
+
 export function GetProject(arg1:string):Promise<store.Project>;
 
 export function GetSettings():Promise<store.Settings>;
