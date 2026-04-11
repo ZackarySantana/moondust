@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -54,6 +55,8 @@ func (s *Service) CreateProjectFromRemote(ctx context.Context, name, remoteURL s
 	if err != nil {
 		return nil, fmt.Errorf("git clone: %w", err)
 	}
+
+	configureClonedRepo(ctx, project.Directory)
 
 	err = s.projectStore.Update(ctx, project)
 	if err != nil {
@@ -324,6 +327,18 @@ func runGit(ctx context.Context, dir string, args ...string) (string, error) {
 		return "", fmt.Errorf("git %s: %w: %s", strings.Join(args, " "), err, strings.TrimSpace(string(out)))
 	}
 	return string(out), nil
+}
+
+func configureClonedRepo(ctx context.Context, dir string) {
+	if runtime.GOOS != "windows" {
+		return
+	}
+	if _, err := runGit(ctx, dir, "config", "core.fileMode", "false"); err != nil {
+		slog.WarnContext(ctx, "failed to set core.fileMode", "error", err)
+	}
+	if _, err := runGit(ctx, dir, "config", "core.autocrlf", "true"); err != nil {
+		slog.WarnContext(ctx, "failed to set core.autocrlf", "error", err)
+	}
 }
 
 var aheadBehindRe = regexp.MustCompile(`ahead (\d+)|behind (\d+)`)
