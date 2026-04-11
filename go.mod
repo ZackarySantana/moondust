@@ -4,6 +4,7 @@ go 1.25
 
 require (
 	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3
+	github.com/UserExistsError/conpty v0.1.4
 	github.com/coder/websocket v1.8.14
 	github.com/creack/pty/v2 v2.0.1
 	github.com/go-git/go-git/v5 v5.17.2
