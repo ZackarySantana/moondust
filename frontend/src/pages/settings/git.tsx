@@ -6,6 +6,7 @@ import { createEffect, createSignal, on, Show } from "solid-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { queryKeys } from "@/lib/query-client";
 import { GetSettings, SaveSettings } from "@wails/go/app/App";
@@ -132,9 +133,8 @@ export const SettingsGitPage: Component = () => {
                             New thread default
                         </Label>
                         <div class="space-y-1">
-                            <select
+                            <Select
                                 id="settings-default-worktree"
-                                class="flex h-9 w-full rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 text-sm text-slate-200 outline-none transition-colors focus:border-emerald-600/60"
                                 value={defaultWorktree()}
                                 onChange={(e) => {
                                     setDefaultWorktree(e.currentTarget.value);
@@ -144,7 +144,7 @@ export const SettingsGitPage: Component = () => {
                                 <option value="ask">Ask every time</option>
                                 <option value="on">Always use worktree</option>
                                 <option value="off">Never use worktree</option>
-                            </select>
+                            </Select>
                             <p class="text-xs text-slate-600">
                                 "Ask every time" shows a prompt when creating
                                 each new thread.
