@@ -4,6 +4,8 @@ import ArrowLeft from "lucide-solid/icons/arrow-left";
 import ArrowUp from "lucide-solid/icons/arrow-up";
 import Bot from "lucide-solid/icons/bot";
 import ChevronDown from "lucide-solid/icons/chevron-down";
+import ChevronDownNav from "lucide-solid/icons/chevron-down";
+import ChevronUpNav from "lucide-solid/icons/chevron-up";
 import Columns2 from "lucide-solid/icons/columns-2";
 import FolderOpen from "lucide-solid/icons/folder-open";
 import Loader2 from "lucide-solid/icons/loader-2";
@@ -19,7 +21,7 @@ import {
     ListThreadMessages,
     SendThreadMessage,
 } from "@wails/go/app/App";
-import { DiffViewer } from "@/components/diff-viewer";
+import { DiffViewer, type DiffNav } from "@/components/diff-viewer";
 import { TerminalPane } from "@/components/terminal-pane";
 import { queryKeys } from "@/lib/query-client";
 import type { store } from "@wails/go/models";
@@ -89,6 +91,7 @@ export const ThreadPage: Component = () => {
 
     const [diffTarget, setDiffTarget] = createSignal<DiffTarget | null>(null);
     const [sideBySide, setSideBySide] = createSignal(true);
+    const [diffNav, setDiffNav] = createSignal<DiffNav | null>(null);
 
     const diffQuery = useQuery(() => ({
         queryKey: [
@@ -363,6 +366,31 @@ export const ThreadPage: Component = () => {
                                 <div class="ml-auto flex items-center gap-1">
                                     <button
                                         type="button"
+                                        class="cursor-pointer rounded p-1 text-slate-500 transition-colors hover:bg-slate-800/50 hover:text-slate-200"
+                                        onClick={() => diffNav()?.goPrev()}
+                                        title="Previous change"
+                                    >
+                                        <ChevronUpNav
+                                            class="size-3.5"
+                                            stroke-width={2}
+                                            aria-hidden
+                                        />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="cursor-pointer rounded p-1 text-slate-500 transition-colors hover:bg-slate-800/50 hover:text-slate-200"
+                                        onClick={() => diffNav()?.goNext()}
+                                        title="Next change"
+                                    >
+                                        <ChevronDownNav
+                                            class="size-3.5"
+                                            stroke-width={2}
+                                            aria-hidden
+                                        />
+                                    </button>
+                                    <span class="mx-0.5 h-4 w-px bg-slate-800/60" />
+                                    <button
+                                        type="button"
                                         class={`cursor-pointer rounded p-1 transition-colors ${sideBySide() ? "bg-slate-800/50 text-slate-200" : "text-slate-500 hover:text-slate-300"}`}
                                         onClick={() => setSideBySide(true)}
                                         title="Side by side"
@@ -420,6 +448,7 @@ export const ThreadPage: Component = () => {
                                                 }
                                                 path={target().path}
                                                 sideBySide={sideBySide()}
+                                                onReady={setDiffNav}
                                             />
                                         }
                                     >

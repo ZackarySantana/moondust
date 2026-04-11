@@ -2,7 +2,6 @@ import * as monaco from "monaco-editor";
 import type { Component } from "solid-js";
 import { createEffect, on, onCleanup, onMount } from "solid-js";
 
-// Configure Monaco workers inline to avoid separate worker file issues
 self.MonacoEnvironment = {
     getWorker() {
         return new Worker(
@@ -15,12 +14,18 @@ self.MonacoEnvironment = {
     },
 };
 
+export interface DiffNav {
+    goNext: () => void;
+    goPrev: () => void;
+}
+
 export interface DiffViewerProps {
     original: string;
     modified: string;
     language: string;
     path: string;
     sideBySide?: boolean;
+    onReady?: (nav: DiffNav) => void;
 }
 
 export const DiffViewer: Component<DiffViewerProps> = (props) => {
@@ -42,6 +47,9 @@ export const DiffViewer: Component<DiffViewerProps> = (props) => {
             "diffEditor.removedLineBackground": "#ef444410",
             "editorGutter.addedBackground": "#10b98140",
             "editorGutter.deletedBackground": "#ef444440",
+            "editorOverviewRuler.addedForeground": "#10b98160",
+            "editorOverviewRuler.deletedForeground": "#ef444460",
+            "editorOverviewRuler.modifiedForeground": "#f59e0b60",
             "scrollbar.shadow": "#00000000",
             "scrollbarSlider.background": "#2a342f60",
             "scrollbarSlider.hoverBackground": "#2a342f90",
@@ -69,9 +77,10 @@ export const DiffViewer: Component<DiffViewerProps> = (props) => {
             scrollBeyondLastLine: false,
             minimap: { enabled: false },
             lineNumbers: "on",
-            glyphMargin: false,
+            glyphMargin: true,
             folding: true,
-            renderOverviewRuler: false,
+            renderOverviewRuler: true,
+            overviewRulerLanes: 3,
             scrollbar: {
                 verticalScrollbarSize: 8,
                 horizontalScrollbarSize: 8,
@@ -83,9 +92,15 @@ export const DiffViewer: Component<DiffViewerProps> = (props) => {
                 "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Menlo', monospace",
             padding: { top: 8 },
             automaticLayout: true,
+            renderMarginRevertIcon: false,
         });
 
         editor.setModel({ original: originalModel, modified: modifiedModel });
+
+        props.onReady?.({
+            goNext: () => editor?.goToDiff("next"),
+            goPrev: () => editor?.goToDiff("previous"),
+        });
     });
 
     createEffect(
