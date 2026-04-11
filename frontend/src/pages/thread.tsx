@@ -89,7 +89,23 @@ export const ThreadPage: Component = () => {
             "",
     );
 
-    const [diffTarget, setDiffTarget] = createSignal<DiffTarget | null>(null);
+    const [diffTargetByThread, setDiffTargetByThread] = createSignal<
+        Record<string, DiffTarget>
+    >({});
+    const diffTarget = createMemo(
+        () => diffTargetByThread()[params.threadId] ?? null,
+    );
+    const setDiffTarget = (target: DiffTarget | null) => {
+        setDiffTargetByThread((prev) => {
+            const next = { ...prev };
+            if (target) {
+                next[params.threadId] = target;
+            } else {
+                delete next[params.threadId];
+            }
+            return next;
+        });
+    };
     const [sideBySide, setSideBySide] = createSignal(true);
     const [diffNav, setDiffNav] = createSignal<DiffNav | null>(null);
 
