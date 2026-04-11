@@ -10,12 +10,14 @@ import Search from "lucide-solid/icons/search";
 import X from "lucide-solid/icons/x";
 import { Button } from "@/components/ui/button";
 import type { Component } from "solid-js";
-import { createMemo, createSignal, onCleanup, onMount, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show } from "solid-js";
 
 export const SettingsLogsPage: Component = () => {
     const [lines, setLines] = createSignal<string[]>([]);
     const [busy, setBusy] = createSignal(false);
     const [filter, setFilter] = createSignal("");
+    const [userAtBottom, setUserAtBottom] = createSignal(true);
+    let logRef!: HTMLPreElement;
 
     const filtered = createMemo(() => {
         const q = filter().toLowerCase();
@@ -72,6 +74,19 @@ export const SettingsLogsPage: Component = () => {
             setBusy(false);
         }
     }
+
+    createEffect(
+        on(
+            () => filtered().length,
+            () => {
+                if (userAtBottom() && logRef) {
+                    requestAnimationFrame(() => {
+                        logRef.scrollTop = logRef.scrollHeight;
+                    });
+                }
+            },
+        ),
+    );
 
     return (
         <div class="flex min-h-0 flex-1 flex-col gap-3">
@@ -138,7 +153,19 @@ export const SettingsLogsPage: Component = () => {
                 </p>
             </Show>
 
-            <pre class="max-h-[min(32rem,calc(100vh-14rem))] min-h-48 overflow-auto rounded-lg border border-slate-800/40 bg-slate-950/40 p-3 font-mono text-[11px] leading-relaxed text-slate-400 whitespace-pre-wrap wrap-break-word">
+            <pre
+                ref={(el) => {
+                    logRef = el;
+                    el.addEventListener("scroll", () => {
+                        const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 32;
+                        setUserAtBottom(atBottom);
+                    });
+                    requestAnimationFrame(() => {
+                        el.scrollTop = el.scrollHeight;
+                    });
+                }}
+                class="max-h-[min(32rem,calc(100vh-14rem))] min-h-48 overflow-auto rounded-lg border border-slate-800/40 bg-slate-950/40 p-3 font-mono text-[11px] leading-relaxed text-slate-400 whitespace-pre-wrap wrap-break-word"
+            >
                 {filtered().join("\n") ||
                     (filter() ? "No matching lines." : "No log lines yet.")}
             </pre>
