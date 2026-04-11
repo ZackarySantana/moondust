@@ -188,6 +188,12 @@ func formatLogLine(line store.LogLine) string {
 	return base
 }
 
+// notifyProjectCreated sends a desktop notification asynchronously.
+// Runs in a goroutine because macOS's UNUserNotificationCenter crashes with an
+// unrecoverable cgo/Objective-C signal when the app is unsigned or lacks a
+// bundle identifier (common during development). The goroutine ensures the
+// project creation return value reaches the frontend even if the notification
+// subsystem panics.
 func (a *App) notifyProjectCreated(p *store.Project) {
 	go func() {
 		defer func() {
