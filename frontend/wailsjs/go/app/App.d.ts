@@ -36,6 +36,8 @@ export function ListThreadMessages(arg1:string):Promise<Array<store.ChatMessage>
 
 export function ListThreads():Promise<Array<store.Thread>>;
 
+export function RenameThread(arg1:string,arg2:string):Promise<void>;
+
 export function SaveSettings(arg1:store.Settings):Promise<void>;
 
 export function SelectProjectFolder():Promise<string>;

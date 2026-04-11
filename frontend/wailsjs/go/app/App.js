@@ -70,6 +70,10 @@ export function ListThreads() {
   return window['go']['app']['App']['ListThreads']();
 }
 
+export function RenameThread(arg1, arg2) {
+  return window['go']['app']['App']['RenameThread'](arg1, arg2);
+}
+
 export function SaveSettings(arg1) {
   return window['go']['app']['App']['SaveSettings'](arg1);
 }

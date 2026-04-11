@@ -192,6 +192,15 @@ func (s *Service) GetThread(ctx context.Context, id string) (*store.Thread, erro
 	return s.threadStore.Get(ctx, id)
 }
 
+func (s *Service) RenameThread(ctx context.Context, id, title string) error {
+	thread, err := s.threadStore.Get(ctx, id)
+	if err != nil {
+		return fmt.Errorf("get thread: %w", err)
+	}
+	thread.Title = title
+	return s.threadStore.Update(ctx, thread)
+}
+
 func (s *Service) ListThreads(ctx context.Context) ([]*store.Thread, error) {
 	threads, err := s.threadStore.List(ctx)
 	if err != nil {

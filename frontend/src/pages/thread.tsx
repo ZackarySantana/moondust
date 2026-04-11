@@ -19,6 +19,7 @@ import {
     GetThread,
     GetThreadGitReview,
     ListThreadMessages,
+    RenameThread,
     SendThreadMessage,
 } from "@wails/go/app/App";
 import { DiffViewer, type DiffNav } from "@/components/diff-viewer";
@@ -109,6 +110,33 @@ export const ThreadPage: Component = () => {
     const [sideBySide, setSideBySide] = createSignal(true);
     const [diffNav, setDiffNav] = createSignal<DiffNav | null>(null);
 
+    const [editingTitle, setEditingTitle] = createSignal(false);
+    const [titleDraft, setTitleDraft] = createSignal("");
+    let titleInputRef!: HTMLInputElement;
+
+    function startEditingTitle() {
+        setTitleDraft(threadQuery.data?.title ?? "");
+        setEditingTitle(true);
+        requestAnimationFrame(() => {
+            titleInputRef?.focus();
+            titleInputRef?.select();
+        });
+    }
+
+    async function commitTitle() {
+        const trimmed = titleDraft().trim();
+        setEditingTitle(false);
+        if (trimmed && trimmed !== (threadQuery.data?.title ?? "")) {
+            await RenameThread(params.threadId, trimmed);
+            await queryClient.invalidateQueries({
+                queryKey: queryKeys.threads.all,
+            });
+            await queryClient.invalidateQueries({
+                queryKey: queryKeys.threads.detail(params.threadId),
+            });
+        }
+    }
+
     const diffQuery = useQuery(() => ({
         queryKey: [
             "fileDiff",
@@ -163,9 +191,39 @@ export const ThreadPage: Component = () => {
                 <header class="flex items-center gap-3 border-b border-slate-800/40 px-4 py-2.5">
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2">
-                            <h1 class="truncate text-sm font-medium text-slate-100">
-                                {threadQuery.data?.title ?? "Thread"}
-                            </h1>
+                            <Show
+                                when={editingTitle()}
+                                fallback={
+                                    <h1
+                                        class="cursor-text truncate text-sm font-medium text-slate-100 hover:text-white"
+                                        onClick={startEditingTitle}
+                                        title="Click to rename"
+                                    >
+                                        {threadQuery.data?.title ||
+                                            "Untitled thread"}
+                                    </h1>
+                                }
+                            >
+                                <input
+                                    ref={titleInputRef}
+                                    type="text"
+                                    value={titleDraft()}
+                                    onInput={(e) =>
+                                        setTitleDraft(e.currentTarget.value)
+                                    }
+                                    onBlur={() => void commitTitle()}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            e.preventDefault();
+                                            void commitTitle();
+                                        } else if (e.key === "Escape") {
+                                            e.preventDefault();
+                                            setEditingTitle(false);
+                                        }
+                                    }}
+                                    class="min-w-0 truncate rounded bg-transparent px-0.5 text-sm font-medium text-slate-100 outline-none ring-1 ring-emerald-500/40"
+                                />
+                            </Show>
                             <span class="shrink-0 text-[10px] text-slate-600">
                                 in
                             </span>

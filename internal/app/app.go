@@ -93,6 +93,10 @@ func (a *App) GetThread(id string) (*store.Thread, error) {
 	return a.service.GetThread(a.Ctx, id)
 }
 
+func (a *App) RenameThread(id, title string) error {
+	return a.service.RenameThread(a.Ctx, id, title)
+}
+
 func (a *App) ListThreads() ([]*store.Thread, error) {
 	return a.service.ListThreads(a.Ctx)
 }

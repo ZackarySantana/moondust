@@ -1,4 +1,5 @@
 import { A, useLocation } from "@solidjs/router";
+import { useQueryClient } from "@tanstack/solid-query";
 import ChevronRight from "lucide-solid/icons/chevron-right";
 import Plus from "lucide-solid/icons/plus";
 import Settings from "lucide-solid/icons/settings";
@@ -7,9 +8,12 @@ import {
     createSignal,
     For,
     onCleanup,
+    Show,
     type Component,
 } from "solid-js";
+import { RenameThread } from "@wails/go/app/App";
 import { Separator } from "@/components/ui/separator";
+import { queryKeys } from "@/lib/query-client";
 import { relativeTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { store } from "@wails/go/models";
@@ -256,6 +260,46 @@ const ProjectThread: Component<{
     time?: string;
     active?: boolean;
 }> = (props) => {
+    const queryClient = useQueryClient();
+    const [editing, setEditing] = createSignal(false);
+    const [draft, setDraft] = createSignal("");
+    let inputRef!: HTMLInputElement;
+
+    function startEditing(e: MouseEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+        setDraft(props.name);
+        setEditing(true);
+        requestAnimationFrame(() => {
+            inputRef?.focus();
+            inputRef?.select();
+        });
+    }
+
+    async function commit() {
+        const trimmed = draft().trim();
+        setEditing(false);
+        if (trimmed && trimmed !== props.name) {
+            await RenameThread(props.threadID, trimmed);
+            await queryClient.invalidateQueries({
+                queryKey: queryKeys.threads.all,
+            });
+            await queryClient.invalidateQueries({
+                queryKey: queryKeys.threads.detail(props.threadID),
+            });
+        }
+    }
+
+    function onKeyDown(e: KeyboardEvent) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            void commit();
+        } else if (e.key === "Escape") {
+            e.preventDefault();
+            setEditing(false);
+        }
+    }
+
     return (
         <A
             href={`/project/${props.projectID}/thread/${props.threadID}`}
@@ -265,9 +309,26 @@ const ProjectThread: Component<{
                     ? "bg-slate-800/55 text-slate-200"
                     : "text-slate-500 hover:bg-slate-800/40 hover:text-slate-300",
             )}
+            onDblClick={startEditing}
         >
-            <span class="min-w-0 flex-1 truncate">{props.name}</span>
-            {props.time && (
+            <Show
+                when={editing()}
+                fallback={
+                    <span class="min-w-0 flex-1 truncate">{props.name}</span>
+                }
+            >
+                <input
+                    ref={inputRef}
+                    type="text"
+                    value={draft()}
+                    onInput={(e) => setDraft(e.currentTarget.value)}
+                    onBlur={() => void commit()}
+                    onKeyDown={onKeyDown}
+                    onClick={(e) => e.preventDefault()}
+                    class="min-w-0 flex-1 truncate rounded bg-transparent px-0.5 text-xs text-slate-200 outline-none ring-1 ring-emerald-500/40"
+                />
+            </Show>
+            {!editing() && props.time && (
                 <span class="shrink-0 text-[10px] tabular-nums text-slate-600">
                     {props.time}
                 </span>
