@@ -275,13 +275,12 @@ func (s *Service) GetThreadGitStatus(ctx context.Context, threadID string) (*sto
 		dir = thread.WorktreeDir
 	}
 
-	cmd := exec.CommandContext(ctx, "git", "-C", dir, "status", "--short", "--branch")
-	out, err := cmd.CombinedOutput()
+	statusOut, err := runGit(ctx, dir, "status", "--short", "--branch")
 	if err != nil {
-		return nil, fmt.Errorf("git status: %w: %s", err, strings.TrimSpace(string(out)))
+		return nil, err
 	}
 
-	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	lines := strings.Split(strings.TrimSpace(statusOut), "\n")
 	status := &store.GitStatus{}
 	for i, line := range lines {
 		line = strings.TrimSpace(line)
