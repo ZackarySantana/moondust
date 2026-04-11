@@ -12,7 +12,14 @@ import Loader2 from "lucide-solid/icons/loader-2";
 import Rows2 from "lucide-solid/icons/rows-2";
 import Sparkles from "lucide-solid/icons/sparkles";
 import type { Component, JSX, ParentComponent } from "solid-js";
-import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
+import {
+    createEffect,
+    createMemo,
+    createSignal,
+    For,
+    on,
+    Show,
+} from "solid-js";
 import {
     GetFileDiff,
     GetProject,
@@ -36,6 +43,8 @@ export const ThreadPage: Component = () => {
     const params = useParams<{ projectId: string; threadId: string }>();
     const queryClient = useQueryClient();
     const [draft, setDraft] = createSignal("");
+    const [userAtBottom, setUserAtBottom] = createSignal(true);
+    let messagesContainerRef!: HTMLDivElement;
 
     const projectQuery = useQuery(() => ({
         queryKey: queryKeys.projects.detail(params.projectId),
@@ -184,6 +193,20 @@ export const ThreadPage: Component = () => {
         await navigator.clipboard.writeText(lines.join("\n"));
     }
 
+    createEffect(
+        on(
+            () => [draft(), messages().length] as const,
+            () => {
+                if (userAtBottom() && messagesContainerRef) {
+                    requestAnimationFrame(() => {
+                        messagesContainerRef.scrollTop =
+                            messagesContainerRef.scrollHeight;
+                    });
+                }
+            },
+        ),
+    );
+
     return (
         <div class="flex h-full min-h-0 w-full overflow-hidden">
             <section class="flex min-h-0 flex-1 flex-col overflow-hidden border-r border-slate-800/40">
@@ -251,7 +274,20 @@ export const ThreadPage: Component = () => {
                     fallback={
                         <>
                             {/* ── Messages ── */}
-                            <div class="min-h-0 flex-1 overflow-y-auto">
+                            <div
+                                ref={(el) => {
+                                    messagesContainerRef = el;
+                                    el.addEventListener("scroll", () => {
+                                        const atBottom =
+                                            el.scrollHeight -
+                                                el.scrollTop -
+                                                el.clientHeight <
+                                            32;
+                                        setUserAtBottom(atBottom);
+                                    });
+                                }}
+                                class="min-h-0 flex-1 overflow-y-auto"
+                            >
                                 <div class="mx-auto flex w-full max-w-3xl flex-col gap-1 px-4 py-4">
                                     <Show
                                         when={messages().length > 0}
