@@ -9,7 +9,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -240,4 +242,179 @@ func (s *Service) GetThreadGitStatus(ctx context.Context, threadID string) (*sto
 		status.Entries = append(status.Entries, line)
 	}
 	return status, nil
+}
+
+func (s *Service) GetThreadGitReview(ctx context.Context, threadID string) (*store.GitReview, error) {
+	thread, project, err := s.resolveThreadProject(ctx, threadID)
+	if err != nil {
+		return nil, err
+	}
+	_ = thread
+
+	review := &store.GitReview{
+		RemoteURL: project.RemoteURL,
+	}
+
+	statusOut, err := runGit(ctx, project.Directory, "status", "--porcelain=v1", "--branch")
+	if err != nil {
+		return nil, err
+	}
+	parseGitStatus(review, statusOut)
+
+	defaultBranch := detectDefaultBranch(ctx, project.Directory)
+
+	localOut, err := runGit(ctx, project.Directory, "log", "--no-color",
+		"--pretty=format:%h\t%s\t%an\t%ar\t%aI", defaultBranch+"..HEAD", "-n", "20")
+	if err == nil {
+		review.LocalCommits = parseCommitsWithDate(localOut)
+	}
+
+	mainOut, err := runGit(ctx, project.Directory, "log", "--no-color",
+		"--pretty=format:%h\t%s\t%an\t%ar\t%aI", defaultBranch, "-n", "8")
+	if err == nil {
+		review.MainCommits = parseCommitsWithDate(mainOut)
+	}
+
+	diffStatOut, err := runGit(ctx, project.Directory, "diff", "--stat")
+	if err == nil {
+		review.DiffStat = strings.TrimSpace(diffStatOut)
+	}
+
+	patchOut, err := runGit(ctx, project.Directory, "diff", "--no-color", "--", ".")
+	if err == nil {
+		patch := strings.TrimSpace(patchOut)
+		if patch == "" {
+			cachedOut, cachedErr := runGit(ctx, project.Directory, "diff", "--cached", "--no-color", "--", ".")
+			if cachedErr == nil {
+				patch = strings.TrimSpace(cachedOut)
+			}
+		}
+		if len(patch) > 8000 {
+			patch = patch[:8000] + "\n\n... (truncated)"
+		}
+		review.PatchPreview = patch
+	}
+
+	return review, nil
+}
+
+func (s *Service) resolveThreadProject(ctx context.Context, threadID string) (*store.Thread, *store.Project, error) {
+	thread, err := s.threadStore.Get(ctx, threadID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("get thread: %w", err)
+	}
+	if thread == nil {
+		return nil, nil, fmt.Errorf("thread not found")
+	}
+	project, err := s.projectStore.Get(ctx, thread.ProjectID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("get project: %w", err)
+	}
+	if project == nil {
+		return nil, nil, fmt.Errorf("project not found")
+	}
+	return thread, project, nil
+}
+
+func runGit(ctx context.Context, dir string, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("git %s: %w: %s", strings.Join(args, " "), err, strings.TrimSpace(string(out)))
+	}
+	return string(out), nil
+}
+
+var aheadBehindRe = regexp.MustCompile(`ahead (\d+)|behind (\d+)`)
+
+func parseGitStatus(review *store.GitReview, raw string) {
+	lines := strings.Split(strings.TrimSpace(raw), "\n")
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		if strings.HasPrefix(line, "## ") {
+			branchLine := strings.TrimPrefix(line, "## ")
+			review.Branch = branchLine
+			for _, m := range aheadBehindRe.FindAllStringSubmatch(branchLine, -1) {
+				if m[1] != "" {
+					if v, err := strconv.Atoi(m[1]); err == nil {
+						review.Ahead = v
+					}
+				}
+				if m[2] != "" {
+					if v, err := strconv.Atoi(m[2]); err == nil {
+						review.Behind = v
+					}
+				}
+			}
+			continue
+		}
+		if strings.HasPrefix(line, "?? ") {
+			path := strings.TrimSpace(strings.TrimPrefix(line, "?? "))
+			review.Untracked = append(review.Untracked, store.GitFileChange{
+				Path:   path,
+				Status: "untracked",
+			})
+			continue
+		}
+		if len(line) < 4 {
+			continue
+		}
+		x := line[0]
+		y := line[1]
+		path := strings.TrimSpace(line[3:])
+		if x != ' ' {
+			review.Staged = append(review.Staged, store.GitFileChange{
+				Path:   path,
+				Status: string(x),
+			})
+		}
+		if y != ' ' {
+			review.Unstaged = append(review.Unstaged, store.GitFileChange{
+				Path:   path,
+				Status: string(y),
+			})
+		}
+	}
+}
+
+func parseCommitsWithDate(raw string) []store.GitCommitSummary {
+	var commits []store.GitCommitSummary
+	for _, line := range strings.Split(strings.TrimSpace(raw), "\n") {
+		if line == "" {
+			continue
+		}
+		parts := strings.Split(line, "\t")
+		if len(parts) < 4 {
+			continue
+		}
+		c := store.GitCommitSummary{
+			Hash:    parts[0],
+			Subject: parts[1],
+			Author:  parts[2],
+			When:    parts[3],
+		}
+		if len(parts) >= 5 {
+			c.ExactDate = parts[4]
+		}
+		commits = append(commits, c)
+	}
+	return commits
+}
+
+func detectDefaultBranch(ctx context.Context, dir string) string {
+	out, err := runGit(ctx, dir, "symbolic-ref", "refs/remotes/origin/HEAD")
+	if err == nil {
+		ref := strings.TrimSpace(out)
+		if i := strings.LastIndex(ref, "/"); i >= 0 {
+			return ref[i+1:]
+		}
+	}
+	for _, candidate := range []string{"main", "master"} {
+		if _, err := runGit(ctx, dir, "rev-parse", "--verify", candidate); err == nil {
+			return candidate
+		}
+	}
+	return "main"
 }

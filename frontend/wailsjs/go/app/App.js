@@ -38,6 +38,10 @@ export function GetThread(arg1) {
   return window['go']['app']['App']['GetThread'](arg1);
 }
 
+export function GetThreadGitReview(arg1) {
+  return window['go']['app']['App']['GetThreadGitReview'](arg1);
+}
+
 export function GetThreadGitStatus(arg1) {
   return window['go']['app']['App']['GetThreadGitStatus'](arg1);
 }

@@ -20,6 +20,8 @@ export function GetProject(arg1:string):Promise<store.Project>;
 
 export function GetThread(arg1:string):Promise<store.Thread>;
 
+export function GetThreadGitReview(arg1:string):Promise<store.GitReview>;
+
 export function GetThreadGitStatus(arg1:string):Promise<store.GitStatus>;
 
 export function ListLogs():Promise<Array<store.LogLine>>;

@@ -101,6 +101,10 @@ func (a *App) GetThreadGitStatus(threadID string) (*store.GitStatus, error) {
 	return a.service.GetThreadGitStatus(a.Ctx, threadID)
 }
 
+func (a *App) GetThreadGitReview(threadID string) (*store.GitReview, error) {
+	return a.service.GetThreadGitReview(a.Ctx, threadID)
+}
+
 func (a *App) CancelCreateProject() {
 }
 

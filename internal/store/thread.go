@@ -52,6 +52,33 @@ type GitStatus struct {
 	Entries []string `json:"entries"`
 }
 
+type GitFileChange struct {
+	Path   string `json:"path"`
+	Status string `json:"status"`
+}
+
+type GitCommitSummary struct {
+	Hash      string `json:"hash"`
+	Subject   string `json:"subject"`
+	Author    string `json:"author"`
+	When      string `json:"when"`
+	ExactDate string `json:"exact_date"`
+}
+
+type GitReview struct {
+	Branch       string             `json:"branch"`
+	Ahead        int                `json:"ahead"`
+	Behind       int                `json:"behind"`
+	RemoteURL    string             `json:"remote_url"`
+	Staged       []GitFileChange    `json:"staged"`
+	Unstaged     []GitFileChange    `json:"unstaged"`
+	Untracked    []GitFileChange    `json:"untracked"`
+	LocalCommits []GitCommitSummary `json:"local_commits"`
+	MainCommits  []GitCommitSummary `json:"main_commits"`
+	DiffStat     string             `json:"diff_stat"`
+	PatchPreview string             `json:"patch_preview"`
+}
+
 type ThreadStore interface {
 	Get(ctx context.Context, id string) (*Thread, error)
 	List(ctx context.Context) ([]*Thread, error)
