@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import { useParams } from "@solidjs/router";
 import type { RouteSectionProps } from "@solidjs/router";
-import type { Component } from "solid-js";
+import type { Accessor, Component, Setter } from "solid-js";
 import {
     createContext,
     createEffect,
@@ -21,6 +21,12 @@ interface ProjectSettingsContextValue {
     project: () => store.Project | undefined;
     isLoading: () => boolean;
     markDirty: () => void;
+    fields: {
+        name: Accessor<string>;
+        setName: Setter<string>;
+        remoteUrl: Accessor<string>;
+        setRemoteUrl: Setter<string>;
+    };
 }
 
 const ProjectSettingsContext = createContext<ProjectSettingsContextValue>();
@@ -102,6 +108,7 @@ export const ProjectSettingsLayout: Component<RouteSectionProps> = (props) => {
         project: () => projectQuery.data,
         isLoading: () => projectQuery.isLoading,
         markDirty: () => setDirty(true),
+        fields: { name, setName, remoteUrl, setRemoteUrl },
     };
 
     return (

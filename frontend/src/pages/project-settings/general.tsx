@@ -1,5 +1,5 @@
 import type { Component } from "solid-js";
-import { createEffect, createSignal, on } from "solid-js";
+import { createMemo } from "solid-js";
 import {
     CopyableReadonlyField,
     FieldRow,
@@ -8,23 +8,10 @@ import {
 import { useProjectSettings } from "./layout";
 
 export const ProjectGeneralPage: Component = () => {
-    const { project, markDirty } = useProjectSettings();
+    const { project, markDirty, fields } = useProjectSettings();
 
-    const [name, setName] = createSignal("");
-    const [directory, setDirectory] = createSignal("");
-    const [remoteUrl, setRemoteUrl] = createSignal("");
-    const [projectId, setProjectId] = createSignal("");
-
-    createEffect(
-        on(project, (p) => {
-            if (p) {
-                setProjectId(p.id);
-                setName(p.name);
-                setDirectory(p.directory);
-                setRemoteUrl(p.remote_url ?? "");
-            }
-        }),
-    );
+    const projectId = createMemo(() => project()?.id ?? "");
+    const directory = createMemo(() => project()?.directory ?? "");
 
     function handleInput(setter: (v: string) => void) {
         return (e: InputEvent & { currentTarget: HTMLInputElement }) => {
@@ -44,10 +31,10 @@ export const ProjectGeneralPage: Component = () => {
             <FieldRow
                 id="proj-name"
                 label="Name"
-                value={name()}
+                value={fields.name()}
                 placeholder="Project name"
                 description="Display name shown in the sidebar and thread headers."
-                onInput={handleInput(setName)}
+                onInput={handleInput(fields.setName)}
             />
             <CopyableReadonlyField
                 label="Directory"
@@ -58,10 +45,10 @@ export const ProjectGeneralPage: Component = () => {
             <FieldRow
                 id="proj-remote-url"
                 label="Remote URL"
-                value={remoteUrl()}
+                value={fields.remoteUrl()}
                 placeholder="Not configured"
                 description="Git remote used for cloning and syncing."
-                onInput={handleInput(setRemoteUrl)}
+                onInput={handleInput(fields.setRemoteUrl)}
             />
         </Section>
     );
