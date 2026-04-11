@@ -6,6 +6,7 @@ import { createEffect, createMemo, createSignal } from "solid-js";
 import { AppSidebar } from "@/components/app-sidebar";
 import { CreateProjectModal } from "@/components/create-project-modal";
 import { CreateThreadModal } from "@/components/create-thread-modal";
+import { NotificationToast } from "@/components/notification-toast";
 import { queryKeys } from "@/lib/query-client";
 import { GetProject, ListProjects, ListThreads } from "@wails/go/app/App";
 import { store } from "@wails/go/models";
@@ -94,6 +95,7 @@ export const AppShell: Component<RouteSectionProps> = (props) => {
                 }}
                 projectID={newThreadProjectID()}
             />
+            <NotificationToast />
         </div>
     );
 };

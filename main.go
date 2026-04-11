@@ -41,14 +41,16 @@ func main() {
 		panic(err)
 	}
 
+	settingsStore := bbolt.NewSettings(db)
+
 	service := service.New(
 		bbolt.NewProject(db),
 		bbolt.NewThread(db),
 		bbolt.NewMessage(db),
-		bbolt.NewSettings(db),
+		settingsStore,
 	)
 
-	notify := notify.Chain(notify.NewPushChannel())
+	dispatcher := notify.NewDispatcher(settingsStore)
 
 	logStream := logstream.New(bbolt.NewLog(db))
 	logStream.Install()
@@ -58,7 +60,7 @@ func main() {
 		panic(err)
 	}
 
-	app := app.New(service, notify, logStream, termSrv)
+	app := app.New(service, dispatcher, logStream, termSrv)
 
 	err = wails.Run(&options.App{
 		Title:  "Moondust",
@@ -71,12 +73,12 @@ func main() {
 		OnStartup: func(ctx context.Context) {
 			slog.InfoContext(ctx, "startup started...")
 			app.Ctx = ctx
-			notify.Setup(ctx)
+			dispatcher.Setup(ctx)
 			slog.InfoContext(ctx, "startup completed...")
 		},
 		OnShutdown: func(ctx context.Context) {
 			slog.InfoContext(ctx, "shutdown started...")
-			notify.Shutdown(ctx)
+			dispatcher.Shutdown(ctx)
 			logStream.Shutdown()
 			if err := termSrv.Shutdown(ctx); err != nil {
 				slog.ErrorContext(ctx, "terminal server shutdown", "error", err)

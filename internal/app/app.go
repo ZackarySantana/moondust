@@ -2,9 +2,7 @@ package app
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
-	"log/slog"
 	"moondust/internal/logstream"
 	"moondust/internal/notify"
 	"moondust/internal/service"
@@ -21,12 +19,12 @@ type App struct {
 	Ctx context.Context
 
 	service *service.Service
-	notify  notify.Channel
+	notify  *notify.Dispatcher
 	stream  *logstream.Stream
 	term    *terminal.Server
 }
 
-func New(service *service.Service, notify notify.Channel, stream *logstream.Stream, term *terminal.Server) *App {
+func New(service *service.Service, notify *notify.Dispatcher, stream *logstream.Stream, term *terminal.Server) *App {
 	return &App{
 		Ctx:     context.Background(),
 		service: service,
@@ -49,7 +47,7 @@ func (a *App) CreateProjectFromRemote(name, remoteURL string) (*store.Project, e
 	if err != nil {
 		return nil, err
 	}
-	a.notifyProjectCreated(p)
+	a.notify.Emit(notify.EventProjectCreated, "Project Created", fmt.Sprintf("Project %q is ready.", p.Name))
 	return p, nil
 }
 
@@ -58,7 +56,7 @@ func (a *App) CreateProjectFromFolder(name, directory string) (*store.Project, e
 	if err != nil {
 		return nil, err
 	}
-	a.notifyProjectCreated(p)
+	a.notify.Emit(notify.EventProjectCreated, "Project Created", fmt.Sprintf("Project %q is ready.", p.Name))
 	return p, nil
 }
 
@@ -107,7 +105,12 @@ func (a *App) ListThreadMessages(threadID string) ([]*store.ChatMessage, error) 
 }
 
 func (a *App) SendThreadMessage(threadID, content string) ([]*store.ChatMessage, error) {
-	return a.service.SendThreadMessage(a.Ctx, threadID, content)
+	msgs, err := a.service.SendThreadMessage(a.Ctx, threadID, content)
+	if err != nil {
+		return nil, err
+	}
+	a.notify.Emit(notify.EventChatMessageReceived, "Message Received", "New response in your thread.")
+	return msgs, nil
 }
 
 func (a *App) GetThreadGitStatus(threadID string) (*store.GitStatus, error) {
@@ -120,6 +123,12 @@ func (a *App) GetThreadGitReview(threadID string) (*store.GitReview, error) {
 
 func (a *App) GetFileDiff(threadID, filePath, status string) (*store.FileDiff, error) {
 	return a.service.GetFileDiff(a.Ctx, threadID, filePath, status)
+}
+
+// IsPushAvailable reports whether desktop push notifications are available on
+// this platform. The frontend uses this to conditionally disable the push toggle.
+func (a *App) IsPushAvailable() bool {
+	return notify.PushAvailable()
 }
 
 func (a *App) CancelCreateProject() {
@@ -186,30 +195,4 @@ func formatLogLine(line store.LogLine) string {
 		return base + " " + line.Extra
 	}
 	return base
-}
-
-// notifyProjectCreated sends a desktop notification asynchronously.
-// Runs in a goroutine because macOS's UNUserNotificationCenter crashes with an
-// unrecoverable cgo/Objective-C signal when the app is unsigned or lacks a
-// bundle identifier (common during development). The goroutine ensures the
-// project creation return value reaches the frontend even if the notification
-// subsystem panics.
-func (a *App) notifyProjectCreated(p *store.Project) {
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				slog.Debug("notifyProjectCreated panicked", "panic", r)
-			}
-		}()
-		if err := a.notify.Send(a.Ctx, notify.NewPushNotification(
-			notify.LevelInfo,
-			&runtime.NotificationOptions{
-				ID:    rand.Text(),
-				Title: "Project Created",
-				Body:  fmt.Sprintf("Project %q is ready.", p.Name),
-			},
-		)); err != nil {
-			slog.Debug("notifyProjectCreated failed", "error", err)
-		}
-	}()
 }

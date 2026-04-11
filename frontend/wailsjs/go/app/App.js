@@ -54,6 +54,10 @@ export function GetThreadGitStatus(arg1) {
   return window['go']['app']['App']['GetThreadGitStatus'](arg1);
 }
 
+export function IsPushAvailable() {
+  return window['go']['app']['App']['IsPushAvailable']();
+}
+
 export function ListLogs() {
   return window['go']['app']['App']['ListLogs']();
 }

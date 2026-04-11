@@ -1,10 +1,11 @@
-import Folder from "lucide-solid/icons/folder";
+import Bell from "lucide-solid/icons/bell";
 import Blocks from "lucide-solid/icons/blocks";
+import Folder from "lucide-solid/icons/folder";
 import GitBranch from "lucide-solid/icons/git-branch";
-import Layers from "lucide-solid/icons/layers";
-import Sparkles from "lucide-solid/icons/sparkles";
 import Info from "lucide-solid/icons/info";
+import Layers from "lucide-solid/icons/layers";
 import ScrollText from "lucide-solid/icons/scroll-text";
+import Sparkles from "lucide-solid/icons/sparkles";
 import TerminalIcon from "lucide-solid/icons/terminal";
 import type { VerticalNavItem } from "@/components/vertical-nav";
 
@@ -14,6 +15,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     { id: "projects", label: "Projects", icon: Folder },
     { id: "providers", label: "Providers", icon: Blocks },
     { id: "git", label: "Git", icon: GitBranch },
+    { id: "notifications", label: "Notifications", icon: Bell },
     { id: "environments", label: "Environments", icon: Layers },
     { id: "features", label: "Features", icon: Sparkles },
     { id: "logs", label: "Logs", icon: ScrollText },

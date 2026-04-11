@@ -13,6 +13,7 @@ import { SettingsFeaturesPage } from "@/pages/settings/features";
 import { SettingsGitPage } from "@/pages/settings/git";
 import { SettingsLayout } from "@/pages/settings/layout";
 import { SettingsLogsPage } from "@/pages/settings/logs";
+import { SettingsNotificationsPage } from "@/pages/settings/notifications";
 import { SettingsTerminalPage } from "@/pages/settings/terminal";
 import { SettingsProjectsPage } from "@/pages/settings/projects";
 import { SettingsProvidersPage } from "@/pages/settings/providers";
@@ -77,6 +78,10 @@ export default function App() {
                 <Route
                     path="/git"
                     component={SettingsGitPage}
+                />
+                <Route
+                    path="/notifications"
+                    component={SettingsNotificationsPage}
                 />
                 <Route
                     path="/environments"

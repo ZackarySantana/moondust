@@ -28,6 +28,8 @@ export function GetThreadGitReview(arg1:string):Promise<store.GitReview>;
 
 export function GetThreadGitStatus(arg1:string):Promise<store.GitStatus>;
 
+export function IsPushAvailable():Promise<boolean>;
+
 export function ListLogs():Promise<Array<store.LogLine>>;
 
 export function ListProjects():Promise<Array<store.Project>>;

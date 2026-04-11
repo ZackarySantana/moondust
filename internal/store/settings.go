@@ -2,9 +2,18 @@ package store
 
 import "context"
 
+type NotificationChannelConfig struct {
+	Push            bool   `json:"push"`
+	InApp           bool   `json:"in_app"`
+	Slack           bool   `json:"slack"`
+	Email           bool   `json:"email"`
+	SlackWebhookURL string `json:"slack_webhook_url,omitempty"`
+}
+
 type Settings struct {
-	SSHAuthSock     string `json:"ssh_auth_sock"`
-	DefaultWorktree string `json:"default_worktree"` // "ask", "on", "off"; empty treated as "ask"
+	SSHAuthSock     string                                `json:"ssh_auth_sock"`
+	DefaultWorktree string                                `json:"default_worktree"` // "ask", "on", "off"; empty treated as "ask"
+	Notifications   map[string]*NotificationChannelConfig `json:"notifications"`
 }
 
 type SettingsStore interface {
