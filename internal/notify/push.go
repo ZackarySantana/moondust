@@ -22,7 +22,12 @@ func (c *PushChannel) Kind() Kind {
 	return KindPush
 }
 
-func (c *PushChannel) Send(ctx context.Context, event Event) error {
+func (c *PushChannel) Send(ctx context.Context, event Event) (retErr error) {
+	defer func() {
+		if r := recover(); r != nil {
+			slog.DebugContext(ctx, "notification send panicked", "panic", r)
+		}
+	}()
 	if !runtime.IsNotificationAvailable(ctx) {
 		return nil
 	}
@@ -32,14 +37,20 @@ func (c *PushChannel) Send(ctx context.Context, event Event) error {
 	}
 	err := runtime.SendNotification(ctx, *pushEvent.options)
 	if err != nil {
-		slog.DebugContext(ctx, "send project created notification", "error", err)
+		slog.DebugContext(ctx, "send notification", "error", err)
 	}
 	return nil
 }
 
 func (c *PushChannel) Setup(ctx context.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			slog.WarnContext(ctx, "notification setup panicked; desktop notifications disabled", "panic", r)
+		}
+	}()
 	if err := runtime.InitializeNotifications(ctx); err != nil {
 		slog.WarnContext(ctx, "notification service init failed; desktop notifications may be unavailable", "error", err)
+		return
 	}
 	if _, err := runtime.RequestNotificationAuthorization(ctx); err != nil {
 		slog.DebugContext(ctx, "notification authorization", "error", err)
@@ -48,6 +59,11 @@ func (c *PushChannel) Setup(ctx context.Context) {
 }
 
 func (c *PushChannel) Shutdown(ctx context.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			slog.DebugContext(ctx, "notification cleanup panicked", "panic", r)
+		}
+	}()
 	runtime.CleanupNotifications(ctx)
 }
 
