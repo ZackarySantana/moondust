@@ -24,4 +24,6 @@ export function SelectProjectFolder():Promise<string>;
 
 export function SetLogStreaming(arg1:boolean):Promise<void>;
 
+export function TerminalWebSocketURL():Promise<string>;
+
 export function UpdateProject(arg1:store.Project):Promise<void>;

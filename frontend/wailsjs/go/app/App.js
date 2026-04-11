@@ -46,6 +46,10 @@ export function SetLogStreaming(arg1) {
   return window['go']['app']['App']['SetLogStreaming'](arg1);
 }
 
+export function TerminalWebSocketURL() {
+  return window['go']['app']['App']['TerminalWebSocketURL']();
+}
+
 export function UpdateProject(arg1) {
   return window['go']['app']['App']['UpdateProject'](arg1);
 }

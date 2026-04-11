@@ -10,6 +10,7 @@ import (
 	"moondust/internal/notify"
 	"moondust/internal/service"
 	"moondust/internal/store/bbolt"
+	"moondust/internal/terminal"
 	"os"
 	"path/filepath"
 
@@ -47,7 +48,12 @@ func main() {
 	logStream := logstream.New(bbolt.NewLog(db))
 	logStream.Install()
 
-	app := app.New(service, notify, logStream)
+	termSrv, err := terminal.New()
+	if err != nil {
+		panic(err)
+	}
+
+	app := app.New(service, notify, logStream, termSrv)
 
 	err = wails.Run(&options.App{
 		Title:  "Moondust",
@@ -67,6 +73,9 @@ func main() {
 			slog.InfoContext(ctx, "shutdown started...")
 			notify.Shutdown(ctx)
 			logStream.Shutdown()
+			if err := termSrv.Shutdown(ctx); err != nil {
+				slog.ErrorContext(ctx, "terminal server shutdown", "error", err)
+			}
 			slog.InfoContext(ctx, "shutdown completed...")
 		},
 		Bind: []interface{}{

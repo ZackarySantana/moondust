@@ -8,6 +8,7 @@ import (
 	"moondust/internal/notify"
 	"moondust/internal/service"
 	"moondust/internal/store"
+	"moondust/internal/terminal"
 	"os"
 	"strings"
 	"time"
@@ -21,14 +22,16 @@ type App struct {
 	service *service.Service
 	notify  notify.Channel
 	stream  *logstream.Stream
+	term    *terminal.Server
 }
 
-func New(service *service.Service, notify notify.Channel, stream *logstream.Stream) *App {
+func New(service *service.Service, notify notify.Channel, stream *logstream.Stream, term *terminal.Server) *App {
 	return &App{
 		Ctx:     context.Background(),
 		service: service,
 		notify:  notify,
 		stream:  stream,
+		term:    term,
 	}
 }
 
@@ -122,6 +125,13 @@ func (a *App) DownloadLogs() error {
 		b.WriteByte('\n')
 	}
 	return os.WriteFile(path, []byte(b.String()), 0o644)
+}
+
+func (a *App) TerminalWebSocketURL() (string, error) {
+	if a.term == nil {
+		return "", fmt.Errorf("terminal server unavailable")
+	}
+	return a.term.URL(), nil
 }
 
 func formatLogLine(line store.LogLine) string {

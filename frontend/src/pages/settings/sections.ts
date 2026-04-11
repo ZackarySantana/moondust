@@ -6,6 +6,7 @@ import Layers from "lucide-solid/icons/layers";
 import Sparkles from "lucide-solid/icons/sparkles";
 import Info from "lucide-solid/icons/info";
 import ScrollText from "lucide-solid/icons/scroll-text";
+import TerminalIcon from "lucide-solid/icons/terminal";
 
 export type IconComponent = Component<
     JSX.SvgSVGAttributes<SVGSVGElement> & { "stroke-width"?: number }
@@ -24,6 +25,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     { id: "environments", label: "Environments", icon: Layers },
     { id: "features", label: "Features", icon: Sparkles },
     { id: "logs", label: "Logs", icon: ScrollText },
+    { id: "terminal", label: "Terminal", icon: TerminalIcon },
     { id: "about", label: "About", icon: Info },
 ];
 

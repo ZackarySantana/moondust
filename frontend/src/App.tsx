@@ -8,6 +8,7 @@ import { SettingsFeaturesPage } from "@/pages/settings/features";
 import { SettingsGitPage } from "@/pages/settings/git";
 import { SettingsLayout } from "@/pages/settings/layout";
 import { SettingsLogsPage } from "@/pages/settings/logs";
+import { SettingsTerminalPage } from "@/pages/settings/terminal";
 import { SettingsProjectsPage } from "@/pages/settings/projects";
 import { SettingsProvidersPage } from "@/pages/settings/providers";
 
@@ -57,6 +58,10 @@ export default function App() {
                 <Route
                     path="/logs"
                     component={SettingsLogsPage}
+                />
+                <Route
+                    path="/terminal"
+                    component={SettingsTerminalPage}
                 />
             </Route>
         </Router>
