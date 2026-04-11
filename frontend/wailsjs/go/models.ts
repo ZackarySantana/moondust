@@ -194,6 +194,18 @@ export namespace store {
 	        this.remote_url = source["remote_url"];
 	    }
 	}
+	export class Settings {
+	    ssh_auth_sock: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Settings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ssh_auth_sock = source["ssh_auth_sock"];
+	    }
+	}
 	export class Thread {
 	    id: string;
 	    project_id: string;

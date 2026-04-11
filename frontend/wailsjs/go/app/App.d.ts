@@ -18,6 +18,8 @@ export function DownloadLogs():Promise<void>;
 
 export function GetProject(arg1:string):Promise<store.Project>;
 
+export function GetSettings():Promise<store.Settings>;
+
 export function GetThread(arg1:string):Promise<store.Thread>;
 
 export function GetThreadGitReview(arg1:string):Promise<store.GitReview>;
@@ -31,6 +33,8 @@ export function ListProjects():Promise<Array<store.Project>>;
 export function ListThreadMessages(arg1:string):Promise<Array<store.ChatMessage>>;
 
 export function ListThreads():Promise<Array<store.Thread>>;
+
+export function SaveSettings(arg1:store.Settings):Promise<void>;
 
 export function SelectProjectFolder():Promise<string>;
 

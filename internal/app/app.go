@@ -73,6 +73,14 @@ func (a *App) UpdateProject(project *store.Project) error {
 	return a.service.UpdateProject(a.Ctx, project)
 }
 
+func (a *App) GetSettings() (*store.Settings, error) {
+	return a.service.GetSettings(a.Ctx)
+}
+
+func (a *App) SaveSettings(settings *store.Settings) error {
+	return a.service.SaveSettings(a.Ctx, settings)
+}
+
 func (a *App) DeleteProject(id string, deleteFiles bool) error {
 	return a.service.DeleteProject(a.Ctx, id, deleteFiles)
 }

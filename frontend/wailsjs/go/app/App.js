@@ -34,6 +34,10 @@ export function GetProject(arg1) {
   return window['go']['app']['App']['GetProject'](arg1);
 }
 
+export function GetSettings() {
+  return window['go']['app']['App']['GetSettings']();
+}
+
 export function GetThread(arg1) {
   return window['go']['app']['App']['GetThread'](arg1);
 }
@@ -60,6 +64,10 @@ export function ListThreadMessages(arg1) {
 
 export function ListThreads() {
   return window['go']['app']['App']['ListThreads']();
+}
+
+export function SaveSettings(arg1) {
+  return window['go']['app']['App']['SaveSettings'](arg1);
 }
 
 export function SelectProjectFolder() {

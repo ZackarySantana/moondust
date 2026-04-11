@@ -45,6 +45,7 @@ func main() {
 		bbolt.NewProject(db),
 		bbolt.NewThread(db),
 		bbolt.NewMessage(db),
+		bbolt.NewSettings(db),
 	)
 
 	notify := notify.Chain(notify.NewPushChannel())

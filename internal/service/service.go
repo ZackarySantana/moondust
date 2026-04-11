@@ -17,21 +17,25 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 )
 
 type Service struct {
-	projectStore store.ProjectStore
-	threadStore  store.ThreadStore
-	messageStore store.MessageStore
+	projectStore  store.ProjectStore
+	threadStore   store.ThreadStore
+	messageStore  store.MessageStore
+	settingsStore store.SettingsStore
 }
 
-func New(projectStore store.ProjectStore, threadStore store.ThreadStore, messageStore store.MessageStore) *Service {
+func New(projectStore store.ProjectStore, threadStore store.ThreadStore, messageStore store.MessageStore, settingsStore store.SettingsStore) *Service {
 	return &Service{
 		projectStore: &store.ValidateProjectStore{
 			ProjectStore: projectStore,
 		},
-		threadStore:  threadStore,
-		messageStore: messageStore,
+		threadStore:   threadStore,
+		messageStore:  messageStore,
+		settingsStore: settingsStore,
 	}
 }
 
@@ -49,8 +53,17 @@ func (s *Service) CreateProjectFromRemote(ctx context.Context, name, remoteURL s
 
 	project.Directory = filepath.Join(cacheDir, "moondust", "repositories", string(project.ID))
 
+	settings, err := s.settingsStore.Get(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("loading settings: %w", err)
+	}
+	auth, authErr := sshAuthForURL(remoteURL, settings.SSHAuthSock)
+	if authErr != nil {
+		return nil, authErr
+	}
 	_, err = git.PlainClone(project.Directory, false, &git.CloneOptions{
-		URL: remoteURL,
+		URL:  remoteURL,
+		Auth: auth,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("git clone: %w", err)
@@ -104,6 +117,14 @@ func (s *Service) ListProjects(ctx context.Context) ([]*store.Project, error) {
 
 func (s *Service) UpdateProject(ctx context.Context, project *store.Project) error {
 	return s.projectStore.Update(ctx, project)
+}
+
+func (s *Service) GetSettings(ctx context.Context) (*store.Settings, error) {
+	return s.settingsStore.Get(ctx)
+}
+
+func (s *Service) SaveSettings(ctx context.Context, settings *store.Settings) error {
+	return s.settingsStore.Save(ctx, settings)
 }
 
 func (s *Service) DeleteProject(ctx context.Context, id string, deleteFiles bool) error {
@@ -338,6 +359,51 @@ func runGit(ctx context.Context, dir string, args ...string) (string, error) {
 		return "", fmt.Errorf("git %s: %w: %s", strings.Join(args, " "), err, strings.TrimSpace(string(out)))
 	}
 	return string(out), nil
+}
+
+func sshAuthForURL(remoteURL, sshAuthSock string) (transport.AuthMethod, error) {
+	if !isSSHURL(remoteURL) {
+		return nil, nil
+	}
+	// If an override is provided (from global settings), temporarily set
+	// SSH_AUTH_SOCK so the SSH agent library connects to the right socket.
+	if sshAuthSock != "" {
+		prev := os.Getenv("SSH_AUTH_SOCK")
+		os.Setenv("SSH_AUTH_SOCK", sshAuthSock)
+		defer func() {
+			if prev == "" {
+				os.Unsetenv("SSH_AUTH_SOCK")
+			} else {
+				os.Setenv("SSH_AUTH_SOCK", prev)
+			}
+		}()
+	}
+	if auth, err := gitssh.NewSSHAgentAuth("git"); err == nil {
+		return auth, nil
+	}
+	home, err := os.UserHomeDir()
+	if err == nil {
+		for _, name := range []string{"id_ed25519", "id_rsa", "id_ecdsa"} {
+			keyPath := filepath.Join(home, ".ssh", name)
+			if _, err := os.Stat(keyPath); err != nil {
+				continue
+			}
+			if auth, err := gitssh.NewPublicKeysFromFile("git", keyPath, ""); err == nil {
+				return auth, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("no SSH authentication available: set SSH_AUTH_SOCK (e.g. 1Password SSH agent) or add a key to ~/.ssh/")
+}
+
+func isSSHURL(u string) bool {
+	if strings.HasPrefix(u, "ssh://") {
+		return true
+	}
+	if strings.Contains(u, "@") && strings.Contains(u, ":") && !strings.Contains(u, "://") {
+		return true
+	}
+	return false
 }
 
 func configureClonedRepo(ctx context.Context, dir string) {
