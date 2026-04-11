@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import { useParams } from "@solidjs/router";
 import type { Component, JSX, ParentComponent } from "solid-js";
-import { createMemo, createSignal, For, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
 import {
     GetProject,
     GetThread,
@@ -132,23 +132,38 @@ export const ThreadPage: Component = () => {
                 </div>
 
                 <div class="shrink-0 border-t border-slate-800/40 p-4">
-                    <div class="mx-auto flex w-full max-w-3xl flex-col gap-2">
+                    <div class="mx-auto flex w-full max-w-3xl items-end gap-2">
                         <textarea
-                            class="h-20 w-full resize-none rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 text-sm text-slate-200 outline-none transition-colors focus:border-emerald-600/60"
+                            ref={(el) => {
+                                const resize = () => {
+                                    el.style.height = "auto";
+                                    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+                                };
+                                createEffect(() => {
+                                    draft();
+                                    resize();
+                                });
+                            }}
+                            rows={1}
+                            class="max-h-40 min-h-[36px] w-full resize-none rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 text-sm leading-snug text-slate-200 outline-none transition-colors focus:border-emerald-600/60"
                             placeholder="Message thread..."
                             value={draft()}
                             onInput={(e) => setDraft(e.currentTarget.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    submitMessage();
+                                }
+                            }}
                         />
-                        <div class="flex justify-end">
-                            <button
-                                type="button"
-                                class="cursor-pointer rounded-md border border-emerald-700/60 bg-emerald-800/50 px-3 py-1.5 text-xs font-medium text-emerald-100 transition-colors hover:bg-emerald-700/60 disabled:cursor-not-allowed disabled:opacity-50"
-                                disabled={!canSend()}
-                                onClick={submitMessage}
-                            >
-                                {sendMutation.isPending ? "Sending..." : "Send"}
-                            </button>
-                        </div>
+                        <button
+                            type="button"
+                            class="shrink-0 cursor-pointer rounded-md border border-emerald-700/60 bg-emerald-800/50 px-3 py-2 text-xs font-medium text-emerald-100 transition-colors hover:bg-emerald-700/60 disabled:cursor-not-allowed disabled:opacity-50"
+                            disabled={!canSend()}
+                            onClick={submitMessage}
+                        >
+                            {sendMutation.isPending ? "Sending…" : "Send"}
+                        </button>
                     </div>
                 </div>
 
@@ -490,6 +505,7 @@ const ReviewSidebar: Component<{
                     title="Staged"
                     count={staged().length}
                     tone="emerald"
+                    defaultOpen
                 >
                     <Show
                         when={staged().length > 0}
@@ -517,6 +533,7 @@ const ReviewSidebar: Component<{
                     title="Unstaged"
                     count={unstaged().length}
                     tone="amber"
+                    defaultOpen
                 >
                     <Show
                         when={unstaged().length > 0}
@@ -544,6 +561,7 @@ const ReviewSidebar: Component<{
                     title="Untracked"
                     count={untracked().length}
                     tone="sky"
+                    defaultOpen
                 >
                     <Show
                         when={untracked().length > 0}

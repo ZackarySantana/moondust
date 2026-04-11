@@ -33,7 +33,9 @@ func New(projectStore store.ProjectStore, threadStore store.ThreadStore, message
 		projectStore: &store.ValidateProjectStore{
 			ProjectStore: projectStore,
 		},
-		threadStore:   threadStore,
+		threadStore: &store.TouchThreadStore{
+			ThreadStore: threadStore,
+		},
 		messageStore:  messageStore,
 		settingsStore: settingsStore,
 	}
@@ -244,9 +246,9 @@ func (s *Service) SendThreadMessage(ctx context.Context, threadID, content strin
 			runes = runes[:48]
 		}
 		thread.Title = string(runes)
-		if err := s.threadStore.Update(ctx, thread); err != nil {
-			return nil, fmt.Errorf("update thread title: %w", err)
-		}
+	}
+	if err := s.threadStore.Update(ctx, thread); err != nil {
+		return nil, fmt.Errorf("update thread: %w", err)
 	}
 
 	return []*store.ChatMessage{userMessage, replyMessage}, nil

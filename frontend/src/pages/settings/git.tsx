@@ -12,6 +12,7 @@ import { GetSettings, SaveSettings } from "@wails/go/app/App";
 import { store } from "@wails/go/models";
 
 interface FieldRowProps {
+    id: string;
     label: string;
     value: string;
     placeholder?: string;
@@ -21,11 +22,15 @@ interface FieldRowProps {
 
 const FieldRow: Component<FieldRowProps> = (props) => (
     <div class="grid grid-cols-[11rem_1fr] items-start gap-4">
-        <Label class="mb-0 pt-2 text-right text-[13px] text-slate-400">
+        <Label
+            for={props.id}
+            class="mb-0 pt-2 text-right text-[13px] text-slate-400"
+        >
             {props.label}
         </Label>
         <div class="space-y-1">
             <Input
+                id={props.id}
                 value={props.value}
                 placeholder={props.placeholder}
                 onInput={props.onInput}
@@ -117,6 +122,7 @@ export const SettingsGitPage: Component = () => {
                 </div>
                 <div class="space-y-4">
                     <FieldRow
+                        id="settings-ssh-auth-sock"
                         label="SSH_AUTH_SOCK"
                         value={sshAuthSock()}
                         placeholder="Use shell default"

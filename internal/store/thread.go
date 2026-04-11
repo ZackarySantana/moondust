@@ -11,6 +11,7 @@ type Thread struct {
 	ProjectID string    `json:"project_id"`
 	Title     string    `json:"title"`
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 func (t *Thread) Validate() error {
@@ -85,6 +86,34 @@ type ThreadStore interface {
 	ListByProject(ctx context.Context, projectID string) ([]*Thread, error)
 	Update(ctx context.Context, thread *Thread) error
 	Delete(ctx context.Context, id string) error
+}
+
+var _ ThreadStore = (*TouchThreadStore)(nil)
+
+// TouchThreadStore wraps a ThreadStore and automatically sets UpdatedAt on every Update call.
+type TouchThreadStore struct {
+	ThreadStore ThreadStore
+}
+
+func (s *TouchThreadStore) Get(ctx context.Context, id string) (*Thread, error) {
+	return s.ThreadStore.Get(ctx, id)
+}
+
+func (s *TouchThreadStore) List(ctx context.Context) ([]*Thread, error) {
+	return s.ThreadStore.List(ctx)
+}
+
+func (s *TouchThreadStore) ListByProject(ctx context.Context, projectID string) ([]*Thread, error) {
+	return s.ThreadStore.ListByProject(ctx, projectID)
+}
+
+func (s *TouchThreadStore) Update(ctx context.Context, thread *Thread) error {
+	thread.UpdatedAt = time.Now().UTC()
+	return s.ThreadStore.Update(ctx, thread)
+}
+
+func (s *TouchThreadStore) Delete(ctx context.Context, id string) error {
+	return s.ThreadStore.Delete(ctx, id)
 }
 
 type MessageStore interface {

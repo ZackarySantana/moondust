@@ -3,10 +3,17 @@ import { A, useLocation, useNavigate } from "@solidjs/router";
 import ChevronRight from "lucide-solid/icons/chevron-right";
 import Plus from "lucide-solid/icons/plus";
 import Settings from "lucide-solid/icons/settings";
-import { For, type Component } from "solid-js";
+import {
+    createMemo,
+    createSignal,
+    For,
+    onCleanup,
+    type Component,
+} from "solid-js";
 import { CreateThread } from "@wails/go/app/App";
 import { Separator } from "@/components/ui/separator";
 import { queryKeys } from "@/lib/query-client";
+import { relativeTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { store } from "@wails/go/models";
 
@@ -17,10 +24,28 @@ export interface AppSidebarProps {
     class?: string;
 }
 
+function threadTimestamp(t: store.Thread): number {
+    const ua = t.updated_at;
+    if (ua) {
+        const d = typeof ua === "string" ? new Date(ua) : ua;
+        if (d instanceof Date && !isNaN(d.getTime())) return d.getTime();
+    }
+    const ca = t.created_at;
+    if (ca) {
+        const d = typeof ca === "string" ? new Date(ca) : ca;
+        if (d instanceof Date && !isNaN(d.getTime())) return d.getTime();
+    }
+    return 0;
+}
+
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const location = useLocation();
+
+    const [tick, setTick] = createSignal(0);
+    const timer = setInterval(() => setTick((t) => t + 1), 60_000);
+    onCleanup(() => clearInterval(timer));
 
     const createThreadMutation = useMutation(() => ({
         mutationFn: (projectID: string) => CreateThread(projectID),
@@ -31,6 +56,27 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             await navigate(`/project/${thread.project_id}/thread/${thread.id}`);
         },
     }));
+
+    const sortedProjects = createMemo(() => {
+        const threads = props.threads;
+        const latestByProject = new Map<string, number>();
+        for (const t of threads) {
+            const ts = threadTimestamp(t);
+            const prev = latestByProject.get(t.project_id) ?? 0;
+            if (ts > prev) latestByProject.set(t.project_id, ts);
+        }
+        return [...props.projects].sort((a, b) => {
+            const ta = latestByProject.get(a.id) ?? 0;
+            const tb = latestByProject.get(b.id) ?? 0;
+            return tb - ta;
+        });
+    });
+
+    function sortedThreadsFor(projectId: string): store.Thread[] {
+        return props.threads
+            .filter((t) => t.project_id === projectId)
+            .sort((a, b) => threadTimestamp(b) - threadTimestamp(a));
+    }
 
     return (
         <aside
@@ -75,7 +121,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                     </button>
                 </div>
                 <div class="flex flex-col gap-1">
-                    <For each={props.projects}>
+                    <For each={sortedProjects()}>
                         {(p) => (
                             <ProjectGroup
                                 id={p.id}
@@ -85,16 +131,19 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                                     createThreadMutation.mutate(p.id)
                                 }
                             >
-                                <For
-                                    each={props.threads.filter(
-                                        (t) => t.project_id === p.id,
-                                    )}
-                                >
+                                <For each={sortedThreadsFor(p.id)}>
                                     {(thread) => (
                                         <ProjectThread
                                             projectID={p.id}
                                             threadID={thread.id}
                                             name={thread.title || "New thread"}
+                                            time={
+                                                (tick(),
+                                                relativeTime(
+                                                    thread.updated_at ||
+                                                        thread.created_at,
+                                                ))
+                                            }
                                             active={
                                                 location.pathname ===
                                                 `/project/${p.id}/thread/${thread.id}`
@@ -220,19 +269,25 @@ const ProjectThread: Component<{
     projectID: string;
     threadID: string;
     name: string;
+    time?: string;
     active?: boolean;
 }> = (props) => {
     return (
         <A
             href={`/project/${props.projectID}/thread/${props.threadID}`}
             class={cn(
-                "block w-full rounded-md px-2 py-1.5 text-left text-xs transition-colors duration-100",
+                "flex w-full items-baseline gap-1 rounded-md px-2 py-1.5 text-left text-xs transition-colors duration-100",
                 props.active
                     ? "bg-slate-800/55 text-slate-200"
                     : "text-slate-500 hover:bg-slate-800/40 hover:text-slate-300",
             )}
         >
-            {props.name}
+            <span class="min-w-0 flex-1 truncate">{props.name}</span>
+            {props.time && (
+                <span class="shrink-0 text-[10px] tabular-nums text-slate-600">
+                    {props.time}
+                </span>
+            )}
         </A>
     );
 };

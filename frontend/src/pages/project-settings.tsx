@@ -28,6 +28,7 @@ import { DeleteProject, GetProject, UpdateProject } from "@wails/go/app/App";
 import { store } from "@wails/go/models";
 
 interface FieldRowProps {
+    id: string;
     label: string;
     value: string;
     placeholder?: string;
@@ -38,11 +39,15 @@ interface FieldRowProps {
 
 const FieldRow: Component<FieldRowProps> = (props) => (
     <div class="grid grid-cols-[11rem_1fr] items-start gap-4">
-        <Label class="mb-0 pt-2 text-right text-[13px] text-slate-400">
+        <Label
+            for={props.id}
+            class="mb-0 pt-2 text-right text-[13px] text-slate-400"
+        >
             {props.label}
         </Label>
         <div class="space-y-1">
             <Input
+                id={props.id}
                 value={props.value}
                 placeholder={props.placeholder}
                 disabled={props.disabled}
@@ -354,6 +359,7 @@ export const ProjectSettingsPage: Component = () => {
                             description="Immutable identifier used internally. Cannot be changed."
                         />
                         <FieldRow
+                            id="proj-name"
                             label="Name"
                             value={name()}
                             placeholder="Project name"
@@ -367,6 +373,7 @@ export const ProjectSettingsPage: Component = () => {
                             description="Local path where the project files are stored."
                         />
                         <FieldRow
+                            id="proj-remote-url"
                             label="Remote URL"
                             value={remoteUrl()}
                             placeholder="Not configured"
@@ -383,6 +390,7 @@ export const ProjectSettingsPage: Component = () => {
                         description="Version control behavior for this project."
                     >
                         <FieldRow
+                            id="proj-default-branch"
                             label="Default branch"
                             value={defaultBranch()}
                             placeholder="main"
@@ -392,6 +400,7 @@ export const ProjectSettingsPage: Component = () => {
                             }
                         />
                         <FieldRow
+                            id="proj-auto-pull"
                             label="Auto-pull"
                             value={autoPull()}
                             placeholder="on change"
@@ -399,6 +408,7 @@ export const ProjectSettingsPage: Component = () => {
                             onInput={(e) => setAutoPull(e.currentTarget.value)}
                         />
                         <FieldRow
+                            id="proj-commit-signing"
                             label="Commit signing"
                             value={commitSigning()}
                             placeholder="Disabled"
@@ -417,6 +427,7 @@ export const ProjectSettingsPage: Component = () => {
                         description="Defaults for threads running in this project."
                     >
                         <FieldRow
+                            id="proj-model"
                             label="Model"
                             value={model()}
                             placeholder="Default"
@@ -424,6 +435,7 @@ export const ProjectSettingsPage: Component = () => {
                             onInput={(e) => setModel(e.currentTarget.value)}
                         />
                         <FieldRow
+                            id="proj-system-prompt"
                             label="System prompt"
                             value={systemPrompt()}
                             placeholder="None"
@@ -433,6 +445,7 @@ export const ProjectSettingsPage: Component = () => {
                             }
                         />
                         <FieldRow
+                            id="proj-max-tokens"
                             label="Max tokens"
                             value={maxTokens()}
                             placeholder="8192"
@@ -440,6 +453,7 @@ export const ProjectSettingsPage: Component = () => {
                             onInput={(e) => setMaxTokens(e.currentTarget.value)}
                         />
                         <FieldRow
+                            id="proj-temperature"
                             label="Temperature"
                             value={temperature()}
                             placeholder="0.7"
@@ -458,6 +472,7 @@ export const ProjectSettingsPage: Component = () => {
                         description="Variables and context injected into agent sessions."
                     >
                         <FieldRow
+                            id="proj-runtime"
                             label="Runtime"
                             value={runtime()}
                             placeholder="Auto-detect"
@@ -465,6 +480,7 @@ export const ProjectSettingsPage: Component = () => {
                             onInput={(e) => setRuntime(e.currentTarget.value)}
                         />
                         <FieldRow
+                            id="proj-shell"
                             label="Shell"
                             value={shell()}
                             placeholder="/bin/bash"
@@ -472,6 +488,7 @@ export const ProjectSettingsPage: Component = () => {
                             onInput={(e) => setShell(e.currentTarget.value)}
                         />
                         <FieldRow
+                            id="proj-working-dir"
                             label="Working directory"
                             value={workingDir()}
                             placeholder="Project root"
