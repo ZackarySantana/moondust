@@ -6,13 +6,22 @@ import {
     ListLogs,
     SetLogStreaming,
 } from "@wails/go/app/App";
+import Search from "lucide-solid/icons/search";
+import X from "lucide-solid/icons/x";
 import { Button } from "@/components/ui/button";
 import type { Component } from "solid-js";
-import { createSignal, onCleanup, onMount } from "solid-js";
+import { createMemo, createSignal, onCleanup, onMount, Show } from "solid-js";
 
 export const SettingsLogsPage: Component = () => {
     const [lines, setLines] = createSignal<string[]>([]);
     const [busy, setBusy] = createSignal(false);
+    const [filter, setFilter] = createSignal("");
+
+    const filtered = createMemo(() => {
+        const q = filter().toLowerCase();
+        if (!q) return lines();
+        return lines().filter((l) => l.toLowerCase().includes(q));
+    });
 
     async function loadAll() {
         try {
@@ -93,8 +102,45 @@ export const SettingsLogsPage: Component = () => {
                     </Button>
                 </div>
             </div>
+
+            <div class="relative">
+                <Search
+                    class="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-600"
+                    stroke-width={2}
+                    aria-hidden
+                />
+                <input
+                    type="text"
+                    value={filter()}
+                    onInput={(e) => setFilter(e.currentTarget.value)}
+                    placeholder="Filter logs…"
+                    class="h-8 w-full rounded-lg border border-slate-800/40 bg-slate-950/40 pr-8 pl-8.5 text-xs text-slate-300 transition-colors placeholder:text-slate-600 focus-visible:border-emerald-700/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-600/30"
+                />
+                <Show when={filter()}>
+                    <button
+                        type="button"
+                        class="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer rounded p-0.5 text-slate-600 transition-colors hover:text-slate-300"
+                        aria-label="Clear filter"
+                        onClick={() => setFilter("")}
+                    >
+                        <X
+                            class="size-3.5"
+                            stroke-width={2}
+                            aria-hidden
+                        />
+                    </button>
+                </Show>
+            </div>
+
+            <Show when={filter() && lines().length > 0}>
+                <p class="text-[11px] tabular-nums text-slate-600">
+                    {filtered().length} of {lines().length} lines
+                </p>
+            </Show>
+
             <pre class="max-h-[min(32rem,calc(100vh-14rem))] min-h-48 overflow-auto rounded-lg border border-slate-800/40 bg-slate-950/40 p-3 font-mono text-[11px] leading-relaxed text-slate-400 whitespace-pre-wrap wrap-break-word">
-                {lines().join("\n") || "No log lines yet."}
+                {filtered().join("\n") ||
+                    (filter() ? "No matching lines." : "No log lines yet.")}
             </pre>
         </div>
     );
