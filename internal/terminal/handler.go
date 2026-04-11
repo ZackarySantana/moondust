@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/coder/websocket"
 )
@@ -21,5 +22,9 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 	defer c.Close(websocket.StatusNormalClosure, "")
 
 	ctx := r.Context()
-	runTerminalSession(ctx, c)
+	sessionID := strings.TrimSpace(r.URL.Query().Get("session"))
+	if sessionID == "" {
+		sessionID = "default"
+	}
+	s.attach(ctx, c, sessionID, r.URL.Query().Get("cwd"))
 }

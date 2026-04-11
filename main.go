@@ -41,7 +41,11 @@ func main() {
 		panic(err)
 	}
 
-	service := service.New(bbolt.NewProject(db))
+	service := service.New(
+		bbolt.NewProject(db),
+		bbolt.NewThread(db),
+		bbolt.NewMessage(db),
+	)
 
 	notify := notify.Chain(notify.NewPushChannel())
 

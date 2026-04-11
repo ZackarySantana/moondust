@@ -77,6 +77,30 @@ func (a *App) DeleteProject(id string) error {
 	return a.service.DeleteProject(a.Ctx, id)
 }
 
+func (a *App) CreateThread(projectID string) (*store.Thread, error) {
+	return a.service.CreateThread(a.Ctx, projectID)
+}
+
+func (a *App) GetThread(id string) (*store.Thread, error) {
+	return a.service.GetThread(a.Ctx, id)
+}
+
+func (a *App) ListThreads() ([]*store.Thread, error) {
+	return a.service.ListThreads(a.Ctx)
+}
+
+func (a *App) ListThreadMessages(threadID string) ([]*store.ChatMessage, error) {
+	return a.service.ListThreadMessages(a.Ctx, threadID)
+}
+
+func (a *App) SendThreadMessage(threadID, content string) ([]*store.ChatMessage, error) {
+	return a.service.SendThreadMessage(a.Ctx, threadID, content)
+}
+
+func (a *App) GetThreadGitStatus(threadID string) (*store.GitStatus, error) {
+	return a.service.GetThreadGitStatus(a.Ctx, threadID)
+}
+
 func (a *App) CancelCreateProject() {
 }
 

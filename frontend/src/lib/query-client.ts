@@ -16,4 +16,10 @@ export const queryKeys = {
         all: ["projects"] as const,
         detail: (id: string) => ["projects", id] as const,
     },
+    threads: {
+        all: ["threads"] as const,
+        detail: (id: string) => ["threads", id] as const,
+        messages: (id: string) => ["threads", id, "messages"] as const,
+        gitStatus: (id: string) => ["threads", id, "git-status"] as const,
+    },
 };

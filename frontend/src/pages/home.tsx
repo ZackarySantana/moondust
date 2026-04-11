@@ -14,11 +14,11 @@ export const HomePage: Component<RouteSectionProps> = () => {
                 </div>
                 <div class="space-y-1.5">
                     <h2 class="text-sm font-medium text-slate-400">
-                        Start a new thread
+                        No thread selected
                     </h2>
                     <p class="max-w-xs text-xs leading-relaxed text-slate-600">
-                        Select a project from the sidebar or create a new one to
-                        begin.
+                        Choose a thread from the sidebar, or create one with the
+                        plus button under a project.
                     </p>
                 </div>
             </div>

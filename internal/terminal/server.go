@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -14,6 +15,8 @@ type Server struct {
 	token    string
 	listener net.Listener
 	srv      *http.Server
+	mu       sync.Mutex
+	sessions map[string]managedSession
 }
 
 func New() (*Server, error) {
@@ -32,6 +35,7 @@ func New() (*Server, error) {
 	s := &Server{
 		token:    token,
 		listener: ln,
+		sessions: map[string]managedSession{},
 	}
 	mux.HandleFunc("/terminal", s.handleTerminal)
 
@@ -57,6 +61,16 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	if s.srv == nil {
 		return nil
 	}
+	s.mu.Lock()
+	sessions := make([]managedSession, 0, len(s.sessions))
+	for _, sess := range s.sessions {
+		sessions = append(sessions, sess)
+	}
+	s.mu.Unlock()
+	for _, sess := range sessions {
+		_ = sess.Close()
+	}
+
 	shCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	err := s.srv.Shutdown(shCtx)
@@ -64,4 +78,35 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		_ = s.listener.Close()
 	}
 	return err
+}
+
+func (s *Server) attach(ctx context.Context, c wsConn, sessionID, cwd string) {
+	sess, err := s.getOrCreateSession(sessionID, cwd)
+	if err != nil {
+		return
+	}
+	sess.Attach(ctx, c)
+}
+
+func (s *Server) getOrCreateSession(sessionID, cwd string) (managedSession, error) {
+	s.mu.Lock()
+	existing := s.sessions[sessionID]
+	s.mu.Unlock()
+	if existing != nil {
+		return existing, nil
+	}
+
+	created, err := newManagedSession(cwd)
+	if err != nil {
+		return nil, err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if existing = s.sessions[sessionID]; existing != nil {
+		_ = created.Close()
+		return existing, nil
+	}
+	s.sessions[sessionID] = created
+	return created, nil
 }

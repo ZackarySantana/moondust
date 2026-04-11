@@ -6,7 +6,7 @@ import { createEffect, createMemo, createSignal } from "solid-js";
 import { AppSidebar } from "@/components/app-sidebar";
 import { CreateProjectModal } from "@/components/create-project-modal";
 import { queryKeys } from "@/lib/query-client";
-import { GetProject, ListProjects } from "@wails/go/app/App";
+import { GetProject, ListProjects, ListThreads } from "@wails/go/app/App";
 import { store } from "@wails/go/models";
 import { WindowSetTitle } from "@wails/runtime/runtime";
 
@@ -18,6 +18,13 @@ export const AppShell: Component<RouteSectionProps> = (props) => {
         queryKey: queryKeys.projects.all,
         queryFn: async (): Promise<store.Project[]> => {
             const list = await ListProjects();
+            return list ?? [];
+        },
+    }));
+    const threadsQuery = useQuery(() => ({
+        queryKey: queryKeys.threads.all,
+        queryFn: async (): Promise<store.Thread[]> => {
+            const list = await ListThreads();
             return list ?? [];
         },
     }));
@@ -50,6 +57,11 @@ export const AppShell: Component<RouteSectionProps> = (props) => {
             WindowSetTitle("Moondust — Settings");
             return;
         }
+        const threadMatch = path.match(/^\/project\/([^/]+)\/thread\/([^/]+)$/);
+        if (threadMatch) {
+            WindowSetTitle("Moondust — Thread");
+            return;
+        }
         if (pid) {
             const p = titleProjectQuery.data;
             WindowSetTitle(
@@ -65,6 +77,7 @@ export const AppShell: Component<RouteSectionProps> = (props) => {
             <AppSidebar
                 onNewProject={() => setCreateProjectOpen(true)}
                 projects={projectsQuery.data ?? []}
+                threads={threadsQuery.data ?? []}
             />
             <main class="min-w-0 flex-1 overflow-auto">{props.children}</main>
             <CreateProjectModal

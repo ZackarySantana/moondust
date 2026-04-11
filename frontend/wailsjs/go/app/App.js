@@ -18,6 +18,10 @@ export function CreateProjectFromRemote(arg1, arg2) {
   return window['go']['app']['App']['CreateProjectFromRemote'](arg1, arg2);
 }
 
+export function CreateThread(arg1) {
+  return window['go']['app']['App']['CreateThread'](arg1);
+}
+
 export function DeleteProject(arg1) {
   return window['go']['app']['App']['DeleteProject'](arg1);
 }
@@ -30,6 +34,14 @@ export function GetProject(arg1) {
   return window['go']['app']['App']['GetProject'](arg1);
 }
 
+export function GetThread(arg1) {
+  return window['go']['app']['App']['GetThread'](arg1);
+}
+
+export function GetThreadGitStatus(arg1) {
+  return window['go']['app']['App']['GetThreadGitStatus'](arg1);
+}
+
 export function ListLogs() {
   return window['go']['app']['App']['ListLogs']();
 }
@@ -38,8 +50,20 @@ export function ListProjects() {
   return window['go']['app']['App']['ListProjects']();
 }
 
+export function ListThreadMessages(arg1) {
+  return window['go']['app']['App']['ListThreadMessages'](arg1);
+}
+
+export function ListThreads() {
+  return window['go']['app']['App']['ListThreads']();
+}
+
 export function SelectProjectFolder() {
   return window['go']['app']['App']['SelectProjectFolder']();
+}
+
+export function SendThreadMessage(arg1, arg2) {
+  return window['go']['app']['App']['SendThreadMessage'](arg1, arg2);
 }
 
 export function SetLogStreaming(arg1) {

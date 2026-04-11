@@ -7,21 +7,28 @@ import (
 	"log/slog"
 	"moondust/internal/store"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 )
 
 type Service struct {
 	projectStore store.ProjectStore
+	threadStore  store.ThreadStore
+	messageStore store.MessageStore
 }
 
-func New(projectStore store.ProjectStore) *Service {
+func New(projectStore store.ProjectStore, threadStore store.ThreadStore, messageStore store.MessageStore) *Service {
 	return &Service{
 		projectStore: &store.ValidateProjectStore{
 			ProjectStore: projectStore,
 		},
+		threadStore:  threadStore,
+		messageStore: messageStore,
 	}
 }
 
@@ -96,4 +103,141 @@ func (s *Service) UpdateProject(ctx context.Context, project *store.Project) err
 
 func (s *Service) DeleteProject(ctx context.Context, id string) error {
 	return s.projectStore.Delete(ctx, id)
+}
+
+func (s *Service) CreateThread(ctx context.Context, projectID string) (*store.Thread, error) {
+	project, err := s.projectStore.Get(ctx, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("get project: %w", err)
+	}
+	if project == nil {
+		return nil, fmt.Errorf("project not found")
+	}
+	thread := &store.Thread{
+		ID:        rand.Text(),
+		ProjectID: projectID,
+		Title:     "New thread",
+		CreatedAt: time.Now().UTC(),
+	}
+	if err := thread.Validate(); err != nil {
+		return nil, err
+	}
+	if err := s.threadStore.Update(ctx, thread); err != nil {
+		return nil, fmt.Errorf("update thread: %w", err)
+	}
+	return thread, nil
+}
+
+func (s *Service) GetThread(ctx context.Context, id string) (*store.Thread, error) {
+	return s.threadStore.Get(ctx, id)
+}
+
+func (s *Service) ListThreads(ctx context.Context) ([]*store.Thread, error) {
+	threads, err := s.threadStore.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(threads, func(i, j int) bool {
+		return threads[i].CreatedAt.After(threads[j].CreatedAt)
+	})
+	return threads, nil
+}
+
+func (s *Service) ListThreadMessages(ctx context.Context, threadID string) ([]*store.ChatMessage, error) {
+	if _, err := s.threadStore.Get(ctx, threadID); err != nil {
+		return nil, fmt.Errorf("get thread: %w", err)
+	}
+	return s.messageStore.ListByThread(ctx, threadID)
+}
+
+func (s *Service) SendThreadMessage(ctx context.Context, threadID, content string) ([]*store.ChatMessage, error) {
+	thread, err := s.threadStore.Get(ctx, threadID)
+	if err != nil {
+		return nil, fmt.Errorf("get thread: %w", err)
+	}
+	if thread == nil {
+		return nil, fmt.Errorf("thread not found")
+	}
+
+	trimmed := strings.TrimSpace(content)
+	if trimmed == "" {
+		return nil, fmt.Errorf("message cannot be empty")
+	}
+
+	now := time.Now().UTC()
+	userMessage := &store.ChatMessage{
+		ID:        rand.Text(),
+		ThreadID:  threadID,
+		Role:      "user",
+		Content:   trimmed,
+		CreatedAt: now,
+	}
+	replyMessage := &store.ChatMessage{
+		ID:        rand.Text(),
+		ThreadID:  threadID,
+		Role:      "assistant",
+		Content:   fmt.Sprintf("%s says the robot", trimmed),
+		CreatedAt: now.Add(time.Millisecond),
+	}
+	if err := userMessage.Validate(); err != nil {
+		return nil, err
+	}
+	if err := replyMessage.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := s.messageStore.Append(ctx, threadID, userMessage, replyMessage); err != nil {
+		return nil, fmt.Errorf("append thread messages: %w", err)
+	}
+
+	if thread.Title == "New thread" {
+		runes := []rune(trimmed)
+		if len(runes) > 48 {
+			runes = runes[:48]
+		}
+		thread.Title = string(runes)
+		if err := s.threadStore.Update(ctx, thread); err != nil {
+			return nil, fmt.Errorf("update thread title: %w", err)
+		}
+	}
+
+	return []*store.ChatMessage{userMessage, replyMessage}, nil
+}
+
+func (s *Service) GetThreadGitStatus(ctx context.Context, threadID string) (*store.GitStatus, error) {
+	thread, err := s.threadStore.Get(ctx, threadID)
+	if err != nil {
+		return nil, fmt.Errorf("get thread: %w", err)
+	}
+	if thread == nil {
+		return nil, fmt.Errorf("thread not found")
+	}
+	project, err := s.projectStore.Get(ctx, thread.ProjectID)
+	if err != nil {
+		return nil, fmt.Errorf("get project: %w", err)
+	}
+	if project == nil {
+		return nil, fmt.Errorf("project not found")
+	}
+
+	cmd := exec.CommandContext(ctx, "git", "-C", project.Directory, "status", "--short", "--branch")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("git status: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	status := &store.GitStatus{}
+	for i, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if i == 0 && strings.HasPrefix(line, "## ") {
+			status.Branch = strings.TrimPrefix(line, "## ")
+			continue
+		}
+		status.Entries = append(status.Entries, line)
+	}
+	return status, nil
 }

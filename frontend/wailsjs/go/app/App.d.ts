@@ -10,17 +10,29 @@ export function CreateProjectFromFolder(arg1:string,arg2:string):Promise<store.P
 
 export function CreateProjectFromRemote(arg1:string,arg2:string):Promise<store.Project>;
 
+export function CreateThread(arg1:string):Promise<store.Thread>;
+
 export function DeleteProject(arg1:string):Promise<void>;
 
 export function DownloadLogs():Promise<void>;
 
 export function GetProject(arg1:string):Promise<store.Project>;
 
+export function GetThread(arg1:string):Promise<store.Thread>;
+
+export function GetThreadGitStatus(arg1:string):Promise<store.GitStatus>;
+
 export function ListLogs():Promise<Array<store.LogLine>>;
 
 export function ListProjects():Promise<Array<store.Project>>;
 
+export function ListThreadMessages(arg1:string):Promise<Array<store.ChatMessage>>;
+
+export function ListThreads():Promise<Array<store.Thread>>;
+
 export function SelectProjectFolder():Promise<string>;
+
+export function SendThreadMessage(arg1:string,arg2:string):Promise<Array<store.ChatMessage>>;
 
 export function SetLogStreaming(arg1:boolean):Promise<void>;
 

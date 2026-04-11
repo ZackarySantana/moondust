@@ -1,23 +1,37 @@
-import { A } from "@solidjs/router";
-import ArrowUpDown from "lucide-solid/icons/arrow-up-down";
+import { useMutation, useQueryClient } from "@tanstack/solid-query";
+import { A, useLocation, useNavigate } from "@solidjs/router";
 import ChevronRight from "lucide-solid/icons/chevron-right";
-import MessageSquarePlus from "lucide-solid/icons/message-square-plus";
 import Plus from "lucide-solid/icons/plus";
-import Search from "lucide-solid/icons/search";
 import Settings from "lucide-solid/icons/settings";
-import { For, Show, type Component } from "solid-js";
-import { Button } from "@/components/ui/button";
+import { For, type Component } from "solid-js";
+import { CreateThread } from "@wails/go/app/App";
 import { Separator } from "@/components/ui/separator";
+import { queryKeys } from "@/lib/query-client";
 import { cn } from "@/lib/utils";
 import { store } from "@wails/go/models";
 
 export interface AppSidebarProps {
     onNewProject: () => void;
     projects: store.Project[];
+    threads: store.Thread[];
     class?: string;
 }
 
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
+    const queryClient = useQueryClient();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const createThreadMutation = useMutation(() => ({
+        mutationFn: (projectID: string) => CreateThread(projectID),
+        onSuccess: async (thread) => {
+            await queryClient.invalidateQueries({
+                queryKey: queryKeys.threads.all,
+            });
+            await navigate(`/project/${thread.project_id}/thread/${thread.id}`);
+        },
+    }));
+
     return (
         <aside
             class={cn(
@@ -34,46 +48,8 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                 >
                     Moondust
                 </A>
-                <div class="flex items-center gap-0.5">
-                    <Button
-                        variant="icon"
-                        size="icon"
-                        aria-label="Sort projects"
-                    >
-                        <ArrowUpDown
-                            class="size-3.5"
-                            stroke-width={2}
-                            aria-hidden
-                        />
-                    </Button>
-                    <Button
-                        variant="icon"
-                        size="icon"
-                        aria-label="Search projects"
-                    >
-                        <Search
-                            class="size-3.5"
-                            stroke-width={2}
-                            aria-hidden
-                        />
-                    </Button>
-                </div>
+                <div />
             </header>
-
-            {/* ── Quick actions ── */}
-            <div class="px-2 pb-1">
-                <button
-                    type="button"
-                    class="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-slate-400 transition-colors duration-100 hover:bg-slate-800/40 hover:text-slate-200 active:bg-slate-800/60"
-                >
-                    <MessageSquarePlus
-                        class="size-4 shrink-0 text-slate-500"
-                        stroke-width={1.75}
-                        aria-hidden
-                    />
-                    New Thread
-                </button>
-            </div>
 
             <div class="px-5 py-2">
                 <Separator class="bg-slate-800/35" />
@@ -99,26 +75,36 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                     </button>
                 </div>
                 <div class="flex flex-col gap-1">
-                    <Show
-                        when={props.projects.length > 0}
-                        fallback={
-                            <ProjectGroup name="Project">
-                                <ProjectThread name="Active Thread" />
-                            </ProjectGroup>
-                        }
-                    >
-                        <For each={props.projects}>
-                            {(p) => (
-                                <ProjectGroup
-                                    id={p.id}
-                                    name={p.name}
-                                    title={p.directory}
+                    <For each={props.projects}>
+                        {(p) => (
+                            <ProjectGroup
+                                id={p.id}
+                                name={p.name}
+                                title={p.directory}
+                                onNewThread={() =>
+                                    createThreadMutation.mutate(p.id)
+                                }
+                            >
+                                <For
+                                    each={props.threads.filter(
+                                        (t) => t.project_id === p.id,
+                                    )}
                                 >
-                                    <ProjectThread name="Active Thread" />
-                                </ProjectGroup>
-                            )}
-                        </For>
-                    </Show>
+                                    {(thread) => (
+                                        <ProjectThread
+                                            projectID={p.id}
+                                            threadID={thread.id}
+                                            name={thread.title || "New thread"}
+                                            active={
+                                                location.pathname ===
+                                                `/project/${p.id}/thread/${thread.id}`
+                                            }
+                                        />
+                                    )}
+                                </For>
+                            </ProjectGroup>
+                        )}
+                    </For>
                 </div>
             </div>
 
@@ -170,6 +156,7 @@ const ProjectGroup: Component<{
     id?: string;
     name: string;
     title?: string;
+    onNewThread?: () => void;
     children?: any;
 }> = (props) => {
     return (
@@ -189,6 +176,24 @@ const ProjectGroup: Component<{
                 >
                     {props.name}
                 </span>
+                {props.id && (
+                    <button
+                        type="button"
+                        class="shrink-0 rounded-md p-1 text-slate-600 opacity-0 transition-all duration-100 hover:bg-slate-800/50 hover:text-slate-300 group-hover/project:opacity-100"
+                        aria-label={`New thread in ${props.name}`}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            props.onNewThread?.();
+                        }}
+                    >
+                        <Plus
+                            class="size-3.5"
+                            stroke-width={2}
+                            aria-hidden
+                        />
+                    </button>
+                )}
                 {props.id && (
                     <A
                         href={`/project/${props.id}/settings`}
@@ -211,13 +216,23 @@ const ProjectGroup: Component<{
     );
 };
 
-const ProjectThread: Component<{ name: string }> = (props) => {
+const ProjectThread: Component<{
+    projectID: string;
+    threadID: string;
+    name: string;
+    active?: boolean;
+}> = (props) => {
     return (
-        <button
-            type="button"
-            class="w-full rounded-md px-2 py-1.5 text-left text-xs text-slate-500 transition-colors duration-100 hover:bg-slate-800/40 hover:text-slate-300"
+        <A
+            href={`/project/${props.projectID}/thread/${props.threadID}`}
+            class={cn(
+                "block w-full rounded-md px-2 py-1.5 text-left text-xs transition-colors duration-100",
+                props.active
+                    ? "bg-slate-800/55 text-slate-200"
+                    : "text-slate-500 hover:bg-slate-800/40 hover:text-slate-300",
+            )}
         >
             {props.name}
-        </button>
+        </A>
     );
 };

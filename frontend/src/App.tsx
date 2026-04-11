@@ -11,6 +11,7 @@ import { SettingsLogsPage } from "@/pages/settings/logs";
 import { SettingsTerminalPage } from "@/pages/settings/terminal";
 import { SettingsProjectsPage } from "@/pages/settings/projects";
 import { SettingsProvidersPage } from "@/pages/settings/providers";
+import { ThreadPage } from "@/pages/thread";
 
 export default function App() {
     return (
@@ -22,6 +23,10 @@ export default function App() {
             <Route
                 path="/project/:id/settings"
                 component={ProjectSettingsPage}
+            />
+            <Route
+                path="/project/:projectId/thread/:threadId"
+                component={ThreadPage}
             />
             <Route
                 path="/settings"
