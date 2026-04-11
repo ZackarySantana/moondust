@@ -128,18 +128,29 @@ func (s *Service) SaveSettings(ctx context.Context, settings *store.Settings) er
 }
 
 func (s *Service) DeleteProject(ctx context.Context, id string, deleteFiles bool) error {
+	var dirToRemove string
 	if deleteFiles {
 		project, err := s.projectStore.Get(ctx, id)
 		if err != nil {
 			return fmt.Errorf("get project: %w", err)
 		}
 		if project != nil && project.Directory != "" {
-			if err := os.RemoveAll(project.Directory); err != nil {
-				slog.WarnContext(ctx, "failed to remove project directory", "dir", project.Directory, "error", err)
-			}
+			dirToRemove = project.Directory
 		}
 	}
-	return s.projectStore.Delete(ctx, id)
+
+	if err := s.projectStore.Delete(ctx, id); err != nil {
+		return err
+	}
+
+	if dirToRemove != "" {
+		go func() {
+			if err := os.RemoveAll(dirToRemove); err != nil {
+				slog.Warn("failed to remove project directory", "dir", dirToRemove, "error", err)
+			}
+		}()
+	}
+	return nil
 }
 
 func (s *Service) CreateThread(ctx context.Context, projectID string) (*store.Thread, error) {

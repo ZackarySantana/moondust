@@ -141,7 +141,6 @@ const CopyableReadonlyField: Component<CopyableReadonlyFieldProps> = (
 export const ProjectSettingsPage: Component = () => {
     const params = useParams<{ id: string }>();
     const queryClient = useQueryClient();
-    const navigate = useNavigate();
 
     const [saved, setSaved] = createSignal(false);
     const [error, setError] = createSignal("");
@@ -515,11 +514,10 @@ export const ProjectSettingsPage: Component = () => {
                 onOpenChange={setDeleteModalOpen}
                 projectName={name()}
                 projectId={params.id}
-                onDeleted={async () => {
-                    await queryClient.invalidateQueries({
+                onDeleted={() => {
+                    queryClient.invalidateQueries({
                         queryKey: queryKeys.projects.all,
                     });
-                    navigate("/");
                 }}
             />
         </div>
@@ -537,9 +535,11 @@ const DeleteProjectModal: Component<{
     projectId: string;
     onDeleted: () => void;
 }> = (props) => {
+    const navigate = useNavigate();
     const [confirmText, setConfirmText] = createSignal("");
     const [deleteFiles, setDeleteFiles] = createSignal(false);
     const [deleting, setDeleting] = createSignal(false);
+    const [error, setError] = createSignal("");
 
     const canConfirm = createMemo(
         () => confirmText().trim() === props.projectName && !deleting(),
@@ -558,6 +558,7 @@ const DeleteProjectModal: Component<{
                     setConfirmText("");
                     setDeleteFiles(false);
                     setDeleting(false);
+                    setError("");
                 }
             },
         ),
@@ -575,13 +576,13 @@ const DeleteProjectModal: Component<{
     async function handleDelete() {
         if (!canConfirm()) return;
         setDeleting(true);
+        setError("");
         try {
             await DeleteProject(props.projectId, deleteFiles());
-            props.onOpenChange(false);
             props.onDeleted();
+            navigate("/");
         } catch (e) {
-            alert(e instanceof Error ? e.message : String(e));
-        } finally {
+            setError(e instanceof Error ? e.message : String(e));
             setDeleting(false);
         }
     }
@@ -648,6 +649,12 @@ const DeleteProjectModal: Component<{
                         </div>
                     </label>
 
+                    <Show when={error()}>
+                        <p class="rounded-lg border border-red-900/30 bg-red-950/15 px-3 py-2 text-xs text-red-400">
+                            {error()}
+                        </p>
+                    </Show>
+
                     <div class="flex justify-end gap-2 pt-1">
                         <Button
                             type="button"
@@ -660,6 +667,7 @@ const DeleteProjectModal: Component<{
                         <Button
                             type="button"
                             variant="destructive"
+                            class="inline-flex min-w-36 items-center justify-center gap-2"
                             disabled={!canConfirm()}
                             onClick={() => void handleDelete()}
                         >
@@ -672,7 +680,7 @@ const DeleteProjectModal: Component<{
                                     stroke-width={2}
                                     aria-hidden
                                 />
-                                <span>Deleting...</span>
+                                <span>Deleting…</span>
                             </Show>
                         </Button>
                     </div>
