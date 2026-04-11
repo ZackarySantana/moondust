@@ -26,6 +26,8 @@ export interface CreateThreadModalProps {
     projectID: string;
 }
 
+type Phase = "prompt" | "creating";
+
 export const CreateThreadModal: Component<CreateThreadModalProps> = (props) => {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
@@ -36,31 +38,37 @@ export const CreateThreadModal: Component<CreateThreadModalProps> = (props) => {
     }));
 
     const [useWorktree, setUseWorktree] = createSignal(false);
+    const [phase, setPhase] = createSignal<Phase>("prompt");
+    const [error, setError] = createSignal("");
 
     const defaultPref = () => settingsQuery.data?.default_worktree || "ask";
-    const needsPrompt = () => defaultPref() === "ask";
 
     createEffect(
         on(
             () => props.open,
             (isOpen) => {
                 if (!isOpen) return;
+                setError("");
                 const pref = defaultPref();
                 if (pref === "on") {
                     setUseWorktree(true);
+                    setPhase("creating");
                     submit(true);
                 } else if (pref === "off") {
                     setUseWorktree(false);
+                    setPhase("creating");
                     submit(false);
                 } else {
                     setUseWorktree(false);
+                    setPhase("prompt");
                 }
             },
         ),
     );
 
     createEffect(() => {
-        if (!props.open || !needsPrompt()) return;
+        if (!props.open) return;
+        if (phase() !== "prompt") return;
         const onKey = (e: KeyboardEvent) => {
             if (e.key === "Escape") props.onOpenChange(false);
         };
@@ -79,27 +87,54 @@ export const CreateThreadModal: Component<CreateThreadModalProps> = (props) => {
             navigate(`/project/${thread.project_id}/thread/${thread.id}`);
         },
         onError: (e) => {
-            alert(e instanceof Error ? e.message : String(e));
+            setError(e instanceof Error ? e.message : String(e));
+            setPhase("prompt");
         },
     }));
 
     function submit(worktree: boolean) {
+        setError("");
+        setPhase("creating");
         createMutation.mutate(worktree);
     }
 
+    function canClose() {
+        return phase() === "prompt" && !createMutation.isPending;
+    }
+
     return (
-        <Show when={needsPrompt()}>
-            <Dialog open={props.open && needsPrompt()}>
-                <DialogOverlay
-                    aria-label="Close dialog"
-                    onClick={() => {
-                        if (!createMutation.isPending)
-                            props.onOpenChange(false);
-                    }}
-                />
-                <DialogContent
-                    role="dialog"
-                    aria-modal="true"
+        <Dialog open={props.open}>
+            <DialogOverlay
+                aria-label="Close dialog"
+                onClick={() => {
+                    if (canClose()) props.onOpenChange(false);
+                }}
+            />
+            <DialogContent
+                role="dialog"
+                aria-modal="true"
+            >
+                <Show
+                    when={phase() === "prompt"}
+                    fallback={
+                        <div class="flex flex-col items-center gap-4 py-6">
+                            <Loader2
+                                class="size-8 animate-spin text-emerald-500"
+                                stroke-width={1.5}
+                                aria-hidden
+                            />
+                            <div class="text-center">
+                                <p class="text-sm font-medium text-slate-200">
+                                    Creating thread…
+                                </p>
+                                <Show when={useWorktree()}>
+                                    <p class="mt-1 text-xs text-slate-500">
+                                        Setting up Git worktree and branch
+                                    </p>
+                                </Show>
+                            </div>
+                        </div>
+                    }
                 >
                     <DialogTitle>New thread</DialogTitle>
                     <div class="space-y-4">
@@ -114,7 +149,6 @@ export const CreateThreadModal: Component<CreateThreadModalProps> = (props) => {
                                 type="checkbox"
                                 class="size-4 shrink-0 cursor-pointer rounded border-slate-700 bg-slate-950/40 text-emerald-500 accent-emerald-500"
                                 checked={useWorktree()}
-                                disabled={createMutation.isPending}
                                 onChange={(e) =>
                                     setUseWorktree(e.currentTarget.checked)
                                 }
@@ -142,37 +176,31 @@ export const CreateThreadModal: Component<CreateThreadModalProps> = (props) => {
                             .
                         </p>
 
+                        <Show when={error()}>
+                            <p class="rounded-lg border border-red-900/30 bg-red-950/15 px-3 py-2 text-xs text-red-400">
+                                {error()}
+                            </p>
+                        </Show>
+
                         <div class="flex justify-end gap-2 pt-1">
                             <Button
                                 type="button"
                                 variant="ghost"
                                 onClick={() => props.onOpenChange(false)}
-                                disabled={createMutation.isPending}
                             >
                                 Cancel
                             </Button>
                             <Button
                                 type="button"
-                                class="inline-flex min-w-28 items-center justify-center gap-2"
-                                disabled={createMutation.isPending}
+                                class="min-w-28"
                                 onClick={() => submit(useWorktree())}
                             >
-                                <Show
-                                    when={createMutation.isPending}
-                                    fallback="Create thread"
-                                >
-                                    <Loader2
-                                        class="size-4 shrink-0 animate-spin"
-                                        stroke-width={2}
-                                        aria-hidden
-                                    />
-                                    <span>Creating…</span>
-                                </Show>
+                                Create thread
                             </Button>
                         </div>
                     </div>
-                </DialogContent>
-            </Dialog>
-        </Show>
+                </Show>
+            </DialogContent>
+        </Dialog>
     );
 };

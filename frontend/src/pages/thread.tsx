@@ -100,9 +100,16 @@ export const ThreadPage: Component = () => {
         <div class="flex h-full min-h-0 w-full overflow-hidden">
             <section class="flex min-h-0 flex-1 flex-col overflow-hidden border-r border-slate-800/40">
                 <header class="border-b border-slate-800/40 px-5 py-3">
-                    <p class="text-[11px] uppercase tracking-wider text-slate-600">
-                        {projectQuery.data?.name ?? "Project"}
-                    </p>
+                    <div class="flex items-baseline gap-2">
+                        <p class="text-[11px] uppercase tracking-wider text-slate-600">
+                            {projectQuery.data?.name ?? "Project"}
+                        </p>
+                        <span class="min-w-0 truncate font-mono text-[10px] text-slate-600/60">
+                            {threadQuery.data?.worktree_dir ||
+                                projectQuery.data?.directory ||
+                                ""}
+                        </span>
+                    </div>
                     <h1 class="text-sm font-medium text-slate-200">
                         {threadQuery.data?.title ?? "Thread"}
                     </h1>
@@ -170,8 +177,10 @@ export const ThreadPage: Component = () => {
                 <div class="flex h-52 min-h-0 shrink-0 border-t border-slate-800/40 p-3">
                     <Show
                         when={
-                            params.threadId && projectQuery.data?.directory
-                                ? `${params.threadId}|${threadQuery.data?.worktree_dir || projectQuery.data.directory}`
+                            params.threadId &&
+                            projectQuery.data?.directory &&
+                            threadQuery.data
+                                ? `${params.threadId}|${threadQuery.data.worktree_dir || projectQuery.data.directory}`
                                 : ""
                         }
                         keyed
