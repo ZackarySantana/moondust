@@ -1,8 +1,12 @@
 import { A } from "@solidjs/router";
-import { For, splitProps, type Component } from "solid-js";
+import type { Component, JSX } from "solid-js";
+import { For, splitProps } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import { cn } from "@/lib/utils";
-import type { IconComponent } from "@/pages/settings/sections";
+
+export type IconComponent = Component<
+    JSX.SvgSVGAttributes<SVGSVGElement> & { "stroke-width"?: number }
+>;
 
 export interface VerticalNavItem {
     id: string;

@@ -32,7 +32,7 @@ export const AppShell: Component<RouteSectionProps> = (props) => {
     }));
 
     const projectIdFromPath = createMemo(() => {
-        const m = location.pathname.match(/^\/project\/([^/]+)\/settings$/);
+        const m = location.pathname.match(/^\/project\/([^/]+)\/settings/);
         return m?.[1] ?? null;
     });
 

@@ -1,48 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import Check from "lucide-solid/icons/check";
 import Loader2 from "lucide-solid/icons/loader-2";
-import type { Component, JSX } from "solid-js";
+import type { Component } from "solid-js";
 import { createEffect, createSignal, on, Show } from "solid-js";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { FieldRow, Section } from "@/components/settings-form";
 import { queryKeys } from "@/lib/query-client";
 import { GetSettings, SaveSettings } from "@wails/go/app/App";
 import { store } from "@wails/go/models";
-
-interface FieldRowProps {
-    id: string;
-    label: string;
-    value: string;
-    placeholder?: string;
-    description?: string;
-    onInput?: JSX.EventHandler<HTMLInputElement, InputEvent>;
-}
-
-const FieldRow: Component<FieldRowProps> = (props) => (
-    <div class="grid grid-cols-[11rem_1fr] items-start gap-4">
-        <Label
-            for={props.id}
-            class="mb-0 pt-2 text-right text-[13px] text-slate-400"
-        >
-            {props.label}
-        </Label>
-        <div class="space-y-1">
-            <Input
-                id={props.id}
-                value={props.value}
-                placeholder={props.placeholder}
-                onInput={props.onInput}
-                readOnly={!props.onInput}
-            />
-            {props.description && (
-                <p class="text-xs text-slate-600">{props.description}</p>
-            )}
-        </div>
-    </div>
-);
 
 export const SettingsGitPage: Component = () => {
     const queryClient = useQueryClient();
@@ -114,69 +82,53 @@ export const SettingsGitPage: Component = () => {
 
             <Separator />
 
-            <section class="space-y-5">
-                <div>
-                    <h2 class="text-sm font-medium text-slate-200">
-                        Worktrees
-                    </h2>
-                    <p class="mt-0.5 text-xs text-slate-600">
-                        Control whether new threads create a Git worktree for
-                        isolated changes.
-                    </p>
-                </div>
-                <div class="space-y-4">
-                    <div class="grid grid-cols-[11rem_1fr] items-start gap-4">
-                        <Label
-                            for="settings-default-worktree"
-                            class="mb-0 pt-2 text-right text-[13px] text-slate-400"
+            <Section
+                title="Worktrees"
+                description="Control whether new threads create a Git worktree for isolated changes."
+            >
+                <div class="grid grid-cols-[11rem_1fr] items-start gap-4">
+                    <Label
+                        for="settings-default-worktree"
+                        class="mb-0 pt-2 text-right text-[13px] text-slate-400"
+                    >
+                        New thread default
+                    </Label>
+                    <div class="space-y-1">
+                        <Select
+                            id="settings-default-worktree"
+                            value={defaultWorktree()}
+                            onChange={(e) => {
+                                setDefaultWorktree(e.currentTarget.value);
+                                setDirty(true);
+                            }}
                         >
-                            New thread default
-                        </Label>
-                        <div class="space-y-1">
-                            <Select
-                                id="settings-default-worktree"
-                                value={defaultWorktree()}
-                                onChange={(e) => {
-                                    setDefaultWorktree(e.currentTarget.value);
-                                    setDirty(true);
-                                }}
-                            >
-                                <option value="ask">Ask every time</option>
-                                <option value="on">Always use worktree</option>
-                                <option value="off">Never use worktree</option>
-                            </Select>
-                            <p class="text-xs text-slate-600">
-                                "Ask every time" shows a prompt when creating
-                                each new thread.
-                            </p>
-                        </div>
+                            <option value="ask">Ask every time</option>
+                            <option value="on">Always use worktree</option>
+                            <option value="off">Never use worktree</option>
+                        </Select>
+                        <p class="text-xs text-slate-600">
+                            "Ask every time" shows a prompt when creating each
+                            new thread.
+                        </p>
                     </div>
                 </div>
-            </section>
+            </Section>
 
             <Separator />
 
-            <section class="space-y-5">
-                <div>
-                    <h2 class="text-sm font-medium text-slate-200">
-                        SSH Authentication
-                    </h2>
-                    <p class="mt-0.5 text-xs text-slate-600">
-                        Configure how Moondust authenticates with Git remotes
-                        over SSH.
-                    </p>
-                </div>
-                <div class="space-y-4">
-                    <FieldRow
-                        id="settings-ssh-auth-sock"
-                        label="SSH_AUTH_SOCK"
-                        value={sshAuthSock()}
-                        placeholder="Use shell default"
-                        description="Path to SSH agent socket, e.g. ~/.1password/agent.sock for 1Password."
-                        onInput={handleInput(setSSHAuthSock)}
-                    />
-                </div>
-            </section>
+            <Section
+                title="SSH Authentication"
+                description="Configure how Moondust authenticates with Git remotes over SSH."
+            >
+                <FieldRow
+                    id="settings-ssh-auth-sock"
+                    label="SSH_AUTH_SOCK"
+                    value={sshAuthSock()}
+                    placeholder="Use shell default"
+                    description="Path to SSH agent socket, e.g. ~/.1password/agent.sock for 1Password."
+                    onInput={handleInput(setSSHAuthSock)}
+                />
+            </Section>
         </div>
     );
 };

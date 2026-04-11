@@ -1,4 +1,3 @@
-import type { Component, JSX } from "solid-js";
 import Folder from "lucide-solid/icons/folder";
 import Blocks from "lucide-solid/icons/blocks";
 import GitBranch from "lucide-solid/icons/git-branch";
@@ -7,16 +6,9 @@ import Sparkles from "lucide-solid/icons/sparkles";
 import Info from "lucide-solid/icons/info";
 import ScrollText from "lucide-solid/icons/scroll-text";
 import TerminalIcon from "lucide-solid/icons/terminal";
+import type { VerticalNavItem } from "@/components/vertical-nav";
 
-export type IconComponent = Component<
-    JSX.SvgSVGAttributes<SVGSVGElement> & { "stroke-width"?: number }
->;
-
-export interface SettingsSection {
-    id: string;
-    label: string;
-    icon: IconComponent;
-}
+export type SettingsSection = VerticalNavItem;
 
 export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     { id: "projects", label: "Projects", icon: Folder },

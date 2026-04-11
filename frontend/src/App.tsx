@@ -1,7 +1,12 @@
 import { Navigate, Route, Router } from "@solidjs/router";
 import { AppShell } from "@/layouts/app-shell";
 import { HomePage } from "@/pages/home";
-import { ProjectSettingsPage } from "@/pages/project-settings";
+import { ProjectSettingsLayout } from "@/pages/project-settings/layout";
+import { ProjectGeneralPage } from "@/pages/project-settings/general";
+import { ProjectGitPage } from "@/pages/project-settings/git";
+import { ProjectAgentPage } from "@/pages/project-settings/agent";
+import { ProjectEnvironmentPage } from "@/pages/project-settings/environment";
+import { ProjectDangerPage } from "@/pages/project-settings/danger";
 import { SettingsAboutPage } from "@/pages/settings/about";
 import { SettingsEnvironmentsPage } from "@/pages/settings/environments";
 import { SettingsFeaturesPage } from "@/pages/settings/features";
@@ -21,13 +26,38 @@ export default function App() {
                 component={HomePage}
             />
             <Route
-                path="/project/:id/settings"
-                component={ProjectSettingsPage}
-            />
-            <Route
                 path="/project/:projectId/thread/:threadId"
                 component={ThreadPage}
             />
+            <Route
+                path="/project/:id/settings"
+                component={ProjectSettingsLayout}
+            >
+                <Route
+                    path="/"
+                    component={() => <Navigate href="general" />}
+                />
+                <Route
+                    path="/general"
+                    component={ProjectGeneralPage}
+                />
+                <Route
+                    path="/git"
+                    component={ProjectGitPage}
+                />
+                <Route
+                    path="/agent"
+                    component={ProjectAgentPage}
+                />
+                <Route
+                    path="/environment"
+                    component={ProjectEnvironmentPage}
+                />
+                <Route
+                    path="/danger"
+                    component={ProjectDangerPage}
+                />
+            </Route>
             <Route
                 path="/settings"
                 component={SettingsLayout}
