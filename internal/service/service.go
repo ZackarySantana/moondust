@@ -265,22 +265,17 @@ func (s *Service) SendThreadMessage(ctx context.Context, threadID, content strin
 }
 
 func (s *Service) GetThreadGitStatus(ctx context.Context, threadID string) (*store.GitStatus, error) {
-	thread, err := s.threadStore.Get(ctx, threadID)
+	thread, project, err := s.resolveThreadProject(ctx, threadID)
 	if err != nil {
-		return nil, fmt.Errorf("get thread: %w", err)
-	}
-	if thread == nil {
-		return nil, fmt.Errorf("thread not found")
-	}
-	project, err := s.projectStore.Get(ctx, thread.ProjectID)
-	if err != nil {
-		return nil, fmt.Errorf("get project: %w", err)
-	}
-	if project == nil {
-		return nil, fmt.Errorf("project not found")
+		return nil, err
 	}
 
-	cmd := exec.CommandContext(ctx, "git", "-C", project.Directory, "status", "--short", "--branch")
+	dir := project.Directory
+	if thread.WorktreeDir != "" {
+		dir = thread.WorktreeDir
+	}
+
+	cmd := exec.CommandContext(ctx, "git", "-C", dir, "status", "--short", "--branch")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("git status: %w: %s", err, strings.TrimSpace(string(out)))
@@ -307,42 +302,46 @@ func (s *Service) GetThreadGitReview(ctx context.Context, threadID string) (*sto
 	if err != nil {
 		return nil, err
 	}
-	_ = thread
+
+	dir := project.Directory
+	if thread.WorktreeDir != "" {
+		dir = thread.WorktreeDir
+	}
 
 	review := &store.GitReview{
 		RemoteURL: project.RemoteURL,
 	}
 
-	statusOut, err := runGit(ctx, project.Directory, "status", "--porcelain=v1", "--branch")
+	statusOut, err := runGit(ctx, dir, "status", "--porcelain=v1", "--branch")
 	if err != nil {
 		return nil, err
 	}
 	parseGitStatus(review, statusOut)
 
-	defaultBranch := detectDefaultBranch(ctx, project.Directory)
+	defaultBranch := detectDefaultBranch(ctx, dir)
 
-	localOut, err := runGit(ctx, project.Directory, "log", "--no-color",
+	localOut, err := runGit(ctx, dir, "log", "--no-color",
 		"--pretty=format:%h\t%s\t%an\t%ar\t%aI", defaultBranch+"..HEAD", "-n", "20")
 	if err == nil {
 		review.LocalCommits = parseCommitsWithDate(localOut)
 	}
 
-	mainOut, err := runGit(ctx, project.Directory, "log", "--no-color",
+	mainOut, err := runGit(ctx, dir, "log", "--no-color",
 		"--pretty=format:%h\t%s\t%an\t%ar\t%aI", defaultBranch, "-n", "8")
 	if err == nil {
 		review.MainCommits = parseCommitsWithDate(mainOut)
 	}
 
-	diffStatOut, err := runGit(ctx, project.Directory, "diff", "--stat")
+	diffStatOut, err := runGit(ctx, dir, "diff", "--stat")
 	if err == nil {
 		review.DiffStat = strings.TrimSpace(diffStatOut)
 	}
 
-	patchOut, err := runGit(ctx, project.Directory, "diff", "--no-color", "--", ".")
+	patchOut, err := runGit(ctx, dir, "diff", "--no-color", "--", ".")
 	if err == nil {
 		patch := strings.TrimSpace(patchOut)
 		if patch == "" {
-			cachedOut, cachedErr := runGit(ctx, project.Directory, "diff", "--cached", "--no-color", "--", ".")
+			cachedOut, cachedErr := runGit(ctx, dir, "diff", "--cached", "--no-color", "--", ".")
 			if cachedErr == nil {
 				patch = strings.TrimSpace(cachedOut)
 			}
