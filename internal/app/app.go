@@ -73,8 +73,8 @@ func (a *App) UpdateProject(project *store.Project) error {
 	return a.service.UpdateProject(a.Ctx, project)
 }
 
-func (a *App) DeleteProject(id string) error {
-	return a.service.DeleteProject(a.Ctx, id)
+func (a *App) DeleteProject(id string, deleteFiles bool) error {
+	return a.service.DeleteProject(a.Ctx, id, deleteFiles)
 }
 
 func (a *App) CreateThread(projectID string) (*store.Thread, error) {

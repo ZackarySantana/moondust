@@ -106,7 +106,18 @@ func (s *Service) UpdateProject(ctx context.Context, project *store.Project) err
 	return s.projectStore.Update(ctx, project)
 }
 
-func (s *Service) DeleteProject(ctx context.Context, id string) error {
+func (s *Service) DeleteProject(ctx context.Context, id string, deleteFiles bool) error {
+	if deleteFiles {
+		project, err := s.projectStore.Get(ctx, id)
+		if err != nil {
+			return fmt.Errorf("get project: %w", err)
+		}
+		if project != nil && project.Directory != "" {
+			if err := os.RemoveAll(project.Directory); err != nil {
+				slog.WarnContext(ctx, "failed to remove project directory", "dir", project.Directory, "error", err)
+			}
+		}
+	}
 	return s.projectStore.Delete(ctx, id)
 }
 
