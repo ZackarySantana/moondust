@@ -21,8 +21,8 @@ import (
 const (
 	authURL     = "https://openrouter.ai/auth"
 	exchangeURL = "https://openrouter.ai/api/v1/auth/keys"
-	// OpenRouter only allows http://localhost:3000 (and HTTPS on 443/3000) for OAuth
-	// callback URLs — random ports cause 409 errors when creating the auth code.
+	// OpenRouter only allows fixed localhost callback URLs (e.g. http://localhost:3000) for OAuth.
+	// Random ports cause 409 errors when creating the auth code.
 	// See: https://openrouter.ai/docs/guides/overview/auth/oauth
 	oauthLocalCallbackPort = "3000"
 	oauthCallbackPath      = "/oauth/callback"
