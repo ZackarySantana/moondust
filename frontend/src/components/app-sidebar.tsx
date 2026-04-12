@@ -129,7 +129,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                                 onNewThread={() => props.onNewThread(p.id)}
                             >
                                 <For each={sortedThreadsFor(p.id)}>
-                                    {(thread) => (
+                                    {(thread, index) => (
                                         <ProjectThread
                                             projectID={p.id}
                                             threadID={thread.id}
@@ -144,6 +144,13 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                                             active={
                                                 location.pathname ===
                                                 `/project/${p.id}/thread/${thread.id}`
+                                            }
+                                            shortcutHint={
+                                                index() < 6
+                                                    ? formatKey(
+                                                          `go_thread_${index() + 1}`,
+                                                      )
+                                                    : undefined
                                             }
                                         />
                                     )}
@@ -277,6 +284,7 @@ const ProjectThread: Component<{
     name: string;
     time?: string;
     active?: boolean;
+    shortcutHint?: string;
 }> = (props) => {
     const queryClient = useQueryClient();
     const [editing, setEditing] = createSignal(false);
@@ -319,38 +327,47 @@ const ProjectThread: Component<{
     }
 
     return (
-        <A
-            href={`/project/${props.projectID}/thread/${props.threadID}`}
-            class={cn(
-                "flex w-full items-baseline gap-1 rounded-md px-2 py-1.5 text-left text-xs transition-colors duration-100",
-                props.active
-                    ? "bg-slate-800/55 text-slate-200"
-                    : "text-slate-500 hover:bg-slate-800/40 hover:text-slate-300",
+        <div class="group/thread relative w-full">
+            {props.shortcutHint && (
+                <kbd class="pointer-events-none absolute right-full top-1/2 mr-1 -translate-y-1/2 rounded border border-slate-700/50 bg-slate-800/40 px-1 py-0.5 font-mono text-[9px] leading-none text-slate-500 opacity-0 transition-opacity group-hover/thread:opacity-100">
+                    {props.shortcutHint}
+                </kbd>
             )}
-            onDblClick={startEditing}
-        >
-            <Show
-                when={editing()}
-                fallback={
-                    <span class="min-w-0 flex-1 truncate">{props.name}</span>
-                }
+            <A
+                href={`/project/${props.projectID}/thread/${props.threadID}`}
+                class={cn(
+                    "flex w-full items-baseline gap-1 rounded-md px-2 py-1.5 text-left text-xs transition-colors duration-100",
+                    props.active
+                        ? "bg-slate-800/55 text-slate-200"
+                        : "text-slate-500 hover:bg-slate-800/40 hover:text-slate-300",
+                )}
+                onDblClick={startEditing}
             >
-                <input
-                    ref={inputRef}
-                    type="text"
-                    value={draft()}
-                    onInput={(e) => setDraft(e.currentTarget.value)}
-                    onBlur={() => void commit()}
-                    onKeyDown={onKeyDown}
-                    onClick={(e) => e.preventDefault()}
-                    class="min-w-0 flex-1 truncate rounded bg-transparent px-0.5 text-xs text-slate-200 outline-none ring-1 ring-emerald-500/40"
-                />
-            </Show>
-            {!editing() && props.time && (
-                <span class="shrink-0 text-[10px] tabular-nums text-slate-600">
-                    {props.time}
-                </span>
-            )}
-        </A>
+                <Show
+                    when={editing()}
+                    fallback={
+                        <span class="min-w-0 flex-1 truncate">
+                            {props.name}
+                        </span>
+                    }
+                >
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        value={draft()}
+                        onInput={(e) => setDraft(e.currentTarget.value)}
+                        onBlur={() => void commit()}
+                        onKeyDown={onKeyDown}
+                        onClick={(e) => e.preventDefault()}
+                        class="min-w-0 flex-1 truncate rounded bg-transparent px-0.5 text-xs text-slate-200 outline-none ring-1 ring-emerald-500/40"
+                    />
+                </Show>
+                {!editing() && props.time && (
+                    <span class="shrink-0 text-[10px] tabular-nums text-slate-600">
+                        {props.time}
+                    </span>
+                )}
+            </A>
+        </div>
     );
 };
