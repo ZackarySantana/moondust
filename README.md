@@ -1,5 +1,7 @@
 # Moondust
 
+**Documentation:** [docs.moondust.pro](https://docs.moondust.pro) (source in [`packages/docs`](packages/docs/)). For build-from-source and contributing, see the **Contributing** page there.
+
 ## Install and run
 
 On **[GitHub Releases](https://github.com/zackarysantana/moondust/releases)** you can read the notes and **download the binary** for your OS and CPU—**one binary per platform** (then run it locally; chmod +x on Unix if needed).

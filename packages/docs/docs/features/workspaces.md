@@ -1,10 +1,10 @@
 ---
-sidebar_position: 1
+sidebar_position: 2
 ---
 
 # Workspaces
 
-Projects live in workspaces. Each workspace has one root path, agent context, tools, and file scope follow that root.
+In the UI, **projects** are workspaces: each project has one root directory on disk. Agent context, tools, and file scope follow that root.
 
 ## Inside a workspace
 
