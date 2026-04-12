@@ -327,47 +327,45 @@ const ProjectThread: Component<{
     }
 
     return (
-        <div class="group/thread relative w-full">
-            {props.shortcutHint && (
-                <kbd class="pointer-events-none absolute right-full top-1/2 mr-1 -translate-y-1/2 rounded border border-slate-700/50 bg-slate-800/40 px-1 py-0.5 font-mono text-[9px] leading-none text-slate-500 opacity-0 transition-opacity group-hover/thread:opacity-100">
-                    {props.shortcutHint}
-                </kbd>
+        <A
+            href={`/project/${props.projectID}/thread/${props.threadID}`}
+            class={cn(
+                "group/thread flex w-full items-baseline gap-1 rounded-md px-2 py-1.5 text-left text-xs transition-colors duration-100",
+                props.active
+                    ? "bg-slate-800/55 text-slate-200"
+                    : "text-slate-500 hover:bg-slate-800/40 hover:text-slate-300",
             )}
-            <A
-                href={`/project/${props.projectID}/thread/${props.threadID}`}
-                class={cn(
-                    "flex w-full items-baseline gap-1 rounded-md px-2 py-1.5 text-left text-xs transition-colors duration-100",
-                    props.active
-                        ? "bg-slate-800/55 text-slate-200"
-                        : "text-slate-500 hover:bg-slate-800/40 hover:text-slate-300",
-                )}
-                onDblClick={startEditing}
+            onDblClick={startEditing}
+        >
+            <Show
+                when={editing()}
+                fallback={
+                    <div class="flex min-w-0 flex-1 items-baseline gap-1.5">
+                        <span class="min-w-0 truncate">{props.name}</span>
+                        {props.shortcutHint && (
+                            <kbd class="pointer-events-none shrink-0 rounded border border-slate-700/50 bg-slate-800/40 px-1 py-0.5 font-mono text-[9px] leading-none text-slate-500 opacity-0 transition-opacity group-hover/thread:opacity-100">
+                                {props.shortcutHint}
+                            </kbd>
+                        )}
+                    </div>
+                }
             >
-                <Show
-                    when={editing()}
-                    fallback={
-                        <span class="min-w-0 flex-1 truncate">
-                            {props.name}
-                        </span>
-                    }
-                >
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        value={draft()}
-                        onInput={(e) => setDraft(e.currentTarget.value)}
-                        onBlur={() => void commit()}
-                        onKeyDown={onKeyDown}
-                        onClick={(e) => e.preventDefault()}
-                        class="min-w-0 flex-1 truncate rounded bg-transparent px-0.5 text-xs text-slate-200 outline-none ring-1 ring-emerald-500/40"
-                    />
-                </Show>
-                {!editing() && props.time && (
-                    <span class="shrink-0 text-[10px] tabular-nums text-slate-600">
-                        {props.time}
-                    </span>
-                )}
-            </A>
-        </div>
+                <input
+                    ref={inputRef}
+                    type="text"
+                    value={draft()}
+                    onInput={(e) => setDraft(e.currentTarget.value)}
+                    onBlur={() => void commit()}
+                    onKeyDown={onKeyDown}
+                    onClick={(e) => e.preventDefault()}
+                    class="min-w-0 flex-1 truncate rounded bg-transparent px-0.5 text-xs text-slate-200 outline-none ring-1 ring-emerald-500/40"
+                />
+            </Show>
+            {!editing() && props.time && (
+                <span class="shrink-0 text-[10px] tabular-nums text-slate-600">
+                    {props.time}
+                </span>
+            )}
+        </A>
     );
 };
