@@ -158,14 +158,14 @@ func AggregateOpenRouterUsageMetrics(messages []*ChatMessage) *OpenRouterUsageMe
 	})
 
 	return &OpenRouterUsageMetrics{
-		TotalAssistantMessages: totalMsgs,
-		DistinctModels:         len(byModel),
-		TotalCostUSD:           totalCost,
-		TotalPromptTokens:      totalPrompt,
-		TotalCompletionTokens:  totalCompletion,
-		RecentlyUsed:           recent,
-		MostUsed:               mostUsed,
-		MostExpensive:          mostExp,
+		TotalAssistantMessages:  totalMsgs,
+		DistinctModels:          len(byModel),
+		TotalCostUSD:            totalCost,
+		TotalPromptTokens:       totalPrompt,
+		TotalCompletionTokens:   totalCompletion,
+		RecentlyUsed:            recent,
+		MostUsed:                mostUsed,
+		MostExpensive:           mostExp,
 		MostExpensivePerMessage: perMessage,
 	}
 }
