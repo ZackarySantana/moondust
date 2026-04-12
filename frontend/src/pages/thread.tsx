@@ -51,10 +51,10 @@ export const ThreadPage: Component = () => {
 
     const { streaming, streamingText, streamingReasoningText } =
         useThreadChatStream(
-        () => params.threadId,
-        queryClient,
-        (msg) => setSendError(msg),
-    );
+            () => params.threadId,
+            queryClient,
+            (msg) => setSendError(msg),
+        );
 
     const projectQuery = useQuery(() => ({
         queryKey: queryKeys.projects.detail(params.projectId),
@@ -379,10 +379,17 @@ export const ThreadPage: Component = () => {
                         !!(threadQuery.data?.worktree_dir ?? "").trim()
                     }
                     onDeleteThread={async (removeWorktree) => {
-                        await DeleteThread(params.threadId, removeWorktree);
-                        await queryClient.invalidateQueries({
-                            queryKey: queryKeys.threads.all,
+                        const tid = params.threadId;
+                        await DeleteThread(tid, removeWorktree);
+                        // Drop this thread's queries without refetching (invalidateQueries on ["threads"]
+                        // would refetch messages/git for the current thread and block navigation for seconds).
+                        queryClient.removeQueries({
+                            queryKey: queryKeys.threads.detail(tid),
                         });
+                        queryClient.setQueryData<store.Thread[]>(
+                            queryKeys.threads.all,
+                            (old) => old?.filter((t) => t.id !== tid) ?? [],
+                        );
                         navigate("/");
                     }}
                 />

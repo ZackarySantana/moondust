@@ -288,8 +288,9 @@ func (s *Service) RenameThread(ctx context.Context, id, title string) error {
 	return s.threadStore.Update(ctx, thread)
 }
 
-// DeleteThread removes the thread and its messages from storage. When removeWorktree is true and the thread has a
-// git worktree, runs `git worktree remove --force` from the project root first.
+// DeleteThread removes the thread and its messages from storage immediately. When removeWorktree is true and the
+// thread has a git worktree, `git worktree remove` runs in the background (same idea as DeleteProject + disk cleanup)
+// so the UI returns without waiting on git.
 func (s *Service) DeleteThread(ctx context.Context, threadID string, removeWorktree bool) error {
 	thread, err := s.threadStore.Get(ctx, threadID)
 	if err != nil {
@@ -306,12 +307,24 @@ func (s *Service) DeleteThread(ctx context.Context, threadID string, removeWorkt
 		return fmt.Errorf("project not found")
 	}
 	worktreeDir := strings.TrimSpace(thread.WorktreeDir)
-	if removeWorktree && worktreeDir != "" && strings.TrimSpace(project.Directory) != "" {
-		if _, err := runGit(ctx, project.Directory, "worktree", "remove", "--force", worktreeDir); err != nil {
-			return fmt.Errorf("remove worktree: %w", err)
-		}
+	projectDir := strings.TrimSpace(project.Directory)
+	doAsyncRemove := removeWorktree && worktreeDir != "" && projectDir != ""
+
+	if err := s.threadStore.Delete(ctx, threadID); err != nil {
+		return err
 	}
-	return s.threadStore.Delete(ctx, threadID)
+
+	if doAsyncRemove {
+		dir := projectDir
+		wt := worktreeDir
+		tid := threadID
+		go func() {
+			if _, err := runGit(context.Background(), dir, "worktree", "remove", "--force", wt); err != nil {
+				slog.Warn("failed to remove git worktree after thread delete", "thread_id", tid, "dir", wt, "error", err)
+			}
+		}()
+	}
+	return nil
 }
 
 // SetThreadChatProvider persists which chat provider this thread uses (e.g. "openrouter").
