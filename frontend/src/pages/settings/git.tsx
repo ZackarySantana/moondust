@@ -44,8 +44,10 @@ export const SettingsGitPage: Component = () => {
 
     const saveMutation = useMutation(() => ({
         mutationFn: async () => {
+            const current = settingsQuery.data;
             await SaveSettings(
                 new store.Settings({
+                    ...current,
                     ssh_auth_sock: sshAuthSock() || "",
                     default_worktree: defaultWorktree(),
                 }),

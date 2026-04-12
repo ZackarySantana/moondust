@@ -106,8 +106,7 @@ export const SettingsNotificationsPage: Component = () => {
             const c = configs();
             await SaveSettings(
                 new store.Settings({
-                    ssh_auth_sock: current?.ssh_auth_sock ?? "",
-                    default_worktree: current?.default_worktree ?? "",
+                    ...current,
                     notifications: {
                         project_created: c.project_created,
                         chat_message_received: c.chat_message_received,

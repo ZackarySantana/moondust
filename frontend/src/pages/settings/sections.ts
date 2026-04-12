@@ -3,6 +3,7 @@ import Blocks from "lucide-solid/icons/blocks";
 import Folder from "lucide-solid/icons/folder";
 import GitBranch from "lucide-solid/icons/git-branch";
 import Info from "lucide-solid/icons/info";
+import Keyboard from "lucide-solid/icons/keyboard";
 import Layers from "lucide-solid/icons/layers";
 import ScrollText from "lucide-solid/icons/scroll-text";
 import Sparkles from "lucide-solid/icons/sparkles";
@@ -16,6 +17,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     { id: "providers", label: "Providers", icon: Blocks },
     { id: "git", label: "Git", icon: GitBranch },
     { id: "notifications", label: "Notifications", icon: Bell },
+    { id: "shortcuts", label: "Keyboard Shortcuts", icon: Keyboard },
     { id: "environments", label: "Environments", icon: Layers },
     { id: "features", label: "Features", icon: Sparkles },
     { id: "logs", label: "Logs", icon: ScrollText },

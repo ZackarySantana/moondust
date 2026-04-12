@@ -1,19 +1,30 @@
 import { useQuery } from "@tanstack/solid-query";
-import { useLocation } from "@solidjs/router";
+import { useLocation, useNavigate } from "@solidjs/router";
 import type { RouteSectionProps } from "@solidjs/router";
 import type { Component } from "solid-js";
-import { createEffect, createMemo, createSignal } from "solid-js";
+import { createEffect, createMemo, createSignal, onCleanup } from "solid-js";
 import { AppSidebar } from "@/components/app-sidebar";
 import { CreateProjectModal } from "@/components/create-project-modal";
 import { CreateThreadModal } from "@/components/create-thread-modal";
 import { NotificationToast } from "@/components/notification-toast";
 import { queryKeys } from "@/lib/query-client";
+import { ShortcutProvider, useShortcuts } from "@/lib/shortcut-context";
 import { GetProject, ListProjects, ListThreads } from "@wails/go/app/App";
 import { store } from "@wails/go/models";
 import { WindowSetTitle } from "@wails/runtime/runtime";
 
 export const AppShell: Component<RouteSectionProps> = (props) => {
+    return (
+        <ShortcutProvider>
+            <AppShellInner {...props} />
+        </ShortcutProvider>
+    );
+};
+
+const AppShellInner: Component<RouteSectionProps> = (props) => {
     const location = useLocation();
+    const navigate = useNavigate();
+    const { onAction } = useShortcuts();
     const [createProjectOpen, setCreateProjectOpen] = createSignal(false);
     const [newThreadProjectID, setNewThreadProjectID] = createSignal("");
 
@@ -74,6 +85,23 @@ export const AppShell: Component<RouteSectionProps> = (props) => {
         }
         WindowSetTitle("Moondust");
     });
+
+    const focusedProjectId = createMemo(() => {
+        const threadMatch = location.pathname.match(/^\/project\/([^/]+)\//);
+        return threadMatch?.[1] ?? null;
+    });
+
+    const cleanups: (() => void)[] = [];
+    cleanups.push(
+        onAction("new_project", () => setCreateProjectOpen(true)),
+        onAction("go_home", () => navigate("/")),
+        onAction("open_settings", () => navigate("/settings")),
+        onAction("new_thread", () => {
+            const pid = focusedProjectId();
+            if (pid) setNewThreadProjectID(pid);
+        }),
+    );
+    onCleanup(() => cleanups.forEach((c) => c()));
 
     return (
         <div class="flex h-full w-full bg-app-bg text-slate-200">

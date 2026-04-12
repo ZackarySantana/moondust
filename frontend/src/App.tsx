@@ -17,6 +17,7 @@ import { SettingsNotificationsPage } from "@/pages/settings/notifications";
 import { SettingsTerminalPage } from "@/pages/settings/terminal";
 import { SettingsProjectsPage } from "@/pages/settings/projects";
 import { SettingsProvidersPage } from "@/pages/settings/providers";
+import { SettingsShortcutsPage } from "@/pages/settings/shortcuts";
 import { ThreadPage } from "@/pages/thread";
 
 export default function App() {
@@ -82,6 +83,10 @@ export default function App() {
                 <Route
                     path="/notifications"
                     component={SettingsNotificationsPage}
+                />
+                <Route
+                    path="/shortcuts"
+                    component={SettingsShortcutsPage}
                 />
                 <Route
                     path="/environments"

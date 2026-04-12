@@ -2,7 +2,7 @@ import { A, useLocation } from "@solidjs/router";
 import { useQueryClient } from "@tanstack/solid-query";
 import ChevronRight from "lucide-solid/icons/chevron-right";
 import Plus from "lucide-solid/icons/plus";
-import Settings from "lucide-solid/icons/settings";
+import SettingsIcon from "lucide-solid/icons/settings";
 import {
     createMemo,
     createSignal,
@@ -12,8 +12,10 @@ import {
     type Component,
 } from "solid-js";
 import { RenameThread } from "@wails/go/app/App";
+import { Kbd } from "@/components/kbd";
 import { Separator } from "@/components/ui/separator";
 import { queryKeys } from "@/lib/query-client";
+import { useShortcuts } from "@/lib/shortcut-context";
 import { relativeTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { store } from "@wails/go/models";
@@ -42,6 +44,7 @@ function threadTimestamp(t: store.Thread): number {
 
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
     const location = useLocation();
+    const { formatKey } = useShortcuts();
 
     const [tick, setTick] = createSignal(0);
     const timer = setInterval(() => setTick((t) => t + 1), 60_000);
@@ -93,22 +96,27 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
             {/* ── Project list ── */}
             <div class="flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-2">
-                <div class="mb-1 flex items-center justify-between px-2.5">
+                <div class="group/projects mb-1 flex items-center justify-between px-2.5">
                     <span class="text-[11px] font-semibold uppercase tracking-widest text-slate-600">
                         Projects
                     </span>
-                    <button
-                        type="button"
-                        class="cursor-pointer rounded-md p-0.5 text-slate-600 transition-colors duration-100 hover:bg-slate-800/50 hover:text-slate-300"
-                        aria-label="New project"
-                        onClick={() => props.onNewProject()}
-                    >
-                        <Plus
-                            class="size-3.5"
-                            stroke-width={2}
-                            aria-hidden
-                        />
-                    </button>
+                    <div class="relative shrink-0">
+                        <kbd class="pointer-events-none absolute right-full top-1/2 mr-1 -translate-y-1/2 rounded border border-slate-700/50 bg-slate-800/40 px-1 py-0.5 font-mono text-[9px] leading-none text-slate-500 opacity-0 transition-opacity group-hover/projects:opacity-100">
+                            {formatKey("new_project")}
+                        </kbd>
+                        <button
+                            type="button"
+                            class="cursor-pointer rounded-md p-0.5 text-slate-600 transition-colors duration-100 hover:bg-slate-800/50 hover:text-slate-300"
+                            aria-label="New project"
+                            onClick={() => props.onNewProject()}
+                        >
+                            <Plus
+                                class="size-3.5"
+                                stroke-width={2}
+                                aria-hidden
+                            />
+                        </button>
+                    </div>
                 </div>
                 <div class="flex flex-col gap-1">
                     <For each={sortedProjects()}>
@@ -117,6 +125,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                                 id={p.id}
                                 name={p.name}
                                 title={p.directory}
+                                shortcutHint={formatKey("new_thread")}
                                 onNewThread={() => props.onNewThread(p.id)}
                             >
                                 <For each={sortedThreadsFor(p.id)}>
@@ -156,11 +165,14 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                     activeClass="bg-slate-800/50 text-slate-200"
                     inactiveClass="text-slate-400 hover:bg-slate-800/40 hover:text-slate-200"
                 >
-                    <Settings
+                    <SettingsIcon
                         class="size-4 shrink-0"
                         stroke-width={1.75}
                     />
                     Settings
+                    <span class="ml-auto">
+                        <Kbd combo={formatKey("open_settings")} />
+                    </span>
                 </A>
 
                 <div class="space-y-1.5 px-1">
@@ -193,6 +205,7 @@ const ProjectGroup: Component<{
     id?: string;
     name: string;
     title?: string;
+    shortcutHint?: string;
     onNewThread?: () => void;
     children?: any;
 }> = (props) => {
@@ -214,22 +227,27 @@ const ProjectGroup: Component<{
                     {props.name}
                 </span>
                 {props.id && (
-                    <button
-                        type="button"
-                        class="shrink-0 rounded-md p-1 text-slate-600 opacity-0 transition-all duration-100 hover:bg-slate-800/50 hover:text-slate-300 group-hover/project:opacity-100"
-                        aria-label={`New thread in ${props.name}`}
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            props.onNewThread?.();
-                        }}
-                    >
-                        <Plus
-                            class="size-3.5"
-                            stroke-width={2}
-                            aria-hidden
-                        />
-                    </button>
+                    <div class="relative shrink-0">
+                        <kbd class="pointer-events-none absolute right-full top-1/2 mr-1 -translate-y-1/2 rounded border border-slate-700/50 bg-slate-800/40 px-1 py-0.5 font-mono text-[9px] leading-none text-slate-500 opacity-0 transition-opacity group-hover/project:opacity-100">
+                            {props.shortcutHint}
+                        </kbd>
+                        <button
+                            type="button"
+                            class="rounded-md p-1 text-slate-600 opacity-0 transition-all duration-100 hover:bg-slate-800/50 hover:text-slate-300 group-hover/project:opacity-100"
+                            aria-label={`New thread in ${props.name}`}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                props.onNewThread?.();
+                            }}
+                        >
+                            <Plus
+                                class="size-3.5"
+                                stroke-width={2}
+                                aria-hidden
+                            />
+                        </button>
+                    </div>
                 )}
                 {props.id && (
                     <A
@@ -238,7 +256,7 @@ const ProjectGroup: Component<{
                         aria-label={`${props.name} settings`}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <Settings
+                        <SettingsIcon
                             class="size-3.5"
                             stroke-width={2}
                             aria-hidden

@@ -22,6 +22,7 @@ import {
     createSignal,
     For,
     on,
+    onCleanup,
     Show,
 } from "solid-js";
 import {
@@ -34,9 +35,11 @@ import {
     SendThreadMessage,
 } from "@wails/go/app/App";
 import { DiffViewer, type DiffNav } from "@/components/diff-viewer";
+import { Kbd } from "@/components/kbd";
 import { ResizeHandle } from "@/components/resize-handle";
 import { TerminalPane } from "@/components/terminal-pane";
 import { queryKeys } from "@/lib/query-client";
+import { useShortcuts } from "@/lib/shortcut-context";
 import type { store } from "@wails/go/models";
 
 interface DiffTarget {
@@ -47,7 +50,9 @@ interface DiffTarget {
 export const ThreadPage: Component = () => {
     const params = useParams<{ projectId: string; threadId: string }>();
     const queryClient = useQueryClient();
+    const { onAction, formatKey } = useShortcuts();
     const [draft, setDraft] = createSignal("");
+    let chatTextareaRef!: HTMLTextAreaElement;
     const [userAtBottom, setUserAtBottom] = createSignal(true);
     const [terminalHeight, setTerminalHeight] = createSignal(208);
     const [sidebarWidth, setSidebarWidth] = createSignal(320);
@@ -216,6 +221,22 @@ export const ThreadPage: Component = () => {
         ),
     );
 
+    const shortcutCleanups: (() => void)[] = [];
+    shortcutCleanups.push(
+        onAction("focus_chat", () => chatTextareaRef?.focus()),
+        onAction("toggle_terminal", () => setTerminalOpen((v) => !v)),
+        onAction("toggle_sidebar", () => setSidebarOpen((v) => !v)),
+        onAction("close_diff", () => {
+            if (diffTarget()) setDiffTarget(null);
+        }),
+        onAction("next_diff", () => diffNav()?.goNext()),
+        onAction("prev_diff", () => diffNav()?.goPrev()),
+        onAction("toggle_diff_mode", () => {
+            if (diffTarget()) setSideBySide((v) => !v);
+        }),
+    );
+    onCleanup(() => shortcutCleanups.forEach((c) => c()));
+
     return (
         <div class="flex h-full min-h-0 w-full overflow-hidden">
             <section class="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -276,60 +297,54 @@ export const ThreadPage: Component = () => {
                             </div>
                         </Show>
                     </div>
-                    <div class="flex shrink-0 items-center gap-0.5">
+                    <div class="flex shrink-0 items-center gap-1">
                         <button
                             type="button"
-                            class="cursor-pointer rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-800/50 hover:text-slate-300"
+                            class="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-slate-500 transition-colors hover:bg-slate-800/40 hover:text-slate-300"
                             onClick={() => setTerminalOpen((v) => !v)}
-                            title={
-                                terminalOpen()
-                                    ? "Hide terminal"
-                                    : "Show terminal"
-                            }
                         >
                             <Show
                                 when={terminalOpen()}
                                 fallback={
                                     <PanelBottomDashed
-                                        class="size-4"
+                                        class="size-3.5"
                                         stroke-width={1.5}
                                         aria-hidden
                                     />
                                 }
                             >
                                 <PanelBottom
-                                    class="size-4"
+                                    class="size-3.5"
                                     stroke-width={1.5}
                                     aria-hidden
                                 />
                             </Show>
+                            Terminal
+                            <Kbd combo={formatKey("toggle_terminal")} />
                         </button>
                         <button
                             type="button"
-                            class="cursor-pointer rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-800/50 hover:text-slate-300"
+                            class="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-slate-500 transition-colors hover:bg-slate-800/40 hover:text-slate-300"
                             onClick={() => setSidebarOpen((v) => !v)}
-                            title={
-                                sidebarOpen()
-                                    ? "Hide review panel"
-                                    : "Show review panel"
-                            }
                         >
                             <Show
                                 when={sidebarOpen()}
                                 fallback={
                                     <PanelRightDashed
-                                        class="size-4"
+                                        class="size-3.5"
                                         stroke-width={1.5}
                                         aria-hidden
                                     />
                                 }
                             >
                                 <PanelRight
-                                    class="size-4"
+                                    class="size-3.5"
                                     stroke-width={1.5}
                                     aria-hidden
                                 />
                             </Show>
+                            Git
+                            <Kbd combo={formatKey("toggle_sidebar")} />
                         </button>
                     </div>
                 </header>
@@ -433,6 +448,7 @@ export const ThreadPage: Component = () => {
                                     <div class="rounded-xl border border-slate-800/50 bg-slate-900/40 transition-colors focus-within:border-emerald-700/40">
                                         <textarea
                                             ref={(el) => {
+                                                chatTextareaRef = el;
                                                 const resize = () => {
                                                     el.style.height = "auto";
                                                     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
@@ -478,32 +494,37 @@ export const ThreadPage: Component = () => {
                                                     />
                                                 </button>
                                             </div>
-                                            <button
-                                                type="button"
-                                                class="flex size-7 cursor-pointer items-center justify-center rounded-lg bg-emerald-700/80 text-white transition-all duration-100 hover:bg-emerald-600/90 disabled:cursor-not-allowed disabled:opacity-30"
-                                                disabled={!canSend()}
-                                                onClick={submitMessage}
-                                                aria-label="Send message"
-                                            >
-                                                <Show
-                                                    when={
-                                                        !sendMutation.isPending
-                                                    }
-                                                    fallback={
-                                                        <Loader2
-                                                            class="size-3.5 animate-spin"
-                                                            stroke-width={2}
+                                            <div class="flex items-center gap-2">
+                                                <kbd class="hidden items-center rounded border border-slate-700/50 bg-slate-800/40 px-1.5 py-0.5 font-mono text-[9px] leading-none text-slate-600 sm:inline-flex">
+                                                    Enter
+                                                </kbd>
+                                                <button
+                                                    type="button"
+                                                    class="flex size-7 cursor-pointer items-center justify-center rounded-lg bg-emerald-700/80 text-white transition-all duration-100 hover:bg-emerald-600/90 disabled:cursor-not-allowed disabled:opacity-30"
+                                                    disabled={!canSend()}
+                                                    onClick={submitMessage}
+                                                    aria-label="Send message"
+                                                >
+                                                    <Show
+                                                        when={
+                                                            !sendMutation.isPending
+                                                        }
+                                                        fallback={
+                                                            <Loader2
+                                                                class="size-3.5 animate-spin"
+                                                                stroke-width={2}
+                                                                aria-hidden
+                                                            />
+                                                        }
+                                                    >
+                                                        <ArrowUp
+                                                            class="size-4"
+                                                            stroke-width={2.5}
                                                             aria-hidden
                                                         />
-                                                    }
-                                                >
-                                                    <ArrowUp
-                                                        class="size-4"
-                                                        stroke-width={2.5}
-                                                        aria-hidden
-                                                    />
-                                                </Show>
-                                            </button>
+                                                    </Show>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -519,6 +540,7 @@ export const ThreadPage: Component = () => {
                                     type="button"
                                     class="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-slate-400 transition-colors hover:bg-slate-800/50 hover:text-slate-200"
                                     onClick={() => setDiffTarget(null)}
+                                    title={`Back to chat (${formatKey("close_diff")})`}
                                 >
                                     <ArrowLeft
                                         class="size-3"
@@ -526,6 +548,7 @@ export const ThreadPage: Component = () => {
                                         aria-hidden
                                     />
                                     Chat
+                                    <Kbd combo={formatKey("close_diff")} />
                                 </button>
                                 <span class="text-slate-700">·</span>
                                 <span
@@ -543,7 +566,7 @@ export const ThreadPage: Component = () => {
                                         type="button"
                                         class="cursor-pointer rounded p-1 text-slate-500 transition-colors hover:bg-slate-800/50 hover:text-slate-200"
                                         onClick={() => diffNav()?.goPrev()}
-                                        title="Previous change"
+                                        title={`Previous change (${formatKey("prev_diff")})`}
                                     >
                                         <ChevronUpNav
                                             class="size-3.5"
@@ -555,7 +578,7 @@ export const ThreadPage: Component = () => {
                                         type="button"
                                         class="cursor-pointer rounded p-1 text-slate-500 transition-colors hover:bg-slate-800/50 hover:text-slate-200"
                                         onClick={() => diffNav()?.goNext()}
-                                        title="Next change"
+                                        title={`Next change (${formatKey("next_diff")})`}
                                     >
                                         <ChevronDownNav
                                             class="size-3.5"

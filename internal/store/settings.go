@@ -11,9 +11,10 @@ type NotificationChannelConfig struct {
 }
 
 type Settings struct {
-	SSHAuthSock     string                                `json:"ssh_auth_sock"`
-	DefaultWorktree string                                `json:"default_worktree"` // "ask", "on", "off"; empty treated as "ask"
-	Notifications   map[string]*NotificationChannelConfig `json:"notifications"`
+	SSHAuthSock       string                                `json:"ssh_auth_sock"`
+	DefaultWorktree   string                                `json:"default_worktree"` // "ask", "on", "off"; empty treated as "ask"
+	Notifications     map[string]*NotificationChannelConfig `json:"notifications"`
+	KeyboardShortcuts map[string]string                     `json:"keyboard_shortcuts"`
 }
 
 type SettingsStore interface {

@@ -236,6 +236,7 @@ export namespace store {
 	    ssh_auth_sock: string;
 	    default_worktree: string;
 	    notifications: Record<string, NotificationChannelConfig>;
+	    keyboard_shortcuts: Record<string, string>;
 	
 	    static createFrom(source: any = {}) {
 	        return new Settings(source);
@@ -246,6 +247,7 @@ export namespace store {
 	        this.ssh_auth_sock = source["ssh_auth_sock"];
 	        this.default_worktree = source["default_worktree"];
 	        this.notifications = this.convertValues(source["notifications"], NotificationChannelConfig, true);
+	        this.keyboard_shortcuts = source["keyboard_shortcuts"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
