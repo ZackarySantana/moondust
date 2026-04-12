@@ -9,6 +9,10 @@ import ChevronUpNav from "lucide-solid/icons/chevron-up";
 import Columns2 from "lucide-solid/icons/columns-2";
 import FolderOpen from "lucide-solid/icons/folder-open";
 import Loader2 from "lucide-solid/icons/loader-2";
+import PanelBottom from "lucide-solid/icons/panel-bottom";
+import PanelBottomDashed from "lucide-solid/icons/panel-bottom-dashed";
+import PanelRight from "lucide-solid/icons/panel-right";
+import PanelRightDashed from "lucide-solid/icons/panel-right-dashed";
 import Rows2 from "lucide-solid/icons/rows-2";
 import Sparkles from "lucide-solid/icons/sparkles";
 import type { Component, JSX, ParentComponent } from "solid-js";
@@ -47,6 +51,8 @@ export const ThreadPage: Component = () => {
     const [userAtBottom, setUserAtBottom] = createSignal(true);
     const [terminalHeight, setTerminalHeight] = createSignal(208);
     const [sidebarWidth, setSidebarWidth] = createSignal(320);
+    const [terminalOpen, setTerminalOpen] = createSignal(true);
+    const [sidebarOpen, setSidebarOpen] = createSignal(true);
     let messagesContainerRef!: HTMLDivElement;
 
     const projectQuery = useQuery(() => ({
@@ -269,6 +275,62 @@ export const ThreadPage: Component = () => {
                                 </span>
                             </div>
                         </Show>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-0.5">
+                        <button
+                            type="button"
+                            class="cursor-pointer rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-800/50 hover:text-slate-300"
+                            onClick={() => setTerminalOpen((v) => !v)}
+                            title={
+                                terminalOpen()
+                                    ? "Hide terminal"
+                                    : "Show terminal"
+                            }
+                        >
+                            <Show
+                                when={terminalOpen()}
+                                fallback={
+                                    <PanelBottomDashed
+                                        class="size-4"
+                                        stroke-width={1.5}
+                                        aria-hidden
+                                    />
+                                }
+                            >
+                                <PanelBottom
+                                    class="size-4"
+                                    stroke-width={1.5}
+                                    aria-hidden
+                                />
+                            </Show>
+                        </button>
+                        <button
+                            type="button"
+                            class="cursor-pointer rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-800/50 hover:text-slate-300"
+                            onClick={() => setSidebarOpen((v) => !v)}
+                            title={
+                                sidebarOpen()
+                                    ? "Hide review panel"
+                                    : "Show review panel"
+                            }
+                        >
+                            <Show
+                                when={sidebarOpen()}
+                                fallback={
+                                    <PanelRightDashed
+                                        class="size-4"
+                                        stroke-width={1.5}
+                                        aria-hidden
+                                    />
+                                }
+                            >
+                                <PanelRight
+                                    class="size-4"
+                                    stroke-width={1.5}
+                                    aria-hidden
+                                />
+                            </Show>
+                        </button>
                     </div>
                 </header>
 
@@ -578,62 +640,68 @@ export const ThreadPage: Component = () => {
                 </Show>
 
                 {/* ── Terminal ── */}
+                <Show when={terminalOpen()}>
+                    <ResizeHandle
+                        direction="vertical"
+                        onResize={(delta) =>
+                            setTerminalHeight((h) =>
+                                Math.max(80, Math.min(600, h + delta)),
+                            )
+                        }
+                    />
+                    <div
+                        class="flex min-h-0 shrink-0 p-3"
+                        style={{ height: `${terminalHeight()}px` }}
+                    >
+                        <Show
+                            when={
+                                params.threadId &&
+                                projectQuery.data?.directory &&
+                                threadQuery.data
+                                    ? `${params.threadId}|${threadQuery.data.worktree_dir || projectQuery.data.directory}`
+                                    : ""
+                            }
+                            keyed
+                            fallback={
+                                <div class="flex h-full w-full items-center justify-center rounded-md border border-slate-800/60 bg-app-panel text-xs text-slate-500">
+                                    Loading terminal...
+                                </div>
+                            }
+                        >
+                            {(ready) => {
+                                const [threadID, cwd] = ready.split("|", 2);
+                                return (
+                                    <TerminalPane
+                                        sessionKey={`thread:${threadID}`}
+                                        workingDirectory={cwd}
+                                    />
+                                );
+                            }}
+                        </Show>
+                    </div>
+                </Show>
+            </section>
+
+            <Show when={sidebarOpen()}>
                 <ResizeHandle
-                    direction="vertical"
+                    direction="horizontal"
                     onResize={(delta) =>
-                        setTerminalHeight((h) =>
-                            Math.max(80, Math.min(600, h + delta)),
+                        setSidebarWidth((w) =>
+                            Math.max(200, Math.min(600, w + delta)),
                         )
                     }
                 />
-                <div
-                    class="flex min-h-0 shrink-0 p-3"
-                    style={{ height: `${terminalHeight()}px` }}
-                >
-                    <Show
-                        when={
-                            params.threadId &&
-                            projectQuery.data?.directory &&
-                            threadQuery.data
-                                ? `${params.threadId}|${threadQuery.data.worktree_dir || projectQuery.data.directory}`
-                                : ""
-                        }
-                        keyed
-                        fallback={
-                            <div class="flex h-full w-full items-center justify-center rounded-md border border-slate-800/60 bg-app-panel text-xs text-slate-500">
-                                Loading terminal...
-                            </div>
-                        }
-                    >
-                        {(ready) => {
-                            const [threadID, cwd] = ready.split("|", 2);
-                            return (
-                                <TerminalPane
-                                    sessionKey={`thread:${threadID}`}
-                                    workingDirectory={cwd}
-                                />
-                            );
-                        }}
-                    </Show>
-                </div>
-            </section>
-
-            <ResizeHandle
-                direction="horizontal"
-                onResize={(delta) =>
-                    setSidebarWidth((w) =>
-                        Math.max(200, Math.min(600, w + delta)),
-                    )
-                }
-            />
-            <ReviewSidebar
-                width={sidebarWidth()}
-                git={gitStatusQuery.data ?? null}
-                onRefresh={() => void refreshGitSidebar()}
-                onCopySummary={() => void copyReviewSummary()}
-                onCopyPatch={() => void copyPatchPreview()}
-                onFileClick={(path, status) => setDiffTarget({ path, status })}
-            />
+                <ReviewSidebar
+                    width={sidebarWidth()}
+                    git={gitStatusQuery.data ?? null}
+                    onRefresh={() => void refreshGitSidebar()}
+                    onCopySummary={() => void copyReviewSummary()}
+                    onCopyPatch={() => void copyPatchPreview()}
+                    onFileClick={(path, status) =>
+                        setDiffTarget({ path, status })
+                    }
+                />
+            </Show>
         </div>
     );
 };
