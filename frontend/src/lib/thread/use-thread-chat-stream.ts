@@ -16,6 +16,11 @@ export function useThreadChatStream(
     const [streamingText, setStreamingText] = createSignal("");
     const [streamingReasoningText, setStreamingReasoningText] =
         createSignal("");
+    const [streamingThinkingDurationSec, setStreamingThinkingDurationSec] =
+        createSignal<number | null>(null);
+
+    /** Wall time when the first reasoning delta arrived; reset each stream. */
+    let reasoningStartMs: number | null = null;
 
     createEffect(
         on(
@@ -25,6 +30,8 @@ export function useThreadChatStream(
                     setStreaming(false);
                     setStreamingText("");
                     setStreamingReasoningText("");
+                    setStreamingThinkingDurationSec(null);
+                    reasoningStartMs = null;
                 }
             },
         ),
@@ -40,6 +47,8 @@ export function useThreadChatStream(
                 if (p?.thread_id !== tid()) return;
                 setStreamingText("");
                 setStreamingReasoningText("");
+                setStreamingThinkingDurationSec(null);
+                reasoningStartMs = null;
                 setStreaming(true);
             }),
         );
@@ -53,11 +62,27 @@ export function useThreadChatStream(
                 if (p?.thread_id !== tid()) return;
                 const d = p.delta ?? "";
                 const r = p.reasoning_delta ?? "";
-                if (d) {
-                    setStreamingText((prev) => prev + d);
-                }
                 if (r) {
+                    if (reasoningStartMs === null) {
+                        reasoningStartMs = Date.now();
+                    }
                     setStreamingReasoningText((prev) => prev + r);
+                }
+                if (d) {
+                    if (
+                        reasoningStartMs !== null &&
+                        streamingThinkingDurationSec() === null
+                    ) {
+                        setStreamingThinkingDurationSec(
+                            Math.max(
+                                1,
+                                Math.round(
+                                    (Date.now() - reasoningStartMs) / 1000,
+                                ),
+                            ),
+                        );
+                    }
+                    setStreamingText((prev) => prev + d);
                 }
             }),
         );
@@ -74,6 +99,8 @@ export function useThreadChatStream(
                         setStreaming(false);
                         setStreamingText("");
                         setStreamingReasoningText("");
+                        setStreamingThinkingDurationSec(null);
+                        reasoningStartMs = null;
                     }
                 })();
             }),
@@ -85,6 +112,8 @@ export function useThreadChatStream(
                 setStreaming(false);
                 setStreamingText("");
                 setStreamingReasoningText("");
+                setStreamingThinkingDurationSec(null);
+                reasoningStartMs = null;
                 onStreamError(p?.error?.trim() || "Assistant reply failed");
             }),
         );
@@ -92,5 +121,10 @@ export function useThreadChatStream(
         onCleanup(() => unsubs.forEach((u) => u()));
     });
 
-    return { streaming, streamingText, streamingReasoningText };
+    return {
+        streaming,
+        streamingText,
+        streamingReasoningText,
+        streamingThinkingDurationSec,
+    };
 }

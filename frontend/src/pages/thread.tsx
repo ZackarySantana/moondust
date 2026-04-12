@@ -32,6 +32,16 @@ import {
 } from "@/lib/chat-provider";
 import { queryKeys } from "@/lib/query-client";
 import { useShortcuts } from "@/lib/shortcut-context";
+import {
+    setSidebarOpen,
+    setSidebarWidth,
+    setTerminalHeight,
+    setTerminalOpen,
+    sidebarOpen,
+    sidebarWidth,
+    terminalHeight,
+    terminalOpen,
+} from "@/lib/thread-workspace-layout";
 import { useThreadChatStream } from "@/lib/thread/use-thread-chat-stream";
 import type { store } from "@wails/go/models";
 import type { DiffNav } from "@/components/diff-viewer";
@@ -44,17 +54,17 @@ export const ThreadPage: Component = () => {
     const [draft, setDraft] = createSignal("");
     const [sendError, setSendError] = createSignal("");
     let chatTextareaRef!: HTMLTextAreaElement;
-    const [terminalHeight, setTerminalHeight] = createSignal(208);
-    const [sidebarWidth, setSidebarWidth] = createSignal(320);
-    const [terminalOpen, setTerminalOpen] = createSignal(true);
-    const [sidebarOpen, setSidebarOpen] = createSignal(true);
 
-    const { streaming, streamingText, streamingReasoningText } =
-        useThreadChatStream(
-            () => params.threadId,
-            queryClient,
-            (msg) => setSendError(msg),
-        );
+    const {
+        streaming,
+        streamingText,
+        streamingReasoningText,
+        streamingThinkingDurationSec,
+    } = useThreadChatStream(
+        () => params.threadId,
+        queryClient,
+        (msg) => setSendError(msg),
+    );
 
     const projectQuery = useQuery(() => ({
         queryKey: queryKeys.projects.detail(params.projectId),
@@ -77,6 +87,8 @@ export const ThreadPage: Component = () => {
         queryKey: queryKeys.threads.messages(params.threadId),
         queryFn: () => ListThreadMessages(params.threadId),
         enabled: !!params.threadId,
+        // Chat changes often; default staleTime (30s) could hide new assistant rows after navigation.
+        staleTime: 0,
     }));
 
     const gitStatusQuery = useQuery(() => ({
@@ -406,6 +418,9 @@ export const ThreadPage: Component = () => {
                             streaming={streaming}
                             streamingText={streamingText}
                             streamingReasoningText={streamingReasoningText}
+                            streamingThinkingDurationSec={
+                                streamingThinkingDurationSec
+                            }
                             streamingAttribution={streamingAttribution}
                             threadQueryData={() => threadQuery.data}
                             modelChoices={modelChoices}

@@ -6,6 +6,10 @@ import Sparkles from "lucide-solid/icons/sparkles";
 import type { Component } from "solid-js";
 import { createEffect, createSignal, For, on, Show } from "solid-js";
 import { AssistantMessageMetadataButton } from "@/components/assistant-message-metadata";
+import {
+    AssistantReasoningPanel,
+    AssistantReasoningToggleButton,
+} from "@/components/thread/assistant-reasoning";
 import { ChatMarkdown } from "@/components/chat-markdown";
 import { ChatProviderBar } from "@/components/chat-provider-bar";
 import {
@@ -16,6 +20,66 @@ import {
 import type { store } from "@wails/go/models";
 import type { DiffTarget } from "./types";
 
+const PersistedAssistantBubble: Component<{
+    msg: store.ChatMessage;
+    assistantLine: () => string | null;
+}> = (props) => {
+    const [reasoningExpanded, setReasoningExpanded] = createSignal(false);
+    const reasoning = () =>
+        props.msg.metadata?.openrouter?.reasoning?.trim() ?? "";
+
+    return (
+        <div class="flex min-w-0 max-w-[85%] flex-col gap-1">
+            <Show when={props.assistantLine() || reasoning()}>
+                <div class="flex min-w-0 items-center gap-2 pl-[34px]">
+                    <Show
+                        when={props.assistantLine()}
+                        fallback={<span class="min-w-0 flex-1" />}
+                    >
+                        {(line) => (
+                            <p class="min-w-0 flex-1 text-[10px] leading-tight text-slate-500">
+                                {line()}
+                            </p>
+                        )}
+                    </Show>
+                    <Show when={reasoning()}>
+                        <AssistantReasoningToggleButton
+                            durationSec={null}
+                            expanded={reasoningExpanded()}
+                            onToggle={() =>
+                                setReasoningExpanded(!reasoningExpanded())
+                            }
+                        />
+                    </Show>
+                    <Show when={props.assistantLine()}>
+                        <AssistantMessageMetadataButton msg={props.msg} />
+                    </Show>
+                </div>
+            </Show>
+            <Show when={reasoning() && reasoningExpanded()}>
+                <AssistantReasoningPanel
+                    reasoningText={reasoning()}
+                    thinkingPhase={false}
+                />
+            </Show>
+            <div class="flex gap-2.5 py-1">
+                <div class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-slate-800/60">
+                    <Bot
+                        class="size-3.5 text-emerald-500/70"
+                        stroke-width={1.5}
+                    />
+                </div>
+                <div class="min-w-0 text-slate-300">
+                    <ChatMarkdown
+                        source={props.msg.content}
+                        variant="assistant"
+                    />
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export const ThreadChatPane: Component<{
     messages: () => store.ChatMessage[];
     diffTarget: () => DiffTarget | null;
@@ -25,6 +89,7 @@ export const ThreadChatPane: Component<{
     streaming: () => boolean;
     streamingText: () => string;
     streamingReasoningText: () => string;
+    streamingThinkingDurationSec: () => number | null;
     streamingAttribution: () => string | null;
     threadQueryData: () => store.Thread | undefined;
     modelChoices: () => ModelChoice[];
@@ -42,6 +107,27 @@ export const ThreadChatPane: Component<{
 }> = (props) => {
     let messagesContainerRef!: HTMLDivElement;
     const [userAtBottom, setUserAtBottom] = createSignal(true);
+    const [streamingReasoningExpanded, setStreamingReasoningExpanded] =
+        createSignal(false);
+
+    const streamingThinkingPhase = () =>
+        props.streamingReasoningText().length > 0 &&
+        props.streamingText().length === 0;
+
+    /** Collapse the reasoning panel when the answer starts streaming (toggle re-opens). */
+    createEffect(() => {
+        if (!streamingThinkingPhase()) {
+            setStreamingReasoningExpanded(false);
+        }
+    });
+
+    const showStreamingReasoningToggle = () =>
+        props.streamingReasoningText().length > 0 &&
+        props.streamingText().length > 0;
+
+    const showStreamingReasoningPanel = () =>
+        props.streamingReasoningText().length > 0 &&
+        (streamingThinkingPhase() || streamingReasoningExpanded());
 
     createEffect(
         on(
@@ -51,6 +137,7 @@ export const ThreadChatPane: Component<{
                     props.messages().length,
                     props.streamingText(),
                     props.streamingReasoningText(),
+                    props.streamingThinkingDurationSec(),
                 ] as const,
             () => {
                 if (userAtBottom() && messagesContainerRef) {
@@ -168,63 +255,12 @@ export const ThreadChatPane: Component<{
                                             <Show
                                                 when={msg.role === "user"}
                                                 fallback={
-                                                    <div class="flex min-w-0 max-w-[85%] flex-col gap-1">
-                                                        <Show
-                                                            when={assistantLine()}
-                                                        >
-                                                            {(line) => (
-                                                                <div class="flex min-w-0 items-center gap-1 pl-[34px]">
-                                                                    <p class="min-w-0 flex-1 text-[10px] leading-tight text-slate-500">
-                                                                        {line()}
-                                                                    </p>
-                                                                    <AssistantMessageMetadataButton
-                                                                        msg={
-                                                                            msg
-                                                                        }
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                        </Show>
-                                                        <Show
-                                                            when={
-                                                                msg.metadata
-                                                                    ?.openrouter
-                                                                    ?.reasoning
-                                                            }
-                                                        >
-                                                            <details
-                                                                open
-                                                                class="mb-1 rounded-md border border-slate-700/35 bg-slate-900/40 pl-[34px]"
-                                                            >
-                                                                <summary class="cursor-pointer select-none py-1 text-[10px] font-medium text-slate-500">
-                                                                    Thinking
-                                                                </summary>
-                                                                <pre class="max-h-52 overflow-y-auto whitespace-pre-wrap px-1 pb-2 text-[11px] leading-snug text-slate-500">
-                                                                    {msg.metadata
-                                                                        ?.openrouter
-                                                                        ?.reasoning}
-                                                                </pre>
-                                                            </details>
-                                                        </Show>
-                                                        <div class="flex gap-2.5 py-1">
-                                                            <div class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-slate-800/60">
-                                                                <Bot
-                                                                    class="size-3.5 text-emerald-500/70"
-                                                                    stroke-width={
-                                                                        1.5
-                                                                    }
-                                                                />
-                                                            </div>
-                                                            <div class="min-w-0 text-slate-300">
-                                                                <ChatMarkdown
-                                                                    source={
-                                                                        msg.content
-                                                                    }
-                                                                    variant="assistant"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                                    <PersistedAssistantBubble
+                                                        msg={msg}
+                                                        assistantLine={
+                                                            assistantLine
+                                                        }
+                                                    />
                                                 }
                                             >
                                                 <div class="max-w-[80%] rounded-2xl rounded-br-md bg-emerald-800/30 px-3.5 py-2.5 text-slate-100">
@@ -242,31 +278,45 @@ export const ThreadChatPane: Component<{
                                 <div class="flex justify-start py-1">
                                     <div class="flex min-w-0 max-w-[85%] flex-col gap-1">
                                         <Show
-                                            when={props.streamingAttribution()}
-                                        >
-                                            {(line) => (
-                                                <p class="pl-[34px] text-[10px] leading-tight text-slate-500">
-                                                    {line()}
-                                                </p>
-                                            )}
-                                        </Show>
-                                        <Show
                                             when={
+                                                props.streamingAttribution() ||
                                                 props.streamingReasoningText()
                                                     .length > 0
                                             }
                                         >
-                                            <details
-                                                open
-                                                class="mb-1 rounded-md border border-slate-700/35 bg-slate-900/40 pl-[34px]"
-                                            >
-                                                <summary class="cursor-pointer select-none py-1 text-[10px] font-medium text-slate-500">
-                                                    Thinking
-                                                </summary>
-                                                <pre class="max-h-52 overflow-y-auto whitespace-pre-wrap px-1 pb-2 text-[11px] leading-snug text-slate-500">
-                                                    {props.streamingReasoningText()}
-                                                </pre>
-                                            </details>
+                                            <div class="flex min-w-0 items-center gap-2 pl-[34px]">
+                                                <Show
+                                                    when={props.streamingAttribution()}
+                                                    fallback={
+                                                        <span class="min-w-0 flex-1" />
+                                                    }
+                                                >
+                                                    {(line) => (
+                                                        <p class="min-w-0 flex-1 text-[10px] leading-tight text-slate-500">
+                                                            {line()}
+                                                        </p>
+                                                    )}
+                                                </Show>
+                                                <Show
+                                                    when={showStreamingReasoningToggle()}
+                                                >
+                                                    <AssistantReasoningToggleButton
+                                                        durationSec={props.streamingThinkingDurationSec()}
+                                                        expanded={streamingReasoningExpanded()}
+                                                        onToggle={() =>
+                                                            setStreamingReasoningExpanded(
+                                                                !streamingReasoningExpanded(),
+                                                            )
+                                                        }
+                                                    />
+                                                </Show>
+                                            </div>
+                                        </Show>
+                                        <Show when={showStreamingReasoningPanel()}>
+                                            <AssistantReasoningPanel
+                                                reasoningText={props.streamingReasoningText()}
+                                                thinkingPhase={streamingThinkingPhase()}
+                                            />
                                         </Show>
                                         <div class="flex gap-2.5 py-1">
                                             <div class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-slate-800/60">
