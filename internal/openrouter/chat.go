@@ -1,7 +1,6 @@
 package openrouter
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -13,18 +12,6 @@ import (
 )
 
 const chatCompletionsURL = "https://openrouter.ai/api/v1/chat/completions"
-
-// APIMessage is one message in an OpenAI-compatible chat request.
-type APIMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type chatCompletionRequest struct {
-	Model    string       `json:"model"`
-	Messages []APIMessage `json:"messages"`
-	Stream   bool         `json:"stream"`
-}
 
 type chatCompletionResponse struct {
 	Choices []struct {
@@ -118,114 +105,4 @@ func truncateForErr(s string, max int) string {
 		return s
 	}
 	return s[:max] + "…"
-}
-
-type streamDeltaChunk struct {
-	Choices []struct {
-		Delta struct {
-			Content string `json:"content"`
-		} `json:"delta"`
-	} `json:"choices"`
-	Error *struct {
-		Message string `json:"message"`
-	} `json:"error"`
-}
-
-// ChatCompletionStream calls POST /v1/chat/completions with stream: true and invokes onDelta for each text delta.
-func ChatCompletionStream(ctx context.Context, apiKey, model string, messages []APIMessage, onDelta func(string) error) error {
-	apiKey = strings.TrimSpace(apiKey)
-	if apiKey == "" {
-		return fmt.Errorf("missing API key")
-	}
-	model = strings.TrimSpace(model)
-	if model == "" {
-		return fmt.Errorf("missing model")
-	}
-	if len(messages) == 0 {
-		return fmt.Errorf("no messages")
-	}
-	if onDelta == nil {
-		return fmt.Errorf("onDelta is required")
-	}
-
-	body := chatCompletionRequest{
-		Model:    model,
-		Messages: messages,
-		Stream:   true,
-	}
-	raw, err := json.Marshal(body)
-	if err != nil {
-		return fmt.Errorf("encode request: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, chatCompletionsURL, bytes.NewReader(raw))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-	req.Header.Set("Accept", "text/event-stream")
-	req.Header.Set("X-Title", "Moondust")
-
-	client := &http.Client{Timeout: 0}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("openrouter stream request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		respBody, _ := io.ReadAll(resp.Body)
-		var env errorEnvelope
-		if json.Unmarshal(respBody, &env) == nil && env.Error.Message != "" {
-			return APIError(env.Error.Message, resp.StatusCode)
-		}
-		msg := strings.TrimSpace(string(respBody))
-		if msg != "" {
-			return APIError(truncateForErr(msg, 500), resp.StatusCode)
-		}
-		return APIError("", resp.StatusCode)
-	}
-
-	sc := bufio.NewScanner(resp.Body)
-	// Long SSE lines (some providers send big chunks)
-	sc.Buffer(make([]byte, 64*1024), 1024*1024)
-
-	for sc.Scan() {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		line := strings.TrimSpace(sc.Text())
-		if line == "" || strings.HasPrefix(line, ":") {
-			continue
-		}
-		if !strings.HasPrefix(line, "data:") {
-			continue
-		}
-		data := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
-		if data == "[DONE]" {
-			return nil
-		}
-		var chunk streamDeltaChunk
-		if err := json.Unmarshal([]byte(data), &chunk); err != nil {
-			continue
-		}
-		if chunk.Error != nil && chunk.Error.Message != "" {
-			return APIError(chunk.Error.Message, 0)
-		}
-		if len(chunk.Choices) == 0 {
-			continue
-		}
-		delta := chunk.Choices[0].Delta.Content
-		if delta == "" {
-			continue
-		}
-		if err := onDelta(delta); err != nil {
-			return err
-		}
-	}
-	if err := sc.Err(); err != nil {
-		return fmt.Errorf("read stream: %w", err)
-	}
-	return nil
 }

@@ -8,6 +8,7 @@ import (
 	"moondust/internal/chat"
 	"moondust/internal/openrouter"
 	"moondust/internal/store"
+	"moondust/internal/workspace"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -394,12 +395,9 @@ func (s *Service) SendThreadMessage(ctx context.Context, threadID, content strin
 
 // StreamAssistantReply loads the thread transcript (including the latest user message), streams the model reply, and appends the assistant message on success.
 func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onDelta func(string) error) error {
-	thread, err := s.threadStore.Get(ctx, threadID)
+	thread, project, err := s.resolveThreadProject(ctx, threadID)
 	if err != nil {
-		return fmt.Errorf("get thread: %w", err)
-	}
-	if thread == nil {
-		return fmt.Errorf("thread not found")
+		return err
 	}
 
 	st, err := s.settingsStore.Get(ctx)
@@ -435,14 +433,39 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 		return history[i].CreatedAt.Before(history[j].CreatedAt)
 	})
 
-	apiMessages := buildOpenRouterMessagesFromHistory(chat.DefaultSystemPrompt, history)
+	workDir := project.Directory
+	if thread.WorktreeDir != "" {
+		workDir = thread.WorktreeDir
+	}
+	system := chat.WithWorkspaceDir(chat.DefaultSystemPrompt, workDir)
+	apiMessages := buildOpenRouterMessagesFromHistory(system, history)
+	tools := openrouter.ChatToolsFromWorkspace()
+
+	const maxToolSteps = 8
 	var full strings.Builder
-	err = openrouter.ChatCompletionStream(ctx, apiKey, model, apiMessages, func(delta string) error {
-		full.WriteString(delta)
-		return onDelta(delta)
-	})
-	if err != nil {
-		return err
+	for step := 0; step < maxToolSteps; step++ {
+		content, calls, err := openrouter.StreamCompletionRound(ctx, apiKey, model, apiMessages, tools, func(delta string) error {
+			full.WriteString(delta)
+			return onDelta(delta)
+		})
+		if err != nil {
+			return err
+		}
+		if len(calls) == 0 {
+			_ = content
+			break
+		}
+		if step == maxToolSteps-1 {
+			return fmt.Errorf("assistant requested tools too many times (max %d rounds)", maxToolSteps)
+		}
+		apiMessages = append(apiMessages, openrouter.AssistantWithToolCalls(content, calls))
+		for _, tc := range calls {
+			out, terr := workspace.RunTool(workDir, tc.Name, tc.Arguments)
+			if terr != nil {
+				out = "Error: " + terr.Error()
+			}
+			apiMessages = append(apiMessages, openrouter.ToolResultMessage(tc.ID, out))
+		}
 	}
 	replyText := strings.TrimSpace(full.String())
 	if replyText == "" {
@@ -476,15 +499,18 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 // buildOpenRouterMessagesFromHistory returns system plus stored turns in order (including the latest user message).
 func buildOpenRouterMessagesFromHistory(system string, history []*store.ChatMessage) []openrouter.APIMessage {
 	out := make([]openrouter.APIMessage, 0, 1+len(history))
-	out = append(out, openrouter.APIMessage{Role: "system", Content: system})
+	out = append(out, openrouter.APIMessage{Role: "system", Content: ptrString(system)})
 	for _, m := range history {
 		switch m.Role {
 		case "user", "assistant":
-			out = append(out, openrouter.APIMessage{Role: m.Role, Content: m.Content})
+			c := m.Content
+			out = append(out, openrouter.APIMessage{Role: m.Role, Content: &c})
 		}
 	}
 	return out
 }
+
+func ptrString(s string) *string { return &s }
 
 func (s *Service) GetThreadGitStatus(ctx context.Context, threadID string) (*store.GitStatus, error) {
 	thread, project, err := s.resolveThreadProject(ctx, threadID)
