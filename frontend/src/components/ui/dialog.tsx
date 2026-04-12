@@ -29,7 +29,7 @@ export const DialogOverlay: Component<DialogOverlayProps> = (props) => {
         <button
             type="button"
             class={cn(
-                "absolute inset-0 bg-black/65 backdrop-blur-xs animate-overlay-in",
+                "absolute inset-0 cursor-pointer bg-black/65 backdrop-blur-xs animate-overlay-in",
                 local.class,
             )}
             {...rest}

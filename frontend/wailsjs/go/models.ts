@@ -221,6 +221,13 @@ export namespace store {
 	export class OpenRouterChatModel {
 	    id: string;
 	    name: string;
+	    provider: string;
+	    description: string;
+	    pricing_tier: string;
+	    vision: boolean;
+	    reasoning: boolean;
+	    long_context: boolean;
+	    context_length: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new OpenRouterChatModel(source);
@@ -230,6 +237,13 @@ export namespace store {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
 	        this.name = source["name"];
+	        this.provider = source["provider"];
+	        this.description = source["description"];
+	        this.pricing_tier = source["pricing_tier"];
+	        this.vision = source["vision"];
+	        this.reasoning = source["reasoning"];
+	        this.long_context = source["long_context"];
+	        this.context_length = source["context_length"];
 	    }
 	}
 	export class Project {

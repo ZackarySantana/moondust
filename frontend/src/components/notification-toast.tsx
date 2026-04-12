@@ -88,7 +88,7 @@ export const NotificationToast: Component = () => {
                         {toast.deepLink && (
                             <button
                                 type="button"
-                                class="self-start rounded-md bg-emerald-900/40 px-2.5 py-1 text-[11px] font-medium text-emerald-200/90 transition-colors hover:bg-emerald-800/50"
+                                class="cursor-pointer self-start rounded-md bg-emerald-900/40 px-2.5 py-1 text-[11px] font-medium text-emerald-200/90 transition-colors hover:bg-emerald-800/50"
                                 onClick={() => go(toast.id, toast.deepLink)}
                             >
                                 {openActionLabel(toast.deepLink)}

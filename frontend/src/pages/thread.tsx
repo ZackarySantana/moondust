@@ -118,6 +118,12 @@ export const ThreadPage: Component = () => {
             return rows.map((m) => ({
                 id: m.id,
                 label: (m.name && m.name.trim()) || m.id,
+                provider: m.provider,
+                description: m.description,
+                pricing_tier: m.pricing_tier,
+                vision: m.vision,
+                reasoning: m.reasoning,
+                long_context: m.long_context,
             }));
         }
         return [...OPENROUTER_CHAT_MODELS_FALLBACK];
@@ -445,7 +451,7 @@ export const ThreadPage: Component = () => {
                                 when={editingTitle()}
                                 fallback={
                                     <h1
-                                        class="cursor-text truncate text-sm font-medium text-slate-100 hover:text-white"
+                                        class="cursor-pointer truncate text-sm font-medium text-slate-100 hover:text-white"
                                         onClick={startEditingTitle}
                                         title="Click to rename"
                                     >

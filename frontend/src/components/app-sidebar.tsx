@@ -243,7 +243,7 @@ const ProjectGroup: Component<{
                         </kbd>
                         <button
                             type="button"
-                            class="rounded-md p-1 text-slate-600 opacity-0 transition-all duration-100 hover:bg-slate-800/50 hover:text-slate-300 group-hover/project:opacity-100"
+                            class="cursor-pointer rounded-md p-1 text-slate-600 opacity-0 transition-all duration-100 hover:bg-slate-800/50 hover:text-slate-300 group-hover/project:opacity-100"
                             aria-label={`New thread in ${props.name}`}
                             onClick={(e) => {
                                 e.preventDefault();
@@ -262,7 +262,7 @@ const ProjectGroup: Component<{
                 {props.id && (
                     <A
                         href={`/project/${props.id}/settings`}
-                        class="shrink-0 rounded-md p-1 text-slate-600 opacity-0 transition-all duration-100 hover:bg-slate-800/50 hover:text-slate-300 group-hover/project:opacity-100"
+                        class="shrink-0 cursor-pointer rounded-md p-1 text-slate-600 opacity-0 transition-all duration-100 hover:bg-slate-800/50 hover:text-slate-300 group-hover/project:opacity-100"
                         aria-label={`${props.name} settings`}
                         onClick={(e) => e.stopPropagation()}
                     >

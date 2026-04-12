@@ -6,15 +6,19 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"moondust/internal/store"
 )
 
 const modelsListURL = "https://openrouter.ai/api/v1/models"
 
-const maxChatModelsListed = 72
+const maxChatModelsListed = 100
+
+const longContextThreshold = 128_000
 
 type apiModelsResponse struct {
 	Data []apiModel `json:"data"`
@@ -23,16 +27,22 @@ type apiModelsResponse struct {
 type apiModel struct {
 	ID                  string   `json:"id"`
 	Name                string   `json:"name"`
+	Description         string   `json:"description"`
 	Created             int64    `json:"created"`
+	ContextLength       int      `json:"context_length"`
 	SupportedParameters []string `json:"supported_parameters"`
-	Architecture        struct {
+	Pricing             struct {
+		Prompt     string `json:"prompt"`
+		Completion string `json:"completion"`
+	} `json:"pricing"`
+	Architecture struct {
 		InputModalities  []string `json:"input_modalities"`
 		OutputModalities []string `json:"output_modalities"`
 	} `json:"architecture"`
 }
 
 // ListChatModels fetches the public OpenRouter model list and returns entries suitable for chat
-// (text in/out, tool calling). Results are sorted newest-first and capped.
+// (text in/out, tool calling). Results are sorted by provider, then name, and capped.
 func ListChatModels(ctx context.Context) ([]store.OpenRouterChatModel, error) {
 	ctx, cancel := context.WithTimeout(ctx, 45*time.Second)
 	defer cancel()
@@ -59,34 +69,132 @@ func ListChatModels(ctx context.Context) ([]store.OpenRouterChatModel, error) {
 		return nil, fmt.Errorf("decode models: %w", err)
 	}
 
-	out := filterChatModels(payload.Data)
-	sort.SliceStable(out, func(i, j int) bool { return out[i].Created > out[j].Created })
+	filtered := filterChatModels(payload.Data)
+	sort.SliceStable(filtered, func(i, j int) bool {
+		pi, pj := providerSlug(filtered[i].ID), providerSlug(filtered[j].ID)
+		if pi != pj {
+			return pi < pj
+		}
+		return strings.ToLower(strings.TrimSpace(filtered[i].Name)) < strings.ToLower(strings.TrimSpace(filtered[j].Name))
+	})
 
-	trimmed := make([]store.OpenRouterChatModel, 0, min(len(out), maxChatModelsListed))
-	for i := range out {
-		if i >= maxChatModelsListed {
+	out := make([]store.OpenRouterChatModel, 0, min(len(filtered), maxChatModelsListed))
+	for i := range filtered {
+		if len(out) >= maxChatModelsListed {
 			break
 		}
-		name := strings.TrimSpace(out[i].Name)
-		if name == "" {
-			name = out[i].ID
-		}
-		trimmed = append(trimmed, store.OpenRouterChatModel{
-			ID:   out[i].ID,
-			Name: name,
-		})
+		out = append(out, toStoreModel(filtered[i]))
 	}
-	return trimmed, nil
+	return out, nil
 }
 
-type scoredModel struct {
-	ID      string
-	Name    string
-	Created int64
+func providerSlug(id string) string {
+	id = strings.TrimSpace(id)
+	i := strings.Index(id, "/")
+	if i <= 0 {
+		return "other"
+	}
+	return id[:i]
 }
 
-func filterChatModels(in []apiModel) []scoredModel {
-	var out []scoredModel
+func toStoreModel(m apiModel) store.OpenRouterChatModel {
+	name := strings.TrimSpace(m.Name)
+	if name == "" {
+		name = m.ID
+	}
+	desc := strings.TrimSpace(m.Description)
+	if desc == "" {
+		desc = "TBA"
+	} else {
+		desc = truncateRunes(firstLine(desc), 220)
+	}
+	return store.OpenRouterChatModel{
+		ID:            m.ID,
+		Name:          name,
+		Provider:      providerSlug(m.ID),
+		Description:   desc,
+		PricingTier:   pricingTierDisplay(m),
+		Vision:        visionCapable(m),
+		Reasoning:     reasoningCapable(m),
+		LongContext:   m.ContextLength >= longContextThreshold,
+		ContextLength: m.ContextLength,
+	}
+}
+
+func firstLine(s string) string {
+	s = strings.TrimSpace(s)
+	if i := strings.IndexAny(s, "\r\n"); i >= 0 {
+		return strings.TrimSpace(s[:i])
+	}
+	return s
+}
+
+func truncateRunes(s string, max int) string {
+	if max <= 0 {
+		return ""
+	}
+	if utf8.RuneCountInString(s) <= max {
+		return s
+	}
+	r := []rune(s)
+	if len(r) <= max {
+		return s
+	}
+	return string(r[:max]) + "…"
+}
+
+func pricingTierDisplay(m apiModel) string {
+	p := parsePriceString(m.Pricing.Prompt)
+	c := parsePriceString(m.Pricing.Completion)
+	sum := p + c
+	if sum <= 0 {
+		return "Free"
+	}
+	// Heuristic tiers from typical OpenRouter $/token strings (magnitudes vary by model class).
+	switch {
+	case sum < 0.00002:
+		return "$"
+	case sum < 0.0002:
+		return "$$"
+	case sum < 0.002:
+		return "$$$"
+	default:
+		return "$$$$"
+	}
+}
+
+func parsePriceString(s string) float64 {
+	s = strings.TrimSpace(s)
+	if s == "" || s == "0" {
+		return 0
+	}
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0
+	}
+	return f
+}
+
+func visionCapable(m apiModel) bool {
+	for _, x := range m.Architecture.InputModalities {
+		if x == "image" || x == "video" {
+			return true
+		}
+	}
+	return false
+}
+
+func reasoningCapable(m apiModel) bool {
+	for _, p := range m.SupportedParameters {
+		if p == "reasoning" || p == "include_reasoning" {
+			return true
+		}
+	}
+	return false
+}
+
+func filterChatModels(in []apiModel) []apiModel {
+	var out []apiModel
 	for _, m := range in {
 		if !hasString(m.SupportedParameters, "tools") {
 			continue
@@ -97,7 +205,7 @@ func filterChatModels(in []apiModel) []scoredModel {
 		if !hasString(m.Architecture.OutputModalities, "text") {
 			continue
 		}
-		out = append(out, scoredModel{ID: m.ID, Name: m.Name, Created: m.Created})
+		out = append(out, m)
 	}
 	return out
 }

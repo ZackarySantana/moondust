@@ -143,7 +143,7 @@ export const SettingsProvidersPage: Component = () => {
                                         href="https://openrouter.ai/docs/guides/overview/auth/oauth"
                                         target="_blank"
                                         rel="noreferrer"
-                                        class="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
+                                        class="inline-flex cursor-pointer items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
                                     >
                                         OAuth docs
                                         <ExternalLink

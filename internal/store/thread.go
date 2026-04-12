@@ -40,10 +40,17 @@ type ChatMessage struct {
 	ChatModel    string `json:"chat_model,omitempty"`
 }
 
-// OpenRouterChatModel is a selectable model id and label from the OpenRouter /api/v1/models list.
+// OpenRouterChatModel is a selectable model from the OpenRouter /api/v1/models list (chat + tools).
 type OpenRouterChatModel struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Provider      string `json:"provider"`       // Slug before the first "/" in id (e.g. openai).
+	Description   string `json:"description"`    // Short blurb; "TBA" if missing.
+	PricingTier   string `json:"pricing_tier"`   // Relative cost hint, e.g. "$$" or "Free".
+	Vision        bool   `json:"vision"`         // Accepts image (or video) input.
+	Reasoning     bool   `json:"reasoning"`      // Supports reasoning-style parameters.
+	LongContext   bool   `json:"long_context"`   // Large context window.
+	ContextLength int    `json:"context_length"` // Raw context_length from the API.
 }
 
 func (m *ChatMessage) Validate() error {

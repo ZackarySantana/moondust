@@ -6,33 +6,79 @@ export const CHAT_PROVIDERS: readonly {
     label: string;
 }[] = [{ id: "openrouter", label: "OpenRouter" }];
 
-/** Fallback picker + labels when ListOpenRouterChatModels has not loaded yet or fails. */
-export const OPENROUTER_CHAT_MODELS_FALLBACK: readonly {
+export type ModelChoice = {
     id: string;
     label: string;
-}[] = [
-    { id: "openai/gpt-5.4", label: "OpenAI: GPT-5.4" },
-    { id: "openai/gpt-5.4-mini", label: "OpenAI: GPT-5.4 Mini" },
+    provider?: string;
+    description?: string;
+    pricing_tier?: string;
+    vision?: boolean;
+    reasoning?: boolean;
+    long_context?: boolean;
+};
+
+/** Fallback picker when ListOpenRouterChatModels has not loaded yet or fails. */
+export const OPENROUTER_CHAT_MODELS_FALLBACK: readonly ModelChoice[] = [
+    {
+        id: "openai/gpt-5.4",
+        label: "OpenAI: GPT-5.4",
+        provider: "openai",
+        description: "TBA",
+    },
+    {
+        id: "openai/gpt-5.4-mini",
+        label: "OpenAI: GPT-5.4 Mini",
+        provider: "openai",
+        description: "TBA",
+    },
     {
         id: "anthropic/claude-sonnet-4.6",
         label: "Anthropic: Claude Sonnet 4.6",
+        provider: "anthropic",
+        description: "TBA",
     },
-    { id: "anthropic/claude-opus-4.6", label: "Anthropic: Claude Opus 4.6" },
+    {
+        id: "anthropic/claude-opus-4.6",
+        label: "Anthropic: Claude Opus 4.6",
+        provider: "anthropic",
+        description: "TBA",
+    },
     {
         id: "google/gemini-3.1-pro-preview",
         label: "Google: Gemini 3.1 Pro Preview",
+        provider: "google",
+        description: "TBA",
     },
     {
         id: "google/gemini-3.1-flash-lite-preview",
         label: "Google: Gemini 3.1 Flash Lite",
+        provider: "google",
+        description: "TBA",
     },
-    { id: "openai/gpt-4o-mini", label: "OpenAI: GPT-4o mini" },
+    {
+        id: "openai/gpt-4o-mini",
+        label: "OpenAI: GPT-4o mini",
+        provider: "openai",
+        description: "TBA",
+    },
     {
         id: "meta-llama/llama-3.3-70b-instruct",
         label: "Meta: Llama 3.3 70B Instruct",
+        provider: "meta-llama",
+        description: "TBA",
     },
-    { id: "deepseek/deepseek-r1-0528", label: "DeepSeek: R1" },
-    { id: "qwen/qwen3-coder-next", label: "Qwen: Qwen3 Coder Next" },
+    {
+        id: "deepseek/deepseek-r1-0528",
+        label: "DeepSeek: R1",
+        provider: "deepseek",
+        description: "TBA",
+    },
+    {
+        id: "qwen/qwen3-coder-next",
+        label: "Qwen: Qwen3 Coder Next",
+        provider: "qwen",
+        description: "TBA",
+    },
 ];
 
 /** Normalize persisted thread.chat_provider (empty legacy threads default to OpenRouter). */
@@ -48,8 +94,6 @@ export function chatProviderFromThread(
 export function chatModelFromThread(raw: string | undefined): string {
     return (raw ?? "").trim();
 }
-
-export type ModelChoice = { id: string; label: string };
 
 /** Resolve display name for a model id using API list, then fallback slugs. */
 export function modelDisplayName(
