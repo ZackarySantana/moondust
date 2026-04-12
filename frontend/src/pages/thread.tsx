@@ -60,6 +60,7 @@ export const ThreadPage: Component = () => {
     const queryClient = useQueryClient();
     const { onAction, formatKey } = useShortcuts();
     const [draft, setDraft] = createSignal("");
+    const [sendError, setSendError] = createSignal("");
     let chatTextareaRef!: HTMLTextAreaElement;
     const [userAtBottom, setUserAtBottom] = createSignal(true);
     const [terminalHeight, setTerminalHeight] = createSignal(208);
@@ -101,8 +102,12 @@ export const ThreadPage: Component = () => {
     const sendMutation = useMutation(() => ({
         mutationFn: (content: string) =>
             SendThreadMessage(params.threadId, content),
+        onMutate: () => {
+            setSendError("");
+        },
         onSuccess: async () => {
             setDraft("");
+            setSendError("");
             await queryClient.invalidateQueries({
                 queryKey: queryKeys.threads.messages(params.threadId),
             });
@@ -112,6 +117,15 @@ export const ThreadPage: Component = () => {
             await queryClient.invalidateQueries({
                 queryKey: queryKeys.threads.detail(params.threadId),
             });
+        },
+        onError: (err: unknown) => {
+            const msg =
+                err instanceof Error
+                    ? err.message
+                    : typeof err === "string"
+                      ? err
+                      : "Failed to send message";
+            setSendError(msg);
         },
     }));
 
@@ -531,7 +545,14 @@ export const ThreadPage: Component = () => {
 
                             {/* ── Input bar ── */}
                             <div class="shrink-0 border-t border-slate-800/40 px-4 py-3">
-                                <div class="mx-auto w-full max-w-3xl">
+                                <div class="mx-auto w-full max-w-3xl space-y-2">
+                                    <Show when={sendError()}>
+                                        {(msg) => (
+                                            <p class="text-xs text-red-400/90">
+                                                {msg()}
+                                            </p>
+                                        )}
+                                    </Show>
                                     <div class="rounded-xl border border-slate-800/50 bg-slate-900/40 transition-colors focus-within:border-emerald-700/40">
                                         <textarea
                                             ref={(el) => {

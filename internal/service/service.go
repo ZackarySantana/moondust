@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"fmt"
 	"log/slog"
+	"moondust/internal/chat"
+	"moondust/internal/openrouter"
 	"moondust/internal/store"
 	"os"
 	"os/exec"
@@ -339,6 +341,45 @@ func (s *Service) SendThreadMessage(ctx context.Context, threadID, content strin
 		return nil, fmt.Errorf("message cannot be empty")
 	}
 
+	st, err := s.settingsStore.Get(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("load settings: %w", err)
+	}
+	if st == nil {
+		st = &store.Settings{}
+	}
+	apiKey := strings.TrimSpace(st.OpenRouterAPIKey)
+	if apiKey == "" {
+		return nil, fmt.Errorf("add an OpenRouter API key in Settings → Providers")
+	}
+
+	provider := strings.TrimSpace(thread.ChatProvider)
+	if provider == "" {
+		provider = "openrouter"
+	}
+	if provider != "openrouter" {
+		return nil, fmt.Errorf("unsupported chat provider %q (only OpenRouter is available)", provider)
+	}
+
+	model := strings.TrimSpace(thread.ChatModel)
+	if model == "" {
+		model = "openai/gpt-4o-mini"
+	}
+
+	history, err := s.messageStore.ListByThread(ctx, threadID)
+	if err != nil {
+		return nil, fmt.Errorf("list thread messages: %w", err)
+	}
+	sort.Slice(history, func(i, j int) bool {
+		return history[i].CreatedAt.Before(history[j].CreatedAt)
+	})
+
+	apiMessages := buildOpenRouterMessages(chat.DefaultSystemPrompt, history, trimmed)
+	replyText, err := openrouter.ChatCompletion(ctx, apiKey, model, apiMessages)
+	if err != nil {
+		return nil, err
+	}
+
 	now := time.Now().UTC()
 	userMessage := &store.ChatMessage{
 		ID:        rand.Text(),
@@ -351,7 +392,7 @@ func (s *Service) SendThreadMessage(ctx context.Context, threadID, content strin
 		ID:        rand.Text(),
 		ThreadID:  threadID,
 		Role:      "assistant",
-		Content:   fmt.Sprintf("%s says the robot", trimmed),
+		Content:   replyText,
 		CreatedAt: now.Add(time.Millisecond),
 	}
 	if err := userMessage.Validate(); err != nil {
@@ -377,6 +418,20 @@ func (s *Service) SendThreadMessage(ctx context.Context, threadID, content strin
 	}
 
 	return []*store.ChatMessage{userMessage, replyMessage}, nil
+}
+
+// buildOpenRouterMessages returns system, prior turns in order, then the new user message (not yet stored).
+func buildOpenRouterMessages(system string, history []*store.ChatMessage, newUser string) []openrouter.APIMessage {
+	out := make([]openrouter.APIMessage, 0, 2+len(history))
+	out = append(out, openrouter.APIMessage{Role: "system", Content: system})
+	for _, m := range history {
+		switch m.Role {
+		case "user", "assistant":
+			out = append(out, openrouter.APIMessage{Role: m.Role, Content: m.Content})
+		}
+	}
+	out = append(out, openrouter.APIMessage{Role: "user", Content: newUser})
+	return out
 }
 
 func (s *Service) GetThreadGitStatus(ctx context.Context, threadID string) (*store.GitStatus, error) {
