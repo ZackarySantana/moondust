@@ -18,6 +18,8 @@ export function CreateThread(arg1:string,arg2:boolean):Promise<store.Thread>;
 
 export function DeleteProject(arg1:string,arg2:boolean):Promise<void>;
 
+export function DeleteThread(arg1:string,arg2:boolean):Promise<void>;
+
 export function DownloadLogs():Promise<void>;
 
 export function GetBuildLabel():Promise<string>;

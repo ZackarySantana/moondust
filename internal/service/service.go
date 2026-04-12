@@ -286,6 +286,32 @@ func (s *Service) RenameThread(ctx context.Context, id, title string) error {
 	return s.threadStore.Update(ctx, thread)
 }
 
+// DeleteThread removes the thread and its messages from storage. When removeWorktree is true and the thread has a
+// git worktree, runs `git worktree remove --force` from the project root first.
+func (s *Service) DeleteThread(ctx context.Context, threadID string, removeWorktree bool) error {
+	thread, err := s.threadStore.Get(ctx, threadID)
+	if err != nil {
+		return fmt.Errorf("get thread: %w", err)
+	}
+	if thread == nil {
+		return fmt.Errorf("thread not found")
+	}
+	project, err := s.projectStore.Get(ctx, thread.ProjectID)
+	if err != nil {
+		return fmt.Errorf("get project: %w", err)
+	}
+	if project == nil {
+		return fmt.Errorf("project not found")
+	}
+	worktreeDir := strings.TrimSpace(thread.WorktreeDir)
+	if removeWorktree && worktreeDir != "" && strings.TrimSpace(project.Directory) != "" {
+		if _, err := runGit(ctx, project.Directory, "worktree", "remove", "--force", worktreeDir); err != nil {
+			return fmt.Errorf("remove worktree: %w", err)
+		}
+	}
+	return s.threadStore.Delete(ctx, threadID)
+}
+
 // SetThreadChatProvider persists which chat provider this thread uses (e.g. "openrouter").
 func (s *Service) SetThreadChatProvider(ctx context.Context, threadID, provider string) error {
 	provider = strings.TrimSpace(provider)

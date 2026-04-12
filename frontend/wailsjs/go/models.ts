@@ -5,7 +5,6 @@ export namespace store {
 	    completion_tokens?: number;
 	    total_tokens?: number;
 	    cost_usd?: number;
-	    /** Model reasoning / thinking trace when the provider exposes it (e.g. OpenRouter). */
 	    reasoning?: string;
 	
 	    static createFrom(source: any = {}) {

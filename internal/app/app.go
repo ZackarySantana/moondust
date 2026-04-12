@@ -131,6 +131,11 @@ func (a *App) RenameThread(id, title string) error {
 	return a.service.RenameThread(a.Ctx, id, title)
 }
 
+// DeleteThread removes a thread and its chat history. When removeWorktree is true, removes the thread's git worktree if present.
+func (a *App) DeleteThread(threadID string, removeWorktree bool) error {
+	return a.service.DeleteThread(a.Ctx, threadID, removeWorktree)
+}
+
 // SetThreadChatProvider saves which chat provider this thread uses (see store.Thread.ChatProvider).
 func (a *App) SetThreadChatProvider(threadID, provider string) error {
 	return a.service.SetThreadChatProvider(a.Ctx, threadID, provider)

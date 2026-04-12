@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
-import { useParams } from "@solidjs/router";
+import { useNavigate, useParams } from "@solidjs/router";
 import type { Component } from "solid-js";
 import { createMemo, createSignal, onCleanup, Show } from "solid-js";
 import {
+    DeleteThread,
     GetFileDiff,
     GetProject,
     GetSettings,
@@ -37,6 +38,7 @@ import type { DiffNav } from "@/components/diff-viewer";
 
 export const ThreadPage: Component = () => {
     const params = useParams<{ projectId: string; threadId: string }>();
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { onAction, formatKey } = useShortcuts();
     const [draft, setDraft] = createSignal("");
@@ -373,6 +375,16 @@ export const ThreadPage: Component = () => {
                     sidebarOpen={sidebarOpen}
                     onToggleSidebar={() => setSidebarOpen((v) => !v)}
                     formatKey={formatKey}
+                    hasWorktree={() =>
+                        !!(threadQuery.data?.worktree_dir ?? "").trim()
+                    }
+                    onDeleteThread={async (removeWorktree) => {
+                        await DeleteThread(params.threadId, removeWorktree);
+                        await queryClient.invalidateQueries({
+                            queryKey: queryKeys.threads.all,
+                        });
+                        navigate("/");
+                    }}
                 />
 
                 <Show
