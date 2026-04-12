@@ -449,13 +449,20 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 		return fmt.Errorf("openrouter: empty assistant reply")
 	}
 
+	prov := strings.TrimSpace(thread.ChatProvider)
+	if prov == "" {
+		prov = "openrouter"
+	}
+
 	now := time.Now().UTC()
 	replyMessage := &store.ChatMessage{
-		ID:        rand.Text(),
-		ThreadID:  threadID,
-		Role:      "assistant",
-		Content:   replyText,
-		CreatedAt: now,
+		ID:           rand.Text(),
+		ThreadID:     threadID,
+		Role:         "assistant",
+		Content:      replyText,
+		CreatedAt:    now,
+		ChatProvider: prov,
+		ChatModel:    model,
 	}
 	if err := replyMessage.Validate(); err != nil {
 		return err

@@ -35,6 +35,9 @@ type ChatMessage struct {
 	Role      string    `json:"role"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
+	// ChatProvider and ChatModel record which stack produced an assistant reply (e.g. openrouter + openai/gpt-4o-mini).
+	ChatProvider string `json:"chat_provider,omitempty"`
+	ChatModel    string `json:"chat_model,omitempty"`
 }
 
 func (m *ChatMessage) Validate() error {

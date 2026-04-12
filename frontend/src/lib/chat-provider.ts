@@ -32,3 +32,20 @@ export function chatProviderFromThread(
 export function chatModelFromThread(raw: string | undefined): string {
     return (raw ?? "").trim();
 }
+
+/** Short line for above assistant bubbles: "OpenRouter · GPT-4o mini". */
+export function assistantAttributionLabel(
+    providerRaw: string | undefined,
+    modelRaw: string | undefined,
+): string | null {
+    const prov = chatProviderFromThread(providerRaw);
+    const providerLabel =
+        CHAT_PROVIDERS.find((p) => p.id === prov)?.label ?? prov;
+    const mid = chatModelFromThread(modelRaw);
+    const modelLabel = mid
+        ? (OPENROUTER_CHAT_MODELS.find((m) => m.id === mid)?.label ?? mid)
+        : "";
+    if (!providerLabel && !modelLabel) return null;
+    if (providerLabel && modelLabel) return `${providerLabel} · ${modelLabel}`;
+    return providerLabel || modelLabel;
+}

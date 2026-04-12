@@ -7,6 +7,8 @@ export namespace store {
 	    content: string;
 	    // Go type: time
 	    created_at: any;
+	    chat_provider?: string;
+	    chat_model?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ChatMessage(source);
@@ -19,6 +21,8 @@ export namespace store {
 	        this.role = source["role"];
 	        this.content = source["content"];
 	        this.created_at = this.convertValues(source["created_at"], null);
+	        this.chat_provider = source["chat_provider"];
+	        this.chat_model = source["chat_model"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

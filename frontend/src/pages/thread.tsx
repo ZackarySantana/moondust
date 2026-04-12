@@ -43,6 +43,7 @@ import { Kbd } from "@/components/kbd";
 import { ResizeHandle } from "@/components/resize-handle";
 import { TerminalPane } from "@/components/terminal-pane";
 import {
+    assistantAttributionLabel,
     chatModelFromThread,
     chatProviderFromThread,
     type ChatProviderId,
@@ -195,6 +196,12 @@ export const ThreadPage: Component = () => {
     );
     const chatModel = createMemo(() =>
         chatModelFromThread(threadQuery.data?.chat_model),
+    );
+    const streamingAttribution = createMemo(() =>
+        assistantAttributionLabel(
+            threadQuery.data?.chat_provider,
+            threadQuery.data?.chat_model,
+        ),
     );
     const canSend = createMemo(
         () =>
@@ -564,86 +571,131 @@ export const ThreadPage: Component = () => {
                                         }
                                     >
                                         <For each={messages()}>
-                                            {(msg) => (
-                                                <div
-                                                    class={
-                                                        msg.role === "user"
-                                                            ? "flex justify-end py-1"
-                                                            : "flex justify-start py-1"
-                                                    }
-                                                >
+                                            {(msg) => {
+                                                const assistantLine = () => {
+                                                    if (
+                                                        msg.role !== "assistant"
+                                                    )
+                                                        return null;
+                                                    return (
+                                                        assistantAttributionLabel(
+                                                            msg.chat_provider,
+                                                            msg.chat_model,
+                                                        ) ??
+                                                        assistantAttributionLabel(
+                                                            threadQuery.data
+                                                                ?.chat_provider,
+                                                            threadQuery.data
+                                                                ?.chat_model,
+                                                        )
+                                                    );
+                                                };
+                                                return (
                                                     <div
                                                         class={
                                                             msg.role === "user"
-                                                                ? "max-w-[80%] rounded-2xl rounded-br-md bg-emerald-800/30 px-3.5 py-2.5 text-[13px] leading-relaxed text-slate-100"
-                                                                : "flex max-w-[85%] gap-2.5 py-1"
+                                                                ? "flex justify-end py-1"
+                                                                : "flex justify-start py-1"
                                                         }
                                                     >
                                                         <Show
                                                             when={
                                                                 msg.role ===
-                                                                "assistant"
-                                                            }
-                                                        >
-                                                            <div class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-slate-800/60">
-                                                                <Bot
-                                                                    class="size-3.5 text-emerald-500/70"
-                                                                    stroke-width={
-                                                                        1.5
-                                                                    }
-                                                                />
-                                                            </div>
-                                                        </Show>
-                                                        <div
-                                                            class={
-                                                                msg.role ===
-                                                                "assistant"
-                                                                    ? "min-w-0 text-[13px] leading-relaxed text-slate-300"
-                                                                    : ""
-                                                            }
-                                                        >
-                                                            <p class="whitespace-pre-wrap wrap-break-word">
-                                                                {msg.content}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </For>
-                                        <Show when={streaming()}>
-                                            <div class="flex justify-start py-1">
-                                                <div class="flex max-w-[85%] gap-2.5 py-1">
-                                                    <div class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-slate-800/60">
-                                                        <Bot
-                                                            class="size-3.5 text-emerald-500/70"
-                                                            stroke-width={1.5}
-                                                        />
-                                                    </div>
-                                                    <div class="min-w-0 text-[13px] leading-relaxed text-slate-300">
-                                                        <Show
-                                                            when={
-                                                                streamingText()
-                                                                    .length > 0
+                                                                "user"
                                                             }
                                                             fallback={
-                                                                <div class="flex items-center gap-2 text-slate-500">
-                                                                    <Loader2
-                                                                        class="size-3.5 animate-spin"
-                                                                        stroke-width={
-                                                                            2
-                                                                        }
-                                                                        aria-hidden
-                                                                    />
-                                                                    <span class="text-xs">
-                                                                        Thinking…
-                                                                    </span>
+                                                                <div class="flex min-w-0 max-w-[85%] flex-col gap-1">
+                                                                    <Show
+                                                                        when={assistantLine()}
+                                                                    >
+                                                                        {(
+                                                                            line,
+                                                                        ) => (
+                                                                            <p class="pl-[34px] text-[10px] leading-tight text-slate-500">
+                                                                                {line()}
+                                                                            </p>
+                                                                        )}
+                                                                    </Show>
+                                                                    <div class="flex gap-2.5 py-1">
+                                                                        <div class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-slate-800/60">
+                                                                            <Bot
+                                                                                class="size-3.5 text-emerald-500/70"
+                                                                                stroke-width={
+                                                                                    1.5
+                                                                                }
+                                                                            />
+                                                                        </div>
+                                                                        <div class="min-w-0 text-[13px] leading-relaxed text-slate-300">
+                                                                            <p class="whitespace-pre-wrap wrap-break-word">
+                                                                                {
+                                                                                    msg.content
+                                                                                }
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             }
                                                         >
-                                                            <p class="whitespace-pre-wrap wrap-break-word">
-                                                                {streamingText()}
-                                                            </p>
+                                                            <div class="max-w-[80%] rounded-2xl rounded-br-md bg-emerald-800/30 px-3.5 py-2.5 text-[13px] leading-relaxed text-slate-100">
+                                                                <p class="whitespace-pre-wrap wrap-break-word">
+                                                                    {
+                                                                        msg.content
+                                                                    }
+                                                                </p>
+                                                            </div>
                                                         </Show>
+                                                    </div>
+                                                );
+                                            }}
+                                        </For>
+                                        <Show when={streaming()}>
+                                            <div class="flex justify-start py-1">
+                                                <div class="flex min-w-0 max-w-[85%] flex-col gap-1">
+                                                    <Show
+                                                        when={streamingAttribution()}
+                                                    >
+                                                        {(line) => (
+                                                            <p class="pl-[34px] text-[10px] leading-tight text-slate-500">
+                                                                {line()}
+                                                            </p>
+                                                        )}
+                                                    </Show>
+                                                    <div class="flex gap-2.5 py-1">
+                                                        <div class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-slate-800/60">
+                                                            <Bot
+                                                                class="size-3.5 text-emerald-500/70"
+                                                                stroke-width={
+                                                                    1.5
+                                                                }
+                                                            />
+                                                        </div>
+                                                        <div class="min-w-0 text-[13px] leading-relaxed text-slate-300">
+                                                            <Show
+                                                                when={
+                                                                    streamingText()
+                                                                        .length >
+                                                                    0
+                                                                }
+                                                                fallback={
+                                                                    <div class="flex items-center gap-2 text-slate-500">
+                                                                        <Loader2
+                                                                            class="size-3.5 animate-spin"
+                                                                            stroke-width={
+                                                                                2
+                                                                            }
+                                                                            aria-hidden
+                                                                        />
+                                                                        <span class="text-xs">
+                                                                            Thinking…
+                                                                        </span>
+                                                                    </div>
+                                                                }
+                                                            >
+                                                                <p class="whitespace-pre-wrap wrap-break-word">
+                                                                    {streamingText()}
+                                                                </p>
+                                                            </Show>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
