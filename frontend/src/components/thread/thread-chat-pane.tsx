@@ -6,6 +6,7 @@ import Sparkles from "lucide-solid/icons/sparkles";
 import type { Component } from "solid-js";
 import { createEffect, createSignal, For, on, Show } from "solid-js";
 import { AssistantMessageMetadataButton } from "@/components/assistant-message-metadata";
+import { ChatMarkdown } from "@/components/chat-markdown";
 import { ChatProviderBar } from "@/components/chat-provider-bar";
 import {
     assistantAttributionLabel,
@@ -214,21 +215,23 @@ export const ThreadChatPane: Component<{
                                                                     }
                                                                 />
                                                             </div>
-                                                            <div class="min-w-0 text-[13px] leading-relaxed text-slate-300">
-                                                                <p class="whitespace-pre-wrap wrap-break-word">
-                                                                    {
+                                                            <div class="min-w-0 text-slate-300">
+                                                                <ChatMarkdown
+                                                                    source={
                                                                         msg.content
                                                                     }
-                                                                </p>
+                                                                    variant="assistant"
+                                                                />
                                                             </div>
                                                         </div>
                                                     </div>
                                                 }
                                             >
-                                                <div class="max-w-[80%] rounded-2xl rounded-br-md bg-emerald-800/30 px-3.5 py-2.5 text-[13px] leading-relaxed text-slate-100">
-                                                    <p class="whitespace-pre-wrap wrap-break-word">
-                                                        {msg.content}
-                                                    </p>
+                                                <div class="max-w-[80%] rounded-2xl rounded-br-md bg-emerald-800/30 px-3.5 py-2.5 text-slate-100">
+                                                    <ChatMarkdown
+                                                        source={msg.content}
+                                                        variant="user"
+                                                    />
                                                 </div>
                                             </Show>
                                         </div>
@@ -272,7 +275,7 @@ export const ThreadChatPane: Component<{
                                                     stroke-width={1.5}
                                                 />
                                             </div>
-                                            <div class="min-w-0 text-[13px] leading-relaxed text-slate-300">
+                                            <div class="min-w-0 text-slate-300">
                                                 <Show
                                                     when={
                                                         props.streamingText()
@@ -294,9 +297,10 @@ export const ThreadChatPane: Component<{
                                                         </div>
                                                     }
                                                 >
-                                                    <p class="whitespace-pre-wrap wrap-break-word">
-                                                        {props.streamingText()}
-                                                    </p>
+                                                    <ChatMarkdown
+                                                        source={props.streamingText()}
+                                                        variant="assistant"
+                                                    />
                                                 </Show>
                                             </div>
                                         </div>

@@ -257,7 +257,9 @@ func (s *Service) CreateThread(ctx context.Context, projectID string, useWorktre
 
 	if useWorktree && project.Directory != "" {
 		branchName := fmt.Sprintf("moondust/%s", thread.ID[:16])
-		worktreeDir := filepath.Join(project.Directory, ".moondust-worktrees", thread.ID[:16])
+		// Under .git so the checkout stays out of the normal working tree (editors/file lists)
+		// and is never confused with tracked project files.
+		worktreeDir := filepath.Join(project.Directory, ".git", "moondust-worktrees", thread.ID[:16])
 		if _, err := runGit(ctx, project.Directory, "worktree", "add", "-b", branchName, worktreeDir); err != nil {
 			return nil, fmt.Errorf("create worktree: %w", err)
 		}
