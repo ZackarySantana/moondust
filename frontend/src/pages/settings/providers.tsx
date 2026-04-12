@@ -275,11 +275,13 @@ const OpenRouterUsageMetricsPanel: Component = () => {
                 Local usage (this device)
             </p>
             <p class="mt-1 text-xs text-slate-500">
-                From stored assistant replies: billed{" "}
+                Averages are total billed{" "}
                 <code class="rounded bg-slate-900/80 px-1 py-0.5 text-[10px] text-slate-400">
                     cost_usd
                 </code>{" "}
-                when OpenRouter reports it, plus token counts when present.
+                divided by assistant turn count (per model or overall). Turns
+                without a reported cost still count toward the divisor, so
+                averages reflect typical spend per reply.
             </p>
 
             <Show
@@ -302,13 +304,24 @@ const OpenRouterUsageMetricsPanel: Component = () => {
                         const data = m();
                         return (
                             <div class="mt-4 space-y-4">
-                                <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                <div class="grid grid-cols-2 gap-2 lg:grid-cols-5">
                                     <div class="rounded-md border border-slate-800/60 bg-slate-950/40 px-2.5 py-2">
                                         <p class="text-[10px] uppercase text-slate-500">
                                             Total spend
                                         </p>
                                         <p class="mt-0.5 font-mono text-sm text-slate-200">
                                             {formatUsd(data.total_cost_usd)}
+                                        </p>
+                                    </div>
+                                    <div class="rounded-md border border-slate-800/60 bg-slate-950/40 px-2.5 py-2">
+                                        <p class="text-[10px] uppercase text-slate-500">
+                                            Avg per turn (all)
+                                        </p>
+                                        <p class="mt-0.5 font-mono text-sm text-slate-200">
+                                            {formatUsd(
+                                                data.average_cost_per_assistant_turn_usd ??
+                                                    0,
+                                            )}
                                         </p>
                                     </div>
                                     <div class="rounded-md border border-slate-800/60 bg-slate-950/40 px-2.5 py-2">
@@ -381,40 +394,33 @@ const OpenRouterUsageMetricsPanel: Component = () => {
                                     )}
                                 />
                                 <ExpandableMetricList
-                                    title="Most expensive models (by billed cost)"
-                                    emptyHint="No billed cost recorded yet (cost appears after replies when OpenRouter reports it)."
+                                    title="Highest average cost per turn (by model)"
+                                    emptyHint="No assistant turns recorded yet."
                                     rows={data.most_expensive ?? []}
                                     renderRow={(row) => (
-                                        <>
+                                        <div class="flex min-w-0 flex-1 items-start justify-between gap-3">
                                             <span class="min-w-0 truncate font-mono text-[11px] text-slate-200">
                                                 {row.model_id}
                                             </span>
-                                            <span class="shrink-0 text-right font-mono text-[11px] text-amber-200/90">
-                                                {formatUsd(row.total_cost_usd)}
-                                            </span>
-                                        </>
-                                    )}
-                                />
-                                <ExpandableMetricList
-                                    title="Most expensive messages (single turn)"
-                                    emptyHint="No per-message cost recorded yet."
-                                    rows={data.most_expensive_per_message ?? []}
-                                    renderRow={(row) => (
-                                        <>
-                                            <span class="min-w-0 truncate font-mono text-[11px] text-slate-200">
-                                                {row.model_id}
-                                            </span>
-                                            <span class="flex shrink-0 flex-col items-end gap-0.5">
+                                            <div class="flex shrink-0 flex-col items-end gap-0.5 text-right">
                                                 <span class="font-mono text-[11px] text-amber-200/90">
-                                                    {formatUsd(row.cost_usd)}
+                                                    {formatUsd(
+                                                        row.average_cost_usd ??
+                                                            0,
+                                                    )}{" "}
+                                                    <span class="text-[10px] font-normal text-slate-500">
+                                                        avg/turn
+                                                    </span>
                                                 </span>
-                                                <span class="text-[10px] text-slate-500">
-                                                    {formatLastUsed(
-                                                        row.created_at,
-                                                    )}
+                                                <span class="font-mono text-[10px] text-slate-500">
+                                                    {row.use_count} turns ·{" "}
+                                                    {formatUsd(
+                                                        row.total_cost_usd,
+                                                    )}{" "}
+                                                    total
                                                 </span>
-                                            </span>
-                                        </>
+                                            </div>
+                                        </div>
                                     )}
                                 />
                             </div>
@@ -458,7 +464,7 @@ const ExpandableMetricList = <T,>(props: {
             >
                 <ul class="divide-y divide-slate-800/40">
                     {visible().map((row) => (
-                        <li class="flex items-center justify-between gap-2 px-2.5 py-1.5">
+                        <li class="flex items-start justify-between gap-2 px-2.5 py-1.5">
                             {props.renderRow(row)}
                         </li>
                     ))}

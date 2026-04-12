@@ -8,34 +8,29 @@ import (
 
 // OpenRouterModelUsage is per-model aggregates from stored assistant messages.
 type OpenRouterModelUsage struct {
-	ModelID               string    `json:"model_id"`
-	LastUsedAt            time.Time `json:"last_used_at"`
-	UseCount              int       `json:"use_count"`
-	TotalCostUSD          float64   `json:"total_cost_usd"`
-	TotalPromptTokens     int64     `json:"total_prompt_tokens"`
-	TotalCompletionTokens int64     `json:"total_completion_tokens"`
-}
-
-// OpenRouterMessageCost is one assistant turn with a billed cost (for per-message rankings).
-type OpenRouterMessageCost struct {
-	MessageID string    `json:"message_id"`
-	ModelID   string    `json:"model_id"`
-	CostUSD   float64   `json:"cost_usd"`
-	CreatedAt time.Time `json:"created_at"`
+	ModelID      string    `json:"model_id"`
+	LastUsedAt   time.Time `json:"last_used_at"`
+	UseCount     int       `json:"use_count"`
+	TotalCostUSD float64   `json:"total_cost_usd"`
+	// AverageCostUSD is total billed cost divided by assistant turn count for this model (same as $10 / 10 turns = $1).
+	AverageCostUSD        float64 `json:"average_cost_usd"`
+	TotalPromptTokens     int64   `json:"total_prompt_tokens"`
+	TotalCompletionTokens int64   `json:"total_completion_tokens"`
 }
 
 // OpenRouterUsageMetrics summarizes OpenRouter chat usage across all threads.
 type OpenRouterUsageMetrics struct {
-	TotalAssistantMessages int                    `json:"total_assistant_messages"`
-	DistinctModels         int                    `json:"distinct_models"`
-	TotalCostUSD           float64                `json:"total_cost_usd"`
-	TotalPromptTokens      int64                  `json:"total_prompt_tokens"`
-	TotalCompletionTokens  int64                  `json:"total_completion_tokens"`
-	RecentlyUsed           []OpenRouterModelUsage `json:"recently_used"`
-	MostUsed               []OpenRouterModelUsage `json:"most_used"`
-	MostExpensive          []OpenRouterModelUsage `json:"most_expensive"`
-	// MostExpensivePerMessage lists individual assistant messages with cost, highest billed cost first.
-	MostExpensivePerMessage []OpenRouterMessageCost `json:"most_expensive_per_message"`
+	TotalAssistantMessages int     `json:"total_assistant_messages"`
+	DistinctModels         int     `json:"distinct_models"`
+	TotalCostUSD           float64 `json:"total_cost_usd"`
+	// AverageCostPerAssistantTurnUSD is total_cost_usd / total_assistant_messages (all models).
+	AverageCostPerAssistantTurnUSD float64                `json:"average_cost_per_assistant_turn_usd"`
+	TotalPromptTokens              int64                  `json:"total_prompt_tokens"`
+	TotalCompletionTokens          int64                  `json:"total_completion_tokens"`
+	RecentlyUsed                   []OpenRouterModelUsage `json:"recently_used"`
+	MostUsed                       []OpenRouterModelUsage `json:"most_used"`
+	// MostExpensive is sorted by AverageCostUSD descending (typical cost per turn for that model).
+	MostExpensive []OpenRouterModelUsage `json:"most_expensive"`
 }
 
 type openRouterAgg struct {
@@ -53,7 +48,6 @@ func AggregateOpenRouterUsageMetrics(messages []*ChatMessage) *OpenRouterUsageMe
 	var totalMsgs int
 	var totalCost float64
 	var totalPrompt, totalCompletion int64
-	var perMessage []OpenRouterMessageCost
 
 	for _, msg := range messages {
 		if msg == nil || msg.Role != "assistant" {
@@ -85,12 +79,6 @@ func AggregateOpenRouterUsageMetrics(messages []*ChatMessage) *OpenRouterUsageMe
 				c := *or.CostUSD
 				a.cost += c
 				totalCost += c
-				perMessage = append(perMessage, OpenRouterMessageCost{
-					MessageID: msg.ID,
-					ModelID:   model,
-					CostUSD:   c,
-					CreatedAt: msg.CreatedAt,
-				})
 			}
 			if or.PromptTokens != nil {
 				v := int64(*or.PromptTokens)
@@ -107,11 +95,16 @@ func AggregateOpenRouterUsageMetrics(messages []*ChatMessage) *OpenRouterUsageMe
 
 	rows := make([]OpenRouterModelUsage, 0, len(byModel))
 	for id, a := range byModel {
+		avg := 0.0
+		if a.count > 0 {
+			avg = a.cost / float64(a.count)
+		}
 		rows = append(rows, OpenRouterModelUsage{
 			ModelID:               id,
 			LastUsedAt:            a.lastUsed,
 			UseCount:              a.count,
 			TotalCostUSD:          a.cost,
+			AverageCostUSD:        avg,
 			TotalPromptTokens:     a.promptTokens,
 			TotalCompletionTokens: a.completionTokens,
 		})
@@ -138,35 +131,30 @@ func AggregateOpenRouterUsageMetrics(messages []*ChatMessage) *OpenRouterUsageMe
 
 	mostExp := cloneModelUsage(rows)
 	sort.Slice(mostExp, func(i, j int) bool {
+		if mostExp[i].AverageCostUSD != mostExp[j].AverageCostUSD {
+			return mostExp[i].AverageCostUSD > mostExp[j].AverageCostUSD
+		}
 		if mostExp[i].TotalCostUSD != mostExp[j].TotalCostUSD {
 			return mostExp[i].TotalCostUSD > mostExp[j].TotalCostUSD
-		}
-		if mostExp[i].UseCount != mostExp[j].UseCount {
-			return mostExp[i].UseCount > mostExp[j].UseCount
 		}
 		return mostExp[i].ModelID < mostExp[j].ModelID
 	})
 
-	sort.Slice(perMessage, func(i, j int) bool {
-		if perMessage[i].CostUSD != perMessage[j].CostUSD {
-			return perMessage[i].CostUSD > perMessage[j].CostUSD
-		}
-		if !perMessage[i].CreatedAt.Equal(perMessage[j].CreatedAt) {
-			return perMessage[i].CreatedAt.After(perMessage[j].CreatedAt)
-		}
-		return perMessage[i].MessageID < perMessage[j].MessageID
-	})
+	avgAll := 0.0
+	if totalMsgs > 0 {
+		avgAll = totalCost / float64(totalMsgs)
+	}
 
 	return &OpenRouterUsageMetrics{
-		TotalAssistantMessages:  totalMsgs,
-		DistinctModels:          len(byModel),
-		TotalCostUSD:            totalCost,
-		TotalPromptTokens:       totalPrompt,
-		TotalCompletionTokens:   totalCompletion,
-		RecentlyUsed:            recent,
-		MostUsed:                mostUsed,
-		MostExpensive:           mostExp,
-		MostExpensivePerMessage: perMessage,
+		TotalAssistantMessages:         totalMsgs,
+		DistinctModels:                 len(byModel),
+		TotalCostUSD:                   totalCost,
+		AverageCostPerAssistantTurnUSD: avgAll,
+		TotalPromptTokens:              totalPrompt,
+		TotalCompletionTokens:          totalCompletion,
+		RecentlyUsed:                   recent,
+		MostUsed:                       mostUsed,
+		MostExpensive:                  mostExp,
 	}
 }
 

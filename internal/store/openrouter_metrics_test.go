@@ -59,13 +59,11 @@ func TestAggregateOpenRouterUsageMetrics(t *testing.T) {
 
 	require.Len(t, out.MostExpensive, 2)
 	assert.Equal(t, "openai/gpt-4o-mini", out.MostExpensive[0].ModelID)
+	assert.InDelta(t, (c1+c3)/2.0, out.MostExpensive[0].AverageCostUSD, 1e-9)
 	assert.InDelta(t, c1+c3, out.MostExpensive[0].TotalCostUSD, 1e-9)
+	assert.InDelta(t, c2, out.MostExpensive[1].AverageCostUSD, 1e-9)
 
-	require.Len(t, out.MostExpensivePerMessage, 3)
-	assert.InDelta(t, c3, out.MostExpensivePerMessage[0].CostUSD, 1e-9)
-	assert.Equal(t, "openai/gpt-4o-mini", out.MostExpensivePerMessage[0].ModelID)
-	assert.InDelta(t, c2, out.MostExpensivePerMessage[1].CostUSD, 1e-9)
-	assert.InDelta(t, c1, out.MostExpensivePerMessage[2].CostUSD, 1e-9)
+	assert.InDelta(t, (c1+c2+c3)/3.0, out.AverageCostPerAssistantTurnUSD, 1e-9)
 }
 
 func TestAggregateOpenRouterUsageMetrics_Empty(t *testing.T) {
