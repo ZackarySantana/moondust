@@ -40,6 +40,12 @@ type ChatMessage struct {
 	ChatModel    string `json:"chat_model,omitempty"`
 }
 
+// OpenRouterChatModel is a selectable model id and label from the OpenRouter /api/v1/models list.
+type OpenRouterChatModel struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 func (m *ChatMessage) Validate() error {
 	if m.ID == "" {
 		return errors.New("id is required")

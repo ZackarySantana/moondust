@@ -139,6 +139,11 @@ func (s *Service) GetSettings(ctx context.Context) (*store.Settings, error) {
 	return &out, nil
 }
 
+// ListOpenRouterChatModels returns chat-capable models (text + tools) from OpenRouter, newest first.
+func (s *Service) ListOpenRouterChatModels(ctx context.Context) ([]store.OpenRouterChatModel, error) {
+	return openrouter.ListChatModels(ctx)
+}
+
 func (s *Service) SaveSettings(ctx context.Context, incoming *store.Settings) error {
 	stored, err := s.settingsStore.Get(ctx)
 	if err != nil {

@@ -218,6 +218,20 @@ export namespace store {
 	        this.slack_webhook_url = source["slack_webhook_url"];
 	    }
 	}
+	export class OpenRouterChatModel {
+	    id: string;
+	    name: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new OpenRouterChatModel(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	    }
+	}
 	export class Project {
 	    id: string;
 	    name: string;

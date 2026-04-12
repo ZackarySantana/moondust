@@ -23,4 +23,6 @@ export const queryKeys = {
         messages: (id: string) => ["threads", id, "messages"] as const,
         gitStatus: (id: string) => ["threads", id, "git-status"] as const,
     },
+    /** OpenRouter GET /api/v1/models (filtered); safe to cache longer. */
+    openRouterModels: ["openrouter", "chat-models"] as const,
 };

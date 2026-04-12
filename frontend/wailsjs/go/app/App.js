@@ -74,6 +74,10 @@ export function ListLogs() {
   return window['go']['app']['App']['ListLogs']();
 }
 
+export function ListOpenRouterChatModels() {
+  return window['go']['app']['App']['ListOpenRouterChatModels']();
+}
+
 export function ListProjects() {
   return window['go']['app']['App']['ListProjects']();
 }

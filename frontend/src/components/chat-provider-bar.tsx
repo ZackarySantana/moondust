@@ -12,8 +12,8 @@ import {
 } from "solid-js";
 import {
     CHAT_PROVIDERS,
-    OPENROUTER_CHAT_MODELS,
     type ChatProviderId,
+    type ModelChoice,
 } from "@/lib/chat-provider";
 
 const triggerClass =
@@ -30,6 +30,8 @@ export const ChatProviderBar: Component<{
     onProviderChange: (id: ChatProviderId) => void;
     model: string;
     onModelChange: (modelId: string) => void;
+    /** From ListOpenRouterChatModels (or fallback while loading). */
+    modelChoices: readonly ModelChoice[];
     showOpenRouterKeyHint: boolean;
     providerDisabled?: boolean;
     modelDisabled?: boolean;
@@ -55,7 +57,7 @@ export const ChatProviderBar: Component<{
 
     const modelOptions = createMemo(() => {
         const cur = props.model.trim();
-        const known = [...OPENROUTER_CHAT_MODELS];
+        const known = [...props.modelChoices];
         if (cur && !known.some((m) => m.id === cur)) {
             return [{ id: cur, label: cur }, ...known];
         }

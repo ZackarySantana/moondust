@@ -85,6 +85,11 @@ func (a *App) SaveSettings(settings *store.Settings) error {
 	return a.service.SaveSettings(a.Ctx, settings)
 }
 
+// ListOpenRouterChatModels returns chat models that support tools (from OpenRouter public API).
+func (a *App) ListOpenRouterChatModels() ([]store.OpenRouterChatModel, error) {
+	return a.service.ListOpenRouterChatModels(a.Ctx)
+}
+
 // ConnectOpenRouterOAuth starts the OpenRouter OAuth (PKCE) flow in the system browser.
 // Listen for the "openrouter:oauth" event: { status: "ok" } or { error: "..." }.
 func (a *App) ConnectOpenRouterOAuth() {

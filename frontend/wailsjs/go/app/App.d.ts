@@ -38,6 +38,8 @@ export function IsPushAvailable():Promise<boolean>;
 
 export function ListLogs():Promise<Array<store.LogLine>>;
 
+export function ListOpenRouterChatModels():Promise<Array<store.OpenRouterChatModel>>;
+
 export function ListProjects():Promise<Array<store.Project>>;
 
 export function ListThreadMessages(arg1:string):Promise<Array<store.ChatMessage>>;

@@ -31,6 +31,7 @@ import {
     GetSettings,
     GetThread,
     GetThreadGitReview,
+    ListOpenRouterChatModels,
     ListThreadMessages,
     RenameThread,
     SendThreadMessage,
@@ -46,6 +47,7 @@ import {
     assistantAttributionLabel,
     chatModelFromThread,
     chatProviderFromThread,
+    OPENROUTER_CHAT_MODELS_FALLBACK,
     type ChatProviderId,
 } from "@/lib/chat-provider";
 import { queryKeys } from "@/lib/query-client";
@@ -103,6 +105,23 @@ export const ThreadPage: Component = () => {
         enabled: !!params.threadId,
         refetchInterval: 5_000,
     }));
+
+    const openRouterModelsQuery = useQuery(() => ({
+        queryKey: queryKeys.openRouterModels,
+        queryFn: ListOpenRouterChatModels,
+        staleTime: 60 * 60 * 1000,
+    }));
+
+    const modelChoices = createMemo(() => {
+        const rows = openRouterModelsQuery.data;
+        if (rows && rows.length > 0) {
+            return rows.map((m) => ({
+                id: m.id,
+                label: (m.name && m.name.trim()) || m.id,
+            }));
+        }
+        return [...OPENROUTER_CHAT_MODELS_FALLBACK];
+    });
 
     const sendMutation = useMutation(() => ({
         mutationFn: (content: string) =>
@@ -201,6 +220,7 @@ export const ThreadPage: Component = () => {
         assistantAttributionLabel(
             threadQuery.data?.chat_provider,
             threadQuery.data?.chat_model,
+            modelChoices(),
         ),
     );
     const canSend = createMemo(
@@ -581,12 +601,14 @@ export const ThreadPage: Component = () => {
                                                         assistantAttributionLabel(
                                                             msg.chat_provider,
                                                             msg.chat_model,
+                                                            modelChoices(),
                                                         ) ??
                                                         assistantAttributionLabel(
                                                             threadQuery.data
                                                                 ?.chat_provider,
                                                             threadQuery.data
                                                                 ?.chat_model,
+                                                            modelChoices(),
                                                         )
                                                     );
                                                 };
@@ -750,6 +772,7 @@ export const ThreadPage: Component = () => {
                                                 onProviderChange={setProvider}
                                                 model={chatModel()}
                                                 onModelChange={setModel}
+                                                modelChoices={modelChoices()}
                                                 showOpenRouterKeyHint={showOpenRouterKeyHint()}
                                                 providerDisabled={
                                                     setChatProviderMutation.isPending
