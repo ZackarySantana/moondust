@@ -10,6 +10,14 @@ export function ClearLogs() {
   return window['go']['app']['App']['ClearLogs']();
 }
 
+export function ClearOpenRouterAPIKey() {
+  return window['go']['app']['App']['ClearOpenRouterAPIKey']();
+}
+
+export function ConnectOpenRouterOAuth() {
+  return window['go']['app']['App']['ConnectOpenRouterOAuth']();
+}
+
 export function CreateProjectFromFolder(arg1, arg2) {
   return window['go']['app']['App']['CreateProjectFromFolder'](arg1, arg2);
 }

@@ -237,6 +237,9 @@ export namespace store {
 	    default_worktree: string;
 	    notifications: Record<string, NotificationChannelConfig>;
 	    keyboard_shortcuts: Record<string, string>;
+	    openrouter_api_key?: string;
+	    openrouter_clear?: boolean;
+	    has_openrouter_api_key?: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Settings(source);
@@ -248,6 +251,9 @@ export namespace store {
 	        this.default_worktree = source["default_worktree"];
 	        this.notifications = this.convertValues(source["notifications"], NotificationChannelConfig, true);
 	        this.keyboard_shortcuts = source["keyboard_shortcuts"];
+	        this.openrouter_api_key = source["openrouter_api_key"];
+	        this.openrouter_clear = source["openrouter_clear"];
+	        this.has_openrouter_api_key = source["has_openrouter_api_key"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

@@ -3,9 +3,11 @@ package app
 import (
 	"context"
 	"fmt"
+	"moondust/internal/browseropen"
 	"moondust/internal/buildinfo"
 	"moondust/internal/logstream"
 	"moondust/internal/notify"
+	"moondust/internal/openrouter"
 	"moondust/internal/service"
 	"moondust/internal/store"
 	"moondust/internal/terminal"
@@ -81,6 +83,31 @@ func (a *App) GetSettings() (*store.Settings, error) {
 
 func (a *App) SaveSettings(settings *store.Settings) error {
 	return a.service.SaveSettings(a.Ctx, settings)
+}
+
+// ConnectOpenRouterOAuth starts the OpenRouter OAuth (PKCE) flow in the system browser.
+// Listen for the "openrouter:oauth" event: { status: "ok" } or { error: "..." }.
+func (a *App) ConnectOpenRouterOAuth() {
+	ctx := a.Ctx
+	go func() {
+		key, err := openrouter.BrowserOAuthFlow(ctx, func(authURL string) error {
+			return browseropen.Open(authURL)
+		})
+		if err != nil {
+			runtime.EventsEmit(ctx, "openrouter:oauth", map[string]string{"error": err.Error()})
+			return
+		}
+		if err := a.service.SetOpenRouterAPIKey(ctx, key); err != nil {
+			runtime.EventsEmit(ctx, "openrouter:oauth", map[string]string{"error": err.Error()})
+			return
+		}
+		runtime.EventsEmit(ctx, "openrouter:oauth", map[string]string{"status": "ok"})
+	}()
+}
+
+// ClearOpenRouterAPIKey removes the stored OpenRouter API key.
+func (a *App) ClearOpenRouterAPIKey() error {
+	return a.service.ClearOpenRouterAPIKey(a.Ctx)
 }
 
 func (a *App) DeleteProject(id string, deleteFiles bool) error {

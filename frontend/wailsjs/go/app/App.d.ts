@@ -6,6 +6,10 @@ export function CancelCreateProject():Promise<void>;
 
 export function ClearLogs():Promise<void>;
 
+export function ClearOpenRouterAPIKey():Promise<void>;
+
+export function ConnectOpenRouterOAuth():Promise<void>;
+
 export function CreateProjectFromFolder(arg1:string,arg2:string):Promise<store.Project>;
 
 export function CreateProjectFromRemote(arg1:string,arg2:string):Promise<store.Project>;

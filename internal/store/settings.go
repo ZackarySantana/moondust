@@ -15,6 +15,13 @@ type Settings struct {
 	DefaultWorktree   string                                `json:"default_worktree"` // "ask", "on", "off"; empty treated as "ask"
 	Notifications     map[string]*NotificationChannelConfig `json:"notifications"`
 	KeyboardShortcuts map[string]string                     `json:"keyboard_shortcuts"`
+
+	// OpenRouterAPIKey is persisted; never returned from GetSettings (see service).
+	OpenRouterAPIKey string `json:"openrouter_api_key,omitempty"`
+	// OpenRouterClear is write-only: when true, SaveSettings removes the stored API key.
+	OpenRouterClear bool `json:"openrouter_clear,omitempty"`
+	// HasOpenRouterAPIKey is read-only: true if a key is stored (secret is never sent).
+	HasOpenRouterAPIKey bool `json:"has_openrouter_api_key,omitempty"`
 }
 
 type SettingsStore interface {

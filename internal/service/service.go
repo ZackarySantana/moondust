@@ -122,11 +122,78 @@ func (s *Service) UpdateProject(ctx context.Context, project *store.Project) err
 }
 
 func (s *Service) GetSettings(ctx context.Context) (*store.Settings, error) {
-	return s.settingsStore.Get(ctx)
+	raw, err := s.settingsStore.Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if raw == nil {
+		return &store.Settings{}, nil
+	}
+	out := *raw
+	out.HasOpenRouterAPIKey = strings.TrimSpace(raw.OpenRouterAPIKey) != ""
+	out.OpenRouterAPIKey = ""
+	out.OpenRouterClear = false
+	return &out, nil
 }
 
-func (s *Service) SaveSettings(ctx context.Context, settings *store.Settings) error {
-	return s.settingsStore.Save(ctx, settings)
+func (s *Service) SaveSettings(ctx context.Context, incoming *store.Settings) error {
+	stored, err := s.settingsStore.Get(ctx)
+	if err != nil {
+		return err
+	}
+	if stored == nil {
+		stored = &store.Settings{}
+	}
+	merged := mergeSettings(stored, incoming)
+	return s.settingsStore.Save(ctx, merged)
+}
+
+func mergeSettings(stored, incoming *store.Settings) *store.Settings {
+	out := *incoming
+	if incoming.OpenRouterClear {
+		out.OpenRouterAPIKey = ""
+	} else if strings.TrimSpace(incoming.OpenRouterAPIKey) != "" {
+		out.OpenRouterAPIKey = strings.TrimSpace(incoming.OpenRouterAPIKey)
+	} else {
+		out.OpenRouterAPIKey = stored.OpenRouterAPIKey
+	}
+	out.OpenRouterClear = false
+	out.HasOpenRouterAPIKey = false
+	return &out
+}
+
+// SetOpenRouterAPIKey stores an API key from OAuth or manual entry.
+func (s *Service) SetOpenRouterAPIKey(ctx context.Context, key string) error {
+	key = strings.TrimSpace(key)
+	if key == "" {
+		return fmt.Errorf("empty API key")
+	}
+	st, err := s.settingsStore.Get(ctx)
+	if err != nil {
+		return err
+	}
+	if st == nil {
+		st = &store.Settings{}
+	}
+	st.OpenRouterAPIKey = key
+	st.OpenRouterClear = false
+	st.HasOpenRouterAPIKey = false
+	return s.settingsStore.Save(ctx, st)
+}
+
+// ClearOpenRouterAPIKey removes the stored OpenRouter API key.
+func (s *Service) ClearOpenRouterAPIKey(ctx context.Context) error {
+	st, err := s.settingsStore.Get(ctx)
+	if err != nil {
+		return err
+	}
+	if st == nil {
+		st = &store.Settings{}
+	}
+	st.OpenRouterAPIKey = ""
+	st.OpenRouterClear = false
+	st.HasOpenRouterAPIKey = false
+	return s.settingsStore.Save(ctx, st)
 }
 
 func (s *Service) DeleteProject(ctx context.Context, id string, deleteFiles bool) error {
