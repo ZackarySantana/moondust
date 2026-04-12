@@ -107,6 +107,10 @@ const DeleteProjectModal: Component<{
         if (!props.open) return;
         const onKey = (e: KeyboardEvent) => {
             if (e.key === "Escape") close();
+            if (e.key === "Enter" && canConfirm()) {
+                e.preventDefault();
+                void handleDelete();
+            }
         };
         document.addEventListener("keydown", onKey);
         onCleanup(() => document.removeEventListener("keydown", onKey));

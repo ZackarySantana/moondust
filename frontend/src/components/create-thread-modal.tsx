@@ -71,6 +71,10 @@ export const CreateThreadModal: Component<CreateThreadModalProps> = (props) => {
         if (phase() !== "prompt") return;
         const onKey = (e: KeyboardEvent) => {
             if (e.key === "Escape") props.onOpenChange(false);
+            if (e.key === "Enter") {
+                e.preventDefault();
+                submit(useWorktree());
+            }
         };
         document.addEventListener("keydown", onKey);
         onCleanup(() => document.removeEventListener("keydown", onKey));
