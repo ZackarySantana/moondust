@@ -8,6 +8,7 @@ import { CreateProjectModal } from "@/components/create-project-modal";
 import { CreateThreadModal } from "@/components/create-thread-modal";
 import { NotificationToast } from "@/components/notification-toast";
 import { queryKeys } from "@/lib/query-client";
+import { globalSidebarThreadOrder } from "@/lib/sidebar-thread-order";
 import { ShortcutProvider, useShortcuts } from "@/lib/shortcut-context";
 import { GetProject, ListProjects, ListThreads } from "@wails/go/app/App";
 import { store } from "@wails/go/models";
@@ -91,23 +92,14 @@ const AppShellInner: Component<RouteSectionProps> = (props) => {
         return threadMatch?.[1] ?? null;
     });
 
-    function threadTimestamp(t: store.Thread): number {
-        for (const field of [t.updated_at, t.created_at]) {
-            if (!field) continue;
-            const d = typeof field === "string" ? new Date(field) : field;
-            if (d instanceof Date && !isNaN(d.getTime())) return d.getTime();
-        }
-        return 0;
-    }
-
     function goToThread(index: number) {
-        const pid = focusedProjectId();
-        if (!pid) return;
-        const sorted = (threadsQuery.data ?? [])
-            .filter((t) => t.project_id === pid)
-            .sort((a, b) => threadTimestamp(b) - threadTimestamp(a));
-        const thread = sorted[index];
-        if (thread) navigate(`/project/${pid}/thread/${thread.id}`);
+        const order = globalSidebarThreadOrder(
+            projectsQuery.data ?? [],
+            threadsQuery.data ?? [],
+        );
+        const entry = order[index];
+        if (!entry) return;
+        navigate(`/project/${entry.projectId}/thread/${entry.thread.id}`);
     }
 
     const cleanups: (() => void)[] = [];

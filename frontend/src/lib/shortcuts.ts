@@ -11,6 +11,9 @@ export interface ShortcutActionDef {
     context: ShortcutContext;
 }
 
+const GO_THREAD_SLOT_DESCRIPTION =
+    "Jump to that thread slot in the left sidebar: projects ordered by latest activity, then threads in each project newest first (same order across all projects)";
+
 export const SHORTCUT_ACTIONS: readonly ShortcutActionDef[] = [
     {
         id: "new_project",
@@ -81,37 +84,37 @@ export const SHORTCUT_ACTIONS: readonly ShortcutActionDef[] = [
     {
         id: "go_thread_1",
         label: "Open thread 1",
-        description: "Navigate to the 1st thread in the current project",
+        description: GO_THREAD_SLOT_DESCRIPTION,
         context: "global",
     },
     {
         id: "go_thread_2",
         label: "Open thread 2",
-        description: "Navigate to the 2nd thread in the current project",
+        description: GO_THREAD_SLOT_DESCRIPTION,
         context: "global",
     },
     {
         id: "go_thread_3",
         label: "Open thread 3",
-        description: "Navigate to the 3rd thread in the current project",
+        description: GO_THREAD_SLOT_DESCRIPTION,
         context: "global",
     },
     {
         id: "go_thread_4",
         label: "Open thread 4",
-        description: "Navigate to the 4th thread in the current project",
+        description: GO_THREAD_SLOT_DESCRIPTION,
         context: "global",
     },
     {
         id: "go_thread_5",
         label: "Open thread 5",
-        description: "Navigate to the 5th thread in the current project",
+        description: GO_THREAD_SLOT_DESCRIPTION,
         context: "global",
     },
     {
         id: "go_thread_6",
         label: "Open thread 6",
-        description: "Navigate to the 6th thread in the current project",
+        description: GO_THREAD_SLOT_DESCRIPTION,
         context: "global",
     },
 ] as const;

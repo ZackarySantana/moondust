@@ -15,6 +15,11 @@ import { RenameThread } from "@wails/go/app/App";
 import { Kbd } from "@/components/kbd";
 import { Separator } from "@/components/ui/separator";
 import { queryKeys } from "@/lib/query-client";
+import {
+    globalThreadShortcutSlots,
+    sortProjectsByLatestThread,
+    sortThreadsForProject,
+} from "@/lib/sidebar-thread-order";
 import { useShortcuts } from "@/lib/shortcut-context";
 import { relativeTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
@@ -28,20 +33,6 @@ export interface AppSidebarProps {
     class?: string;
 }
 
-function threadTimestamp(t: store.Thread): number {
-    const ua = t.updated_at;
-    if (ua) {
-        const d = typeof ua === "string" ? new Date(ua) : ua;
-        if (d instanceof Date && !isNaN(d.getTime())) return d.getTime();
-    }
-    const ca = t.created_at;
-    if (ca) {
-        const d = typeof ca === "string" ? new Date(ca) : ca;
-        if (d instanceof Date && !isNaN(d.getTime())) return d.getTime();
-    }
-    return 0;
-}
-
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
     const location = useLocation();
     const { formatKey } = useShortcuts();
@@ -50,25 +41,16 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
     const timer = setInterval(() => setTick((t) => t + 1), 60_000);
     onCleanup(() => clearInterval(timer));
 
-    const sortedProjects = createMemo(() => {
-        const threads = props.threads;
-        const latestByProject = new Map<string, number>();
-        for (const t of threads) {
-            const ts = threadTimestamp(t);
-            const prev = latestByProject.get(t.project_id) ?? 0;
-            if (ts > prev) latestByProject.set(t.project_id, ts);
-        }
-        return [...props.projects].sort((a, b) => {
-            const ta = latestByProject.get(a.id) ?? 0;
-            const tb = latestByProject.get(b.id) ?? 0;
-            return tb - ta;
-        });
-    });
+    const sortedProjects = createMemo(() =>
+        sortProjectsByLatestThread(props.projects, props.threads),
+    );
+
+    const shortcutSlotByThreadId = createMemo(() =>
+        globalThreadShortcutSlots(props.projects, props.threads),
+    );
 
     function sortedThreadsFor(projectId: string): store.Thread[] {
-        return props.threads
-            .filter((t) => t.project_id === projectId)
-            .sort((a, b) => threadTimestamp(b) - threadTimestamp(a));
+        return sortThreadsForProject(projectId, props.threads);
     }
 
     return (
@@ -129,31 +111,39 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                                 onNewThread={() => props.onNewThread(p.id)}
                             >
                                 <For each={sortedThreadsFor(p.id)}>
-                                    {(thread, index) => (
-                                        <ProjectThread
-                                            projectID={p.id}
-                                            threadID={thread.id}
-                                            name={thread.title || "New thread"}
-                                            time={
-                                                (tick(),
-                                                relativeTime(
-                                                    thread.updated_at ||
-                                                        thread.created_at,
-                                                ))
-                                            }
-                                            active={
-                                                location.pathname ===
-                                                `/project/${p.id}/thread/${thread.id}`
-                                            }
-                                            shortcutHint={
-                                                index() < 6
-                                                    ? formatKey(
-                                                          `go_thread_${index() + 1}`,
-                                                      )
-                                                    : undefined
-                                            }
-                                        />
-                                    )}
+                                    {(thread) => {
+                                        const slot =
+                                            shortcutSlotByThreadId().get(
+                                                thread.id,
+                                            );
+                                        return (
+                                            <ProjectThread
+                                                projectID={p.id}
+                                                threadID={thread.id}
+                                                name={
+                                                    thread.title || "New thread"
+                                                }
+                                                time={
+                                                    (tick(),
+                                                    relativeTime(
+                                                        thread.updated_at ||
+                                                            thread.created_at,
+                                                    ))
+                                                }
+                                                active={
+                                                    location.pathname ===
+                                                    `/project/${p.id}/thread/${thread.id}`
+                                                }
+                                                shortcutHint={
+                                                    slot !== undefined
+                                                        ? formatKey(
+                                                              `go_thread_${slot + 1}`,
+                                                          )
+                                                        : undefined
+                                                }
+                                            />
+                                        );
+                                    }}
                                 </For>
                             </ProjectGroup>
                         )}
