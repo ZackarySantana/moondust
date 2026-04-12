@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"moondust/internal/buildinfo"
 	"moondust/internal/logstream"
 	"moondust/internal/notify"
 	"moondust/internal/service"
@@ -123,6 +124,11 @@ func (a *App) GetThreadGitReview(threadID string) (*store.GitReview, error) {
 
 func (a *App) GetFileDiff(threadID, filePath, status string) (*store.FileDiff, error) {
 	return a.service.GetFileDiff(a.Ctx, threadID, filePath, status)
+}
+
+// GetBuildLabel returns the user-visible version string (dev build vs release tag).
+func (*App) GetBuildLabel() string {
+	return buildinfo.DisplayLabel
 }
 
 // IsPushAvailable reports whether desktop push notifications are available on

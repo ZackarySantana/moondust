@@ -8,10 +8,11 @@ import {
     createSignal,
     For,
     onCleanup,
+    onMount,
     Show,
     type Component,
 } from "solid-js";
-import { RenameThread } from "@wails/go/app/App";
+import { GetBuildLabel, RenameThread } from "@wails/go/app/App";
 import { Kbd } from "@/components/kbd";
 import { Separator } from "@/components/ui/separator";
 import { queryKeys } from "@/lib/query-client";
@@ -40,6 +41,11 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
     const [tick, setTick] = createSignal(0);
     const timer = setInterval(() => setTick((t) => t + 1), 60_000);
     onCleanup(() => clearInterval(timer));
+
+    const [buildLabel, setBuildLabel] = createSignal("");
+    onMount(() => {
+        void GetBuildLabel().then(setBuildLabel);
+    });
 
     const sortedProjects = createMemo(() =>
         sortProjectsByLatestThread(props.projects, props.threads),
@@ -191,6 +197,13 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                         <div class="h-full w-[40%] rounded-full bg-linear-to-r from-emerald-700/80 to-emerald-500/70 transition-all duration-500" />
                     </div>
                 </div>
+
+                <p
+                    class="min-h-[14px] px-1 pt-1 text-left text-[10px] leading-snug text-slate-600 select-none"
+                    aria-live="polite"
+                >
+                    {buildLabel()}
+                </p>
             </footer>
         </aside>
     );
