@@ -91,6 +91,25 @@ const AppShellInner: Component<RouteSectionProps> = (props) => {
         return threadMatch?.[1] ?? null;
     });
 
+    function threadTimestamp(t: store.Thread): number {
+        for (const field of [t.updated_at, t.created_at]) {
+            if (!field) continue;
+            const d = typeof field === "string" ? new Date(field) : field;
+            if (d instanceof Date && !isNaN(d.getTime())) return d.getTime();
+        }
+        return 0;
+    }
+
+    function goToThread(index: number) {
+        const pid = focusedProjectId();
+        if (!pid) return;
+        const sorted = (threadsQuery.data ?? [])
+            .filter((t) => t.project_id === pid)
+            .sort((a, b) => threadTimestamp(b) - threadTimestamp(a));
+        const thread = sorted[index];
+        if (thread) navigate(`/project/${pid}/thread/${thread.id}`);
+    }
+
     const cleanups: (() => void)[] = [];
     cleanups.push(
         onAction("new_project", () => setCreateProjectOpen(true)),
@@ -100,6 +119,12 @@ const AppShellInner: Component<RouteSectionProps> = (props) => {
             const pid = focusedProjectId();
             if (pid) setNewThreadProjectID(pid);
         }),
+        onAction("go_thread_1", () => goToThread(0)),
+        onAction("go_thread_2", () => goToThread(1)),
+        onAction("go_thread_3", () => goToThread(2)),
+        onAction("go_thread_4", () => goToThread(3)),
+        onAction("go_thread_5", () => goToThread(4)),
+        onAction("go_thread_6", () => goToThread(5)),
     );
     onCleanup(() => cleanups.forEach((c) => c()));
 

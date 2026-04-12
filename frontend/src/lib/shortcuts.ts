@@ -78,6 +78,42 @@ export const SHORTCUT_ACTIONS: readonly ShortcutActionDef[] = [
         description: "Switch between side-by-side and inline diff",
         context: "diff",
     },
+    {
+        id: "go_thread_1",
+        label: "Open thread 1",
+        description: "Navigate to the 1st thread in the current project",
+        context: "global",
+    },
+    {
+        id: "go_thread_2",
+        label: "Open thread 2",
+        description: "Navigate to the 2nd thread in the current project",
+        context: "global",
+    },
+    {
+        id: "go_thread_3",
+        label: "Open thread 3",
+        description: "Navigate to the 3rd thread in the current project",
+        context: "global",
+    },
+    {
+        id: "go_thread_4",
+        label: "Open thread 4",
+        description: "Navigate to the 4th thread in the current project",
+        context: "global",
+    },
+    {
+        id: "go_thread_5",
+        label: "Open thread 5",
+        description: "Navigate to the 5th thread in the current project",
+        context: "global",
+    },
+    {
+        id: "go_thread_6",
+        label: "Open thread 6",
+        description: "Navigate to the 6th thread in the current project",
+        context: "global",
+    },
 ] as const;
 
 export type ShortcutActionId = (typeof SHORTCUT_ACTIONS)[number]["id"];
@@ -94,6 +130,12 @@ const MAC_DEFAULTS: Record<string, string> = {
     next_diff: "Alt+ArrowDown",
     prev_diff: "Alt+ArrowUp",
     toggle_diff_mode: "Meta+Shift+D",
+    go_thread_1: "Meta+1",
+    go_thread_2: "Meta+2",
+    go_thread_3: "Meta+3",
+    go_thread_4: "Meta+4",
+    go_thread_5: "Meta+5",
+    go_thread_6: "Meta+6",
 };
 
 const OTHER_DEFAULTS: Record<string, string> = {
@@ -108,6 +150,12 @@ const OTHER_DEFAULTS: Record<string, string> = {
     next_diff: "Alt+ArrowDown",
     prev_diff: "Alt+ArrowUp",
     toggle_diff_mode: "Ctrl+Shift+D",
+    go_thread_1: "Ctrl+1",
+    go_thread_2: "Ctrl+2",
+    go_thread_3: "Ctrl+3",
+    go_thread_4: "Ctrl+4",
+    go_thread_5: "Ctrl+5",
+    go_thread_6: "Ctrl+6",
 };
 
 export const DEFAULT_SHORTCUTS: Record<string, string> = isMac
