@@ -14,6 +14,8 @@ export function useThreadChatStream(
 ) {
     const [streaming, setStreaming] = createSignal(false);
     const [streamingText, setStreamingText] = createSignal("");
+    const [streamingReasoningText, setStreamingReasoningText] =
+        createSignal("");
 
     createEffect(
         on(
@@ -22,6 +24,7 @@ export function useThreadChatStream(
                 if (prev !== undefined && prev !== id) {
                     setStreaming(false);
                     setStreamingText("");
+                    setStreamingReasoningText("");
                 }
             },
         ),
@@ -36,16 +39,26 @@ export function useThreadChatStream(
                 const p = args[0] as { thread_id?: string };
                 if (p?.thread_id !== tid()) return;
                 setStreamingText("");
+                setStreamingReasoningText("");
                 setStreaming(true);
             }),
         );
         unsubs.push(
             EventsOn("chat:stream", (...args: unknown[]) => {
-                const p = args[0] as { thread_id?: string; delta?: string };
+                const p = args[0] as {
+                    thread_id?: string;
+                    delta?: string;
+                    reasoning_delta?: string;
+                };
                 if (p?.thread_id !== tid()) return;
                 const d = p.delta ?? "";
-                if (!d) return;
-                setStreamingText((prev) => prev + d);
+                const r = p.reasoning_delta ?? "";
+                if (d) {
+                    setStreamingText((prev) => prev + d);
+                }
+                if (r) {
+                    setStreamingReasoningText((prev) => prev + r);
+                }
             }),
         );
         unsubs.push(
@@ -60,6 +73,7 @@ export function useThreadChatStream(
                     if (tid() === doneId) {
                         setStreaming(false);
                         setStreamingText("");
+                        setStreamingReasoningText("");
                     }
                 })();
             }),
@@ -70,6 +84,7 @@ export function useThreadChatStream(
                 if (p?.thread_id !== tid()) return;
                 setStreaming(false);
                 setStreamingText("");
+                setStreamingReasoningText("");
                 onStreamError(p?.error?.trim() || "Assistant reply failed");
             }),
         );
@@ -77,5 +92,5 @@ export function useThreadChatStream(
         onCleanup(() => unsubs.forEach((u) => u()));
     });
 
-    return { streaming, streamingText };
+    return { streaming, streamingText, streamingReasoningText };
 }

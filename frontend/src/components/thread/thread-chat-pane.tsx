@@ -23,6 +23,7 @@ export const ThreadChatPane: Component<{
     sendError: () => string;
     streaming: () => boolean;
     streamingText: () => string;
+    streamingReasoningText: () => string;
     streamingAttribution: () => string | null;
     threadQueryData: () => store.Thread | undefined;
     modelChoices: () => ModelChoice[];
@@ -48,6 +49,7 @@ export const ThreadChatPane: Component<{
                     props.draft(),
                     props.messages().length,
                     props.streamingText(),
+                    props.streamingReasoningText(),
                 ] as const,
             () => {
                 if (userAtBottom() && messagesContainerRef) {
@@ -182,6 +184,27 @@ export const ThreadChatPane: Component<{
                                                                 </div>
                                                             )}
                                                         </Show>
+                                                        <Show
+                                                            when={
+                                                                msg.metadata
+                                                                    ?.openrouter
+                                                                    ?.reasoning
+                                                            }
+                                                        >
+                                                            <details
+                                                                open
+                                                                class="mb-1 rounded-md border border-slate-700/35 bg-slate-900/40 pl-[34px]"
+                                                            >
+                                                                <summary class="cursor-pointer select-none py-1 text-[10px] font-medium text-slate-500">
+                                                                    Thinking
+                                                                </summary>
+                                                                <pre class="max-h-52 overflow-y-auto whitespace-pre-wrap px-1 pb-2 text-[11px] leading-snug text-slate-500">
+                                                                    {msg.metadata
+                                                                        ?.openrouter
+                                                                        ?.reasoning}
+                                                                </pre>
+                                                            </details>
+                                                        </Show>
                                                         <div class="flex gap-2.5 py-1">
                                                             <div class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-slate-800/60">
                                                                 <Bot
@@ -224,6 +247,24 @@ export const ThreadChatPane: Component<{
                                                 </p>
                                             )}
                                         </Show>
+                                        <Show
+                                            when={
+                                                props.streamingReasoningText()
+                                                    .length > 0
+                                            }
+                                        >
+                                            <details
+                                                open
+                                                class="mb-1 rounded-md border border-slate-700/35 bg-slate-900/40 pl-[34px]"
+                                            >
+                                                <summary class="cursor-pointer select-none py-1 text-[10px] font-medium text-slate-500">
+                                                    Thinking
+                                                </summary>
+                                                <pre class="max-h-52 overflow-y-auto whitespace-pre-wrap px-1 pb-2 text-[11px] leading-snug text-slate-500">
+                                                    {props.streamingReasoningText()}
+                                                </pre>
+                                            </details>
+                                        </Show>
                                         <div class="flex gap-2.5 py-1">
                                             <div class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-slate-800/60">
                                                 <Bot
@@ -245,7 +286,10 @@ export const ThreadChatPane: Component<{
                                                                 aria-hidden
                                                             />
                                                             <span class="text-xs">
-                                                                Thinking…
+                                                                {props.streamingReasoningText()
+                                                                    .length > 0
+                                                                    ? "Writing…"
+                                                                    : "Thinking…"}
                                                             </span>
                                                         </div>
                                                     }

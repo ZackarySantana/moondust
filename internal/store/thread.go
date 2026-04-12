@@ -41,6 +41,8 @@ type OpenRouterChatMessageMetadata struct {
 	CompletionTokens *int     `json:"completion_tokens,omitempty"`
 	TotalTokens      *int     `json:"total_tokens,omitempty"`
 	CostUSD          *float64 `json:"cost_usd,omitempty"`
+	// Reasoning is the model's streamed reasoning / thinking trace when the provider exposes it (e.g. OpenRouter delta.reasoning).
+	Reasoning *string `json:"reasoning,omitempty"`
 }
 
 type ChatMessage struct {

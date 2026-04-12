@@ -5,6 +5,8 @@ export namespace store {
 	    completion_tokens?: number;
 	    total_tokens?: number;
 	    cost_usd?: number;
+	    /** Model reasoning / thinking trace when the provider exposes it (e.g. OpenRouter). */
+	    reasoning?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new OpenRouterChatMessageMetadata(source);
@@ -16,6 +18,7 @@ export namespace store {
 	        this.completion_tokens = source["completion_tokens"];
 	        this.total_tokens = source["total_tokens"];
 	        this.cost_usd = source["cost_usd"];
+	        this.reasoning = source["reasoning"];
 	    }
 	}
 	export class ChatMessageMetadata {

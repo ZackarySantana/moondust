@@ -37,6 +37,7 @@ type streamSseChunk struct {
 	Choices []struct {
 		Delta struct {
 			Content   string `json:"content"`
+			Reasoning string `json:"reasoning"`
 			ToolCalls []struct {
 				Index    int    `json:"index"`
 				ID       string `json:"id"`
@@ -62,13 +63,15 @@ type toolCallAcc struct {
 
 // StreamCompletionRound runs one streaming chat completion (optionally with tools).
 // It returns the assistant text for this round, any completed tool calls, and usage from the stream (if reported).
-// onDelta receives only streamed assistant text tokens (not tool argument fragments).
+// onContentDelta receives streamed assistant message text (not tool argument fragments).
+// onReasoningDelta receives streamed reasoning / thinking tokens when the model sends them (OpenRouter delta.reasoning); may be nil.
 func StreamCompletionRound(
 	ctx context.Context,
 	apiKey, model string,
 	messages []APIMessage,
 	tools []ChatTool,
-	onDelta func(string) error,
+	onContentDelta func(string) error,
+	onReasoningDelta func(string) error,
 ) (assistantText string, toolCalls []ToolCallFinal, usage *CompletionUsage, err error) {
 	apiKey = strings.TrimSpace(apiKey)
 	if apiKey == "" {
@@ -81,8 +84,8 @@ func StreamCompletionRound(
 	if len(messages) == 0 {
 		return "", nil, nil, fmt.Errorf("no messages")
 	}
-	if onDelta == nil {
-		return "", nil, nil, fmt.Errorf("onDelta is required")
+	if onContentDelta == nil {
+		return "", nil, nil, fmt.Errorf("onContentDelta is required")
 	}
 
 	body := chatCompletionRequest{
@@ -171,7 +174,12 @@ func StreamCompletionRound(
 		ch := chunk.Choices[0]
 		if ch.Delta.Content != "" {
 			text.WriteString(ch.Delta.Content)
-			if err := onDelta(ch.Delta.Content); err != nil {
+			if err := onContentDelta(ch.Delta.Content); err != nil {
+				return "", nil, nil, err
+			}
+		}
+		if ch.Delta.Reasoning != "" && onReasoningDelta != nil {
+			if err := onReasoningDelta(ch.Delta.Reasoning); err != nil {
 				return "", nil, nil, err
 			}
 		}

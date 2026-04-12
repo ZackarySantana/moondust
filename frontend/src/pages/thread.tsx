@@ -47,7 +47,8 @@ export const ThreadPage: Component = () => {
     const [terminalOpen, setTerminalOpen] = createSignal(true);
     const [sidebarOpen, setSidebarOpen] = createSignal(true);
 
-    const { streaming, streamingText } = useThreadChatStream(
+    const { streaming, streamingText, streamingReasoningText } =
+        useThreadChatStream(
         () => params.threadId,
         queryClient,
         (msg) => setSendError(msg),
@@ -385,6 +386,7 @@ export const ThreadPage: Component = () => {
                             sendError={sendError}
                             streaming={streaming}
                             streamingText={streamingText}
+                            streamingReasoningText={streamingReasoningText}
                             streamingAttribution={streamingAttribution}
                             threadQueryData={() => threadQuery.data}
                             modelChoices={modelChoices}

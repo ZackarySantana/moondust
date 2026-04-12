@@ -407,7 +407,8 @@ func (s *Service) SendThreadMessage(ctx context.Context, threadID, content strin
 }
 
 // StreamAssistantReply loads the thread transcript (including the latest user message), streams the model reply, and appends the assistant message on success.
-func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onDelta func(string) error) error {
+// onReasoningDelta is optional; when non-nil, receives streamed reasoning / thinking tokens when the API sends them.
+func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onDelta func(string) error, onReasoningDelta func(string) error) error {
 	thread, project, err := s.resolveThreadProject(ctx, threadID)
 	if err != nil {
 		return err
@@ -457,6 +458,7 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 
 	const maxToolSteps = 8
 	var full strings.Builder
+	var reasoningFull strings.Builder
 	var totalCost float64
 	var sawCost bool
 	var sumPrompt, sumCompletion, sumTotal int
@@ -465,6 +467,15 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 		content, calls, usage, err := openrouter.StreamCompletionRound(ctx, apiKey, model, apiMessages, tools, func(delta string) error {
 			full.WriteString(delta)
 			return onDelta(delta)
+		}, func(rdelta string) error {
+			if rdelta == "" {
+				return nil
+			}
+			reasoningFull.WriteString(rdelta)
+			if onReasoningDelta != nil {
+				return onReasoningDelta(rdelta)
+			}
+			return nil
 		})
 		if err != nil {
 			return err
@@ -517,7 +528,8 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 		ChatProvider: prov,
 		ChatModel:    model,
 	}
-	if sawTokens || sawCost {
+	reasoningTrim := strings.TrimSpace(reasoningFull.String())
+	if sawTokens || sawCost || reasoningTrim != "" {
 		or := &store.OpenRouterChatMessageMetadata{}
 		if sawTokens {
 			if sumPrompt > 0 {
@@ -534,7 +546,10 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 			c := totalCost
 			or.CostUSD = &c
 		}
-		if or.PromptTokens != nil || or.CompletionTokens != nil || or.TotalTokens != nil || or.CostUSD != nil {
+		if reasoningTrim != "" {
+			or.Reasoning = &reasoningTrim
+		}
+		if or.PromptTokens != nil || or.CompletionTokens != nil || or.TotalTokens != nil || or.CostUSD != nil || or.Reasoning != nil {
 			replyMessage.Metadata = &store.ChatMessageMetadata{OpenRouter: or}
 		}
 	}

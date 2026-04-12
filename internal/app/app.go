@@ -165,6 +165,15 @@ func (a *App) SendThreadMessage(threadID, content string) ([]*store.ChatMessage,
 				"delta":     delta,
 			})
 			return nil
+		}, func(reasoningDelta string) error {
+			if reasoningDelta == "" {
+				return nil
+			}
+			runtime.EventsEmit(emitCtx, "chat:stream", map[string]string{
+				"thread_id":         threadID,
+				"reasoning_delta": reasoningDelta,
+			})
+			return nil
 		})
 		if err != nil {
 			runtime.EventsEmit(emitCtx, "chat:stream_error", map[string]string{
