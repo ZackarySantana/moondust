@@ -30,6 +30,7 @@ import {
     SendThreadMessage,
 } from "@wails/go/app/App";
 import { DiffViewer, type DiffNav } from "@/components/diff-viewer";
+import { ResizeHandle } from "@/components/resize-handle";
 import { TerminalPane } from "@/components/terminal-pane";
 import { queryKeys } from "@/lib/query-client";
 import type { store } from "@wails/go/models";
@@ -44,6 +45,8 @@ export const ThreadPage: Component = () => {
     const queryClient = useQueryClient();
     const [draft, setDraft] = createSignal("");
     const [userAtBottom, setUserAtBottom] = createSignal(true);
+    const [terminalHeight, setTerminalHeight] = createSignal(208);
+    const [sidebarWidth, setSidebarWidth] = createSignal(320);
     let messagesContainerRef!: HTMLDivElement;
 
     const projectQuery = useQuery(() => ({
@@ -209,7 +212,7 @@ export const ThreadPage: Component = () => {
 
     return (
         <div class="flex h-full min-h-0 w-full overflow-hidden">
-            <section class="flex min-h-0 flex-1 flex-col overflow-hidden border-r border-slate-800/40">
+            <section class="flex min-h-0 flex-1 flex-col overflow-hidden">
                 {/* ── Header ── */}
                 <header class="flex items-center gap-3 border-b border-slate-800/40 px-4 py-2.5">
                     <div class="min-w-0 flex-1">
@@ -575,7 +578,18 @@ export const ThreadPage: Component = () => {
                 </Show>
 
                 {/* ── Terminal ── */}
-                <div class="flex h-52 min-h-0 shrink-0 border-t border-slate-800/40 p-3">
+                <ResizeHandle
+                    direction="vertical"
+                    onResize={(delta) =>
+                        setTerminalHeight((h) =>
+                            Math.max(80, Math.min(600, h + delta)),
+                        )
+                    }
+                />
+                <div
+                    class="flex min-h-0 shrink-0 p-3"
+                    style={{ height: `${terminalHeight()}px` }}
+                >
                     <Show
                         when={
                             params.threadId &&
@@ -604,7 +618,16 @@ export const ThreadPage: Component = () => {
                 </div>
             </section>
 
+            <ResizeHandle
+                direction="horizontal"
+                onResize={(delta) =>
+                    setSidebarWidth((w) =>
+                        Math.max(200, Math.min(600, w + delta)),
+                    )
+                }
+            />
             <ReviewSidebar
+                width={sidebarWidth()}
                 git={gitStatusQuery.data ?? null}
                 onRefresh={() => void refreshGitSidebar()}
                 onCopySummary={() => void copyReviewSummary()}
@@ -823,6 +846,7 @@ const CommitRow: Component<{
 // ---------------------------------------------------------------------------
 
 const ReviewSidebar: Component<{
+    width: number;
     git: store.GitReview | null;
     onRefresh: () => void;
     onCopySummary: () => void;
@@ -844,7 +868,10 @@ const ReviewSidebar: Component<{
         commitTab() === "local" ? localCommits() : mainCommits();
 
     return (
-        <aside class="flex min-h-0 w-80 shrink-0 flex-col border-l border-slate-800/40 bg-app-panel">
+        <aside
+            class="flex min-h-0 shrink-0 flex-col bg-app-panel"
+            style={{ width: `${props.width}px` }}
+        >
             <header class="flex items-center justify-between border-b border-slate-800/40 px-3 py-2.5">
                 <h2 class="text-xs font-semibold text-slate-200">Review</h2>
                 <div class="flex items-center gap-1">
