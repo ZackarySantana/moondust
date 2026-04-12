@@ -17,6 +17,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -74,6 +75,20 @@ func main() {
 			slog.InfoContext(ctx, "startup started...")
 			app.Ctx = ctx
 			dispatcher.Setup(ctx)
+			runtime.OnNotificationResponse(ctx, func(result runtime.NotificationResult) {
+				if result.Error != nil || result.Response.UserInfo == nil {
+					return
+				}
+				raw, ok := result.Response.UserInfo["path"]
+				if !ok {
+					return
+				}
+				path, ok := raw.(string)
+				if !ok || path == "" || path[0] != '/' {
+					return
+				}
+				runtime.EventsEmit(ctx, "notification:navigate", path)
+			})
 			slog.InfoContext(ctx, "startup completed...")
 		},
 		OnShutdown: func(ctx context.Context) {

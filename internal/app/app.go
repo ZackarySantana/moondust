@@ -48,7 +48,8 @@ func (a *App) CreateProjectFromRemote(name, remoteURL string) (*store.Project, e
 	if err != nil {
 		return nil, err
 	}
-	a.notify.Emit(notify.EventProjectCreated, "Project Created", fmt.Sprintf("Project %q is ready.", p.Name))
+	link := fmt.Sprintf("/project/%s/settings/general", p.ID)
+	a.notify.Emit(notify.EventProjectCreated, "Project ready", fmt.Sprintf("%q is set up and ready to use.", p.Name), link)
 	return p, nil
 }
 
@@ -57,7 +58,8 @@ func (a *App) CreateProjectFromFolder(name, directory string) (*store.Project, e
 	if err != nil {
 		return nil, err
 	}
-	a.notify.Emit(notify.EventProjectCreated, "Project Created", fmt.Sprintf("Project %q is ready.", p.Name))
+	link := fmt.Sprintf("/project/%s/settings/general", p.ID)
+	a.notify.Emit(notify.EventProjectCreated, "Project ready", fmt.Sprintf("%q is set up and ready to use.", p.Name), link)
 	return p, nil
 }
 
@@ -110,7 +112,22 @@ func (a *App) SendThreadMessage(threadID, content string) ([]*store.ChatMessage,
 	if err != nil {
 		return nil, err
 	}
-	a.notify.Emit(notify.EventChatMessageReceived, "Message Received", "New response in your thread.")
+	title := "New reply"
+	body := "You have a new message in your thread."
+	link := ""
+	if thread, errTh := a.service.GetThread(a.Ctx, threadID); errTh == nil && thread != nil {
+		threadLabel := strings.TrimSpace(thread.Title)
+		if threadLabel == "" {
+			threadLabel = "New thread"
+		}
+		projName := "Project"
+		if proj, errP := a.service.GetProject(a.Ctx, thread.ProjectID); errP == nil && proj != nil {
+			projName = proj.Name
+		}
+		body = fmt.Sprintf("%s | %s", projName, threadLabel)
+		link = fmt.Sprintf("/project/%s/thread/%s", thread.ProjectID, threadID)
+	}
+	a.notify.Emit(notify.EventChatMessageReceived, title, body, link)
 	return msgs, nil
 }
 

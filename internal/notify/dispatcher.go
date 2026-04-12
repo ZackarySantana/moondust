@@ -39,14 +39,15 @@ func (d *Dispatcher) Shutdown(ctx context.Context) {
 // Emit fires notifications for the given event type. It is fully
 // fire-and-forget: each enabled channel runs in its own goroutine
 // with panic recovery and errors are logged, never returned.
-func (d *Dispatcher) Emit(eventType, title, body string) {
+// deepLink is an in-app path (e.g. /project/x/thread/y); empty means no navigation.
+func (d *Dispatcher) Emit(eventType, title, body, deepLink string) {
 	cfg := d.configFor(eventType)
 
 	if cfg.Push && pushAvailable {
-		go d.sendPush(title, body)
+		go d.sendPush(title, body, deepLink)
 	}
 	if cfg.InApp {
-		go d.sendInApp(title, body)
+		go d.sendInApp(title, body, deepLink)
 	}
 	if cfg.Slack && cfg.SlackWebhookURL != "" {
 		go d.sendSlack(cfg.SlackWebhookURL, title, body)
@@ -83,7 +84,7 @@ func (d *Dispatcher) configFor(eventType string) store.NotificationChannelConfig
 // Runs with panic recovery because macOS's UNUserNotificationCenter can
 // crash with an unrecoverable cgo/Objective-C signal when the app is
 // unsigned or lacks a bundle identifier.
-func (d *Dispatcher) sendPush(title, body string) {
+func (d *Dispatcher) sendPush(title, body, deepLink string) {
 	defer func() {
 		if r := recover(); r != nil {
 			slog.Debug("push notification panicked", "panic", r)
@@ -96,16 +97,22 @@ func (d *Dispatcher) sendPush(title, body string) {
 	if !runtime.IsNotificationAvailable(ctx) {
 		return
 	}
-	if err := runtime.SendNotification(ctx, runtime.NotificationOptions{
+	opts := runtime.NotificationOptions{
 		ID:    rand.Text(),
 		Title: title,
 		Body:  body,
-	}); err != nil {
+	}
+	if deepLink != "" {
+		opts.Data = map[string]interface{}{
+			"path": deepLink,
+		}
+	}
+	if err := runtime.SendNotification(ctx, opts); err != nil {
 		slog.Debug("push notification failed", "error", err)
 	}
 }
 
-func (d *Dispatcher) sendInApp(title, body string) {
+func (d *Dispatcher) sendInApp(title, body, deepLink string) {
 	defer func() {
 		if r := recover(); r != nil {
 			slog.Debug("in-app notification panicked", "panic", r)
@@ -115,10 +122,14 @@ func (d *Dispatcher) sendInApp(title, body string) {
 	if ctx == nil {
 		return
 	}
-	runtime.EventsEmit(ctx, "notification", map[string]string{
+	payload := map[string]string{
 		"title": title,
 		"body":  body,
-	})
+	}
+	if deepLink != "" {
+		payload["deepLink"] = deepLink
+	}
+	runtime.EventsEmit(ctx, "notification", payload)
 }
 
 func (d *Dispatcher) sendSlack(webhookURL, title, body string) {

@@ -2,7 +2,13 @@ import { useQuery } from "@tanstack/solid-query";
 import { useLocation, useNavigate } from "@solidjs/router";
 import type { RouteSectionProps } from "@solidjs/router";
 import type { Component } from "solid-js";
-import { createEffect, createMemo, createSignal, onCleanup } from "solid-js";
+import {
+    createEffect,
+    createMemo,
+    createSignal,
+    onCleanup,
+    onMount,
+} from "solid-js";
 import { AppSidebar } from "@/components/app-sidebar";
 import { CreateProjectModal } from "@/components/create-project-modal";
 import { CreateThreadModal } from "@/components/create-thread-modal";
@@ -12,7 +18,7 @@ import { globalSidebarThreadOrder } from "@/lib/sidebar-thread-order";
 import { ShortcutProvider, useShortcuts } from "@/lib/shortcut-context";
 import { GetProject, ListProjects, ListThreads } from "@wails/go/app/App";
 import { store } from "@wails/go/models";
-import { WindowSetTitle } from "@wails/runtime/runtime";
+import { EventsOn, WindowSetTitle } from "@wails/runtime/runtime";
 
 export const AppShell: Component<RouteSectionProps> = (props) => {
     return (
@@ -119,6 +125,14 @@ const AppShellInner: Component<RouteSectionProps> = (props) => {
         onAction("go_thread_6", () => goToThread(5)),
     );
     onCleanup(() => cleanups.forEach((c) => c()));
+
+    onMount(() => {
+        const off = EventsOn("notification:navigate", (...args: unknown[]) => {
+            const path = typeof args[0] === "string" ? args[0] : "";
+            if (path.startsWith("/")) navigate(path);
+        });
+        onCleanup(off);
+    });
 
     return (
         <div class="flex h-full w-full bg-app-bg text-slate-200">
