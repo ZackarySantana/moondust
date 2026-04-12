@@ -26,6 +26,8 @@ export function GetBuildLabel():Promise<string>;
 
 export function GetFileDiff(arg1:string,arg2:string,arg3:string):Promise<store.FileDiff>;
 
+export function GetOpenRouterUsageMetrics():Promise<store.OpenRouterUsageMetrics>;
+
 export function GetProject(arg1:string):Promise<store.Project>;
 
 export function GetSettings():Promise<store.Settings>;

@@ -16,6 +16,12 @@ function invalidateThreadMessages(threadId: string | undefined) {
     });
 }
 
+function invalidateOpenRouterUsageMetrics() {
+    void queryClient.invalidateQueries({
+        queryKey: queryKeys.openRouterUsageMetrics,
+    });
+}
+
 /** First reasoning token time per thread (for “Thought for Xs”). */
 const reasoningStartMsByThread = new Map<string, number>();
 
@@ -117,6 +123,7 @@ export function attachChatStreamGlobalListeners(): () => void {
             const id = p?.thread_id;
             if (!id) return;
             invalidateThreadMessages(id);
+            invalidateOpenRouterUsageMetrics();
             clearSidebarDoneTimer(id);
             clearReasoningStart(id);
             batch(() => {

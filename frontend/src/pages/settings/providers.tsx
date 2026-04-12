@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import ExternalLink from "lucide-solid/icons/external-link";
-import type { Component } from "solid-js";
+import type { Component, JSX } from "solid-js";
 import { createSignal, onCleanup, onMount, Show } from "solid-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { queryKeys } from "@/lib/query-client";
 import {
     ClearOpenRouterAPIKey,
     ConnectOpenRouterOAuth,
+    GetOpenRouterUsageMetrics,
     GetSettings,
     SaveSettings,
 } from "@wails/go/app/App";
@@ -215,8 +216,276 @@ export const SettingsProvidersPage: Component = () => {
                             Disconnect OpenRouter
                         </Button>
                     </Show>
+
+                    <OpenRouterUsageMetricsPanel />
                 </div>
             </Section>
+        </div>
+    );
+};
+
+const METRICS_PREVIEW = 5;
+
+const usdFmt = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6,
+});
+
+function formatUsd(n: number): string {
+    if (!Number.isFinite(n) || n === 0) {
+        return usdFmt.format(0);
+    }
+    if (n < 0.01 && n > 0) {
+        return usdFmt.format(n);
+    }
+    return usdFmt.format(n);
+}
+
+function formatTokens(n: number): string {
+    if (!Number.isFinite(n)) return "0";
+    return new Intl.NumberFormat("en-US").format(Math.round(n));
+}
+
+function formatLastUsed(raw: unknown): string {
+    if (raw == null) return "—";
+    const d =
+        raw instanceof Date
+            ? raw
+            : typeof raw === "string" || typeof raw === "number"
+              ? new Date(raw)
+              : null;
+    if (!d || Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleString(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short",
+    });
+}
+
+const OpenRouterUsageMetricsPanel: Component = () => {
+    const metricsQuery = useQuery(() => ({
+        queryKey: queryKeys.openRouterUsageMetrics,
+        queryFn: GetOpenRouterUsageMetrics,
+    }));
+
+    return (
+        <div class="border-t border-slate-800/40 pt-4">
+            <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                Local usage (this device)
+            </p>
+            <p class="mt-1 text-xs text-slate-500">
+                From stored assistant replies: billed{" "}
+                <code class="rounded bg-slate-900/80 px-1 py-0.5 text-[10px] text-slate-400">
+                    cost_usd
+                </code>{" "}
+                when OpenRouter reports it, plus token counts when present.
+            </p>
+
+            <Show
+                when={!metricsQuery.isLoading}
+                fallback={
+                    <p class="mt-3 text-xs text-slate-500">Loading metrics…</p>
+                }
+            >
+                <Show
+                    when={metricsQuery.data}
+                    fallback={
+                        <p class="mt-3 text-xs text-red-400/90">
+                            {metricsQuery.error instanceof Error
+                                ? metricsQuery.error.message
+                                : "Could not load metrics."}
+                        </p>
+                    }
+                >
+                    {(m) => {
+                        const data = m();
+                        return (
+                            <div class="mt-4 space-y-4">
+                                <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                    <div class="rounded-md border border-slate-800/60 bg-slate-950/40 px-2.5 py-2">
+                                        <p class="text-[10px] uppercase text-slate-500">
+                                            Total spend
+                                        </p>
+                                        <p class="mt-0.5 font-mono text-sm text-slate-200">
+                                            {formatUsd(data.total_cost_usd)}
+                                        </p>
+                                    </div>
+                                    <div class="rounded-md border border-slate-800/60 bg-slate-950/40 px-2.5 py-2">
+                                        <p class="text-[10px] uppercase text-slate-500">
+                                            Assistant turns
+                                        </p>
+                                        <p class="mt-0.5 font-mono text-sm text-slate-200">
+                                            {formatTokens(
+                                                data.total_assistant_messages,
+                                            )}
+                                        </p>
+                                    </div>
+                                    <div class="rounded-md border border-slate-800/60 bg-slate-950/40 px-2.5 py-2">
+                                        <p class="text-[10px] uppercase text-slate-500">
+                                            Models used
+                                        </p>
+                                        <p class="mt-0.5 font-mono text-sm text-slate-200">
+                                            {data.distinct_models}
+                                        </p>
+                                    </div>
+                                    <div class="rounded-md border border-slate-800/60 bg-slate-950/40 px-2.5 py-2">
+                                        <p class="text-[10px] uppercase text-slate-500">
+                                            Tokens (in / out)
+                                        </p>
+                                        <p class="mt-0.5 font-mono text-xs leading-snug text-slate-200">
+                                            {formatTokens(
+                                                data.total_prompt_tokens,
+                                            )}{" "}
+                                            /{" "}
+                                            {formatTokens(
+                                                data.total_completion_tokens,
+                                            )}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <ExpandableMetricList
+                                    title="Recently used models"
+                                    emptyHint="No model usage recorded yet."
+                                    rows={data.recently_used ?? []}
+                                    renderRow={(row) => (
+                                        <>
+                                            <span class="min-w-0 truncate font-mono text-[11px] text-slate-200">
+                                                {row.model_id}
+                                            </span>
+                                            <span class="shrink-0 text-right text-[11px] text-slate-500">
+                                                {formatLastUsed(
+                                                    row.last_used_at,
+                                                )}
+                                            </span>
+                                        </>
+                                    )}
+                                />
+                                <ExpandableMetricList
+                                    title="Most used models"
+                                    emptyHint="No model usage recorded yet."
+                                    rows={data.most_used ?? []}
+                                    renderRow={(row) => (
+                                        <>
+                                            <span class="min-w-0 truncate font-mono text-[11px] text-slate-200">
+                                                {row.model_id}
+                                            </span>
+                                            <span class="shrink-0 text-right font-mono text-[11px] text-slate-400">
+                                                {row.use_count}{" "}
+                                                <span class="text-slate-600">
+                                                    turns
+                                                </span>
+                                            </span>
+                                        </>
+                                    )}
+                                />
+                                <ExpandableMetricList
+                                    title="Most expensive models (by billed cost)"
+                                    emptyHint="No billed cost recorded yet (cost appears after replies when OpenRouter reports it)."
+                                    rows={data.most_expensive ?? []}
+                                    renderRow={(row) => (
+                                        <>
+                                            <span class="min-w-0 truncate font-mono text-[11px] text-slate-200">
+                                                {row.model_id}
+                                            </span>
+                                            <span class="shrink-0 text-right font-mono text-[11px] text-amber-200/90">
+                                                {formatUsd(row.total_cost_usd)}
+                                            </span>
+                                        </>
+                                    )}
+                                />
+                                <ExpandableMetricList
+                                    title="Most expensive messages (single turn)"
+                                    emptyHint="No per-message cost recorded yet."
+                                    rows={data.most_expensive_per_message ?? []}
+                                    renderRow={(row) => (
+                                        <>
+                                            <span class="min-w-0 truncate font-mono text-[11px] text-slate-200">
+                                                {row.model_id}
+                                            </span>
+                                            <span class="flex shrink-0 flex-col items-end gap-0.5">
+                                                <span class="font-mono text-[11px] text-amber-200/90">
+                                                    {formatUsd(row.cost_usd)}
+                                                </span>
+                                                <span class="text-[10px] text-slate-500">
+                                                    {formatLastUsed(
+                                                        row.created_at,
+                                                    )}
+                                                </span>
+                                            </span>
+                                        </>
+                                    )}
+                                />
+                            </div>
+                        );
+                    }}
+                </Show>
+            </Show>
+        </div>
+    );
+};
+
+const ExpandableMetricList = <T,>(props: {
+    title: string;
+    emptyHint: string;
+    rows: T[];
+    renderRow: (row: T) => JSX.Element;
+}) => {
+    const [expanded, setExpanded] = createSignal(false);
+    const rows = () => props.rows ?? [];
+    const visible = () => {
+        const r = rows();
+        if (expanded() || r.length <= METRICS_PREVIEW) {
+            return r;
+        }
+        return r.slice(0, METRICS_PREVIEW);
+    };
+    const rest = () => Math.max(0, rows().length - METRICS_PREVIEW);
+
+    return (
+        <div class="rounded-md border border-slate-800/50 bg-slate-950/30">
+            <p class="border-b border-slate-800/40 px-2.5 py-1.5 text-[11px] font-medium text-slate-400">
+                {props.title}
+            </p>
+            <Show
+                when={rows().length > 0}
+                fallback={
+                    <p class="px-2.5 py-3 text-xs text-slate-500">
+                        {props.emptyHint}
+                    </p>
+                }
+            >
+                <ul class="divide-y divide-slate-800/40">
+                    {visible().map((row) => (
+                        <li class="flex items-center justify-between gap-2 px-2.5 py-1.5">
+                            {props.renderRow(row)}
+                        </li>
+                    ))}
+                </ul>
+                <Show when={rest() > 0 && !expanded()}>
+                    <div class="border-t border-slate-800/40 px-2 py-1.5">
+                        <button
+                            type="button"
+                            class="text-[11px] text-sky-400/90 hover:text-sky-300"
+                            onClick={() => setExpanded(true)}
+                        >
+                            Show {rest()} more
+                        </button>
+                    </div>
+                </Show>
+                <Show when={rest() > 0 && expanded()}>
+                    <div class="border-t border-slate-800/40 px-2 py-1.5">
+                        <button
+                            type="button"
+                            class="text-[11px] text-slate-500 hover:text-slate-400"
+                            onClick={() => setExpanded(false)}
+                        >
+                            Show less
+                        </button>
+                    </div>
+                </Show>
+            </Show>
         </div>
     );
 };

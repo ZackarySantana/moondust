@@ -50,6 +50,10 @@ export function GetFileDiff(arg1, arg2, arg3) {
   return window['go']['app']['App']['GetFileDiff'](arg1, arg2, arg3);
 }
 
+export function GetOpenRouterUsageMetrics() {
+  return window['go']['app']['App']['GetOpenRouterUsageMetrics']();
+}
+
 export function GetProject(arg1) {
   return window['go']['app']['App']['GetProject'](arg1);
 }

@@ -308,6 +308,130 @@ export namespace store {
 	        this.context_length = source["context_length"];
 	    }
 	}
+	export class OpenRouterMessageCost {
+	    message_id: string;
+	    model_id: string;
+	    cost_usd: number;
+	    // Go type: time
+	    created_at: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new OpenRouterMessageCost(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.message_id = source["message_id"];
+	        this.model_id = source["model_id"];
+	        this.cost_usd = source["cost_usd"];
+	        this.created_at = this.convertValues(source["created_at"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class OpenRouterModelUsage {
+	    model_id: string;
+	    // Go type: time
+	    last_used_at: any;
+	    use_count: number;
+	    total_cost_usd: number;
+	    total_prompt_tokens: number;
+	    total_completion_tokens: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new OpenRouterModelUsage(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.model_id = source["model_id"];
+	        this.last_used_at = this.convertValues(source["last_used_at"], null);
+	        this.use_count = source["use_count"];
+	        this.total_cost_usd = source["total_cost_usd"];
+	        this.total_prompt_tokens = source["total_prompt_tokens"];
+	        this.total_completion_tokens = source["total_completion_tokens"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class OpenRouterUsageMetrics {
+	    total_assistant_messages: number;
+	    distinct_models: number;
+	    total_cost_usd: number;
+	    total_prompt_tokens: number;
+	    total_completion_tokens: number;
+	    recently_used: OpenRouterModelUsage[];
+	    most_used: OpenRouterModelUsage[];
+	    most_expensive: OpenRouterModelUsage[];
+	    most_expensive_per_message: OpenRouterMessageCost[];
+	
+	    static createFrom(source: any = {}) {
+	        return new OpenRouterUsageMetrics(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.total_assistant_messages = source["total_assistant_messages"];
+	        this.distinct_models = source["distinct_models"];
+	        this.total_cost_usd = source["total_cost_usd"];
+	        this.total_prompt_tokens = source["total_prompt_tokens"];
+	        this.total_completion_tokens = source["total_completion_tokens"];
+	        this.recently_used = this.convertValues(source["recently_used"], OpenRouterModelUsage);
+	        this.most_used = this.convertValues(source["most_used"], OpenRouterModelUsage);
+	        this.most_expensive = this.convertValues(source["most_expensive"], OpenRouterModelUsage);
+	        this.most_expensive_per_message = this.convertValues(source["most_expensive_per_message"], OpenRouterMessageCost);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Project {
 	    id: string;
 	    name: string;

@@ -90,6 +90,11 @@ func (a *App) ListOpenRouterChatModels() ([]store.OpenRouterChatModel, error) {
 	return a.service.ListOpenRouterChatModels(a.Ctx)
 }
 
+// GetOpenRouterUsageMetrics returns per-model usage and cost from stored assistant messages.
+func (a *App) GetOpenRouterUsageMetrics() (*store.OpenRouterUsageMetrics, error) {
+	return a.service.GetOpenRouterUsageMetrics(a.Ctx)
+}
+
 // ConnectOpenRouterOAuth starts the OpenRouter OAuth (PKCE) flow in the system browser.
 // Listen for the "openrouter:oauth" event: { status: "ok" } or { error: "..." }.
 func (a *App) ConnectOpenRouterOAuth() {
@@ -175,7 +180,7 @@ func (a *App) SendThreadMessage(threadID, content string) ([]*store.ChatMessage,
 				return nil
 			}
 			runtime.EventsEmit(emitCtx, "chat:stream", map[string]string{
-				"thread_id":         threadID,
+				"thread_id":       threadID,
 				"reasoning_delta": reasoningDelta,
 			})
 			return nil
