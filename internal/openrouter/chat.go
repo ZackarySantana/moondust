@@ -91,12 +91,12 @@ func ChatCompletion(ctx context.Context, apiKey, model string, messages []APIMes
 		var env errorEnvelope
 		msg := strings.TrimSpace(string(respBody))
 		if json.Unmarshal(respBody, &env) == nil && env.Error.Message != "" {
-			return "", fmt.Errorf("openrouter: %s", env.Error.Message)
+			return "", APIError(env.Error.Message, resp.StatusCode)
 		}
 		if msg != "" {
-			return "", fmt.Errorf("openrouter: HTTP %s: %s", resp.Status, truncateForErr(msg, 500))
+			return "", APIError(truncateForErr(msg, 500), resp.StatusCode)
 		}
-		return "", fmt.Errorf("openrouter: HTTP %s", resp.Status)
+		return "", APIError("", resp.StatusCode)
 	}
 
 	var out chatCompletionResponse
@@ -104,7 +104,7 @@ func ChatCompletion(ctx context.Context, apiKey, model string, messages []APIMes
 		return "", fmt.Errorf("decode openrouter response: %w", err)
 	}
 	if out.Error != nil && out.Error.Message != "" {
-		return "", fmt.Errorf("openrouter: %s", out.Error.Message)
+		return "", APIError(out.Error.Message, resp.StatusCode)
 	}
 	if len(out.Choices) == 0 || strings.TrimSpace(out.Choices[0].Message.Content) == "" {
 		return "", fmt.Errorf("openrouter: empty assistant reply")
@@ -178,13 +178,13 @@ func ChatCompletionStream(ctx context.Context, apiKey, model string, messages []
 		respBody, _ := io.ReadAll(resp.Body)
 		var env errorEnvelope
 		if json.Unmarshal(respBody, &env) == nil && env.Error.Message != "" {
-			return fmt.Errorf("openrouter: %s", env.Error.Message)
+			return APIError(env.Error.Message, resp.StatusCode)
 		}
 		msg := strings.TrimSpace(string(respBody))
 		if msg != "" {
-			return fmt.Errorf("openrouter: HTTP %s: %s", resp.Status, truncateForErr(msg, 500))
+			return APIError(truncateForErr(msg, 500), resp.StatusCode)
 		}
-		return fmt.Errorf("openrouter: HTTP %s", resp.Status)
+		return APIError("", resp.StatusCode)
 	}
 
 	sc := bufio.NewScanner(resp.Body)
@@ -211,7 +211,7 @@ func ChatCompletionStream(ctx context.Context, apiKey, model string, messages []
 			continue
 		}
 		if chunk.Error != nil && chunk.Error.Message != "" {
-			return fmt.Errorf("openrouter: %s", chunk.Error.Message)
+			return APIError(chunk.Error.Message, 0)
 		}
 		if len(chunk.Choices) == 0 {
 			continue
