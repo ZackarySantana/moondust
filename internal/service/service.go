@@ -327,6 +327,7 @@ func (s *Service) ListThreadMessages(ctx context.Context, threadID string) ([]*s
 	return s.messageStore.ListByThread(ctx, threadID)
 }
 
+// SendThreadMessage saves the user message only and returns it. The caller should run StreamAssistantReply to generate the assistant (e.g. in a goroutine with streaming events).
 func (s *Service) SendThreadMessage(ctx context.Context, threadID, content string) ([]*store.ChatMessage, error) {
 	thread, err := s.threadStore.Get(ctx, threadID)
 	if err != nil {
@@ -361,25 +362,6 @@ func (s *Service) SendThreadMessage(ctx context.Context, threadID, content strin
 		return nil, fmt.Errorf("unsupported chat provider %q (only OpenRouter is available)", provider)
 	}
 
-	model := strings.TrimSpace(thread.ChatModel)
-	if model == "" {
-		model = "openai/gpt-4o-mini"
-	}
-
-	history, err := s.messageStore.ListByThread(ctx, threadID)
-	if err != nil {
-		return nil, fmt.Errorf("list thread messages: %w", err)
-	}
-	sort.Slice(history, func(i, j int) bool {
-		return history[i].CreatedAt.Before(history[j].CreatedAt)
-	})
-
-	apiMessages := buildOpenRouterMessages(chat.DefaultSystemPrompt, history, trimmed)
-	replyText, err := openrouter.ChatCompletion(ctx, apiKey, model, apiMessages)
-	if err != nil {
-		return nil, err
-	}
-
 	now := time.Now().UTC()
 	userMessage := &store.ChatMessage{
 		ID:        rand.Text(),
@@ -388,22 +370,12 @@ func (s *Service) SendThreadMessage(ctx context.Context, threadID, content strin
 		Content:   trimmed,
 		CreatedAt: now,
 	}
-	replyMessage := &store.ChatMessage{
-		ID:        rand.Text(),
-		ThreadID:  threadID,
-		Role:      "assistant",
-		Content:   replyText,
-		CreatedAt: now.Add(time.Millisecond),
-	}
 	if err := userMessage.Validate(); err != nil {
 		return nil, err
 	}
-	if err := replyMessage.Validate(); err != nil {
-		return nil, err
-	}
 
-	if err := s.messageStore.Append(ctx, threadID, userMessage, replyMessage); err != nil {
-		return nil, fmt.Errorf("append thread messages: %w", err)
+	if err := s.messageStore.Append(ctx, threadID, userMessage); err != nil {
+		return nil, fmt.Errorf("append user message: %w", err)
 	}
 
 	if thread.Title == "New thread" {
@@ -417,12 +389,86 @@ func (s *Service) SendThreadMessage(ctx context.Context, threadID, content strin
 		return nil, fmt.Errorf("update thread: %w", err)
 	}
 
-	return []*store.ChatMessage{userMessage, replyMessage}, nil
+	return []*store.ChatMessage{userMessage}, nil
 }
 
-// buildOpenRouterMessages returns system, prior turns in order, then the new user message (not yet stored).
-func buildOpenRouterMessages(system string, history []*store.ChatMessage, newUser string) []openrouter.APIMessage {
-	out := make([]openrouter.APIMessage, 0, 2+len(history))
+// StreamAssistantReply loads the thread transcript (including the latest user message), streams the model reply, and appends the assistant message on success.
+func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onDelta func(string) error) error {
+	thread, err := s.threadStore.Get(ctx, threadID)
+	if err != nil {
+		return fmt.Errorf("get thread: %w", err)
+	}
+	if thread == nil {
+		return fmt.Errorf("thread not found")
+	}
+
+	st, err := s.settingsStore.Get(ctx)
+	if err != nil {
+		return fmt.Errorf("load settings: %w", err)
+	}
+	if st == nil {
+		st = &store.Settings{}
+	}
+	apiKey := strings.TrimSpace(st.OpenRouterAPIKey)
+	if apiKey == "" {
+		return fmt.Errorf("add an OpenRouter API key in Settings → Providers")
+	}
+
+	provider := strings.TrimSpace(thread.ChatProvider)
+	if provider == "" {
+		provider = "openrouter"
+	}
+	if provider != "openrouter" {
+		return fmt.Errorf("unsupported chat provider %q (only OpenRouter is available)", provider)
+	}
+
+	model := strings.TrimSpace(thread.ChatModel)
+	if model == "" {
+		model = "openai/gpt-4o-mini"
+	}
+
+	history, err := s.messageStore.ListByThread(ctx, threadID)
+	if err != nil {
+		return fmt.Errorf("list thread messages: %w", err)
+	}
+	sort.Slice(history, func(i, j int) bool {
+		return history[i].CreatedAt.Before(history[j].CreatedAt)
+	})
+
+	apiMessages := buildOpenRouterMessagesFromHistory(chat.DefaultSystemPrompt, history)
+	var full strings.Builder
+	err = openrouter.ChatCompletionStream(ctx, apiKey, model, apiMessages, func(delta string) error {
+		full.WriteString(delta)
+		return onDelta(delta)
+	})
+	if err != nil {
+		return err
+	}
+	replyText := strings.TrimSpace(full.String())
+	if replyText == "" {
+		return fmt.Errorf("openrouter: empty assistant reply")
+	}
+
+	now := time.Now().UTC()
+	replyMessage := &store.ChatMessage{
+		ID:        rand.Text(),
+		ThreadID:  threadID,
+		Role:      "assistant",
+		Content:   replyText,
+		CreatedAt: now,
+	}
+	if err := replyMessage.Validate(); err != nil {
+		return err
+	}
+	if err := s.messageStore.Append(ctx, threadID, replyMessage); err != nil {
+		return fmt.Errorf("append assistant message: %w", err)
+	}
+	return nil
+}
+
+// buildOpenRouterMessagesFromHistory returns system plus stored turns in order (including the latest user message).
+func buildOpenRouterMessagesFromHistory(system string, history []*store.ChatMessage) []openrouter.APIMessage {
+	out := make([]openrouter.APIMessage, 0, 1+len(history))
 	out = append(out, openrouter.APIMessage{Role: "system", Content: system})
 	for _, m := range history {
 		switch m.Role {
@@ -430,7 +476,6 @@ func buildOpenRouterMessages(system string, history []*store.ChatMessage, newUse
 			out = append(out, openrouter.APIMessage{Role: m.Role, Content: m.Content})
 		}
 	}
-	out = append(out, openrouter.APIMessage{Role: "user", Content: newUser})
 	return out
 }
 

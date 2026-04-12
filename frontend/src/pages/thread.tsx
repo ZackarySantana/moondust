@@ -22,6 +22,7 @@ import {
     For,
     on,
     onCleanup,
+    onMount,
     Show,
 } from "solid-js";
 import {
@@ -49,6 +50,7 @@ import {
 import { queryKeys } from "@/lib/query-client";
 import { useShortcuts } from "@/lib/shortcut-context";
 import type { store } from "@wails/go/models";
+import { EventsOn } from "@wails/runtime/runtime";
 
 interface DiffTarget {
     path: string;
@@ -61,6 +63,8 @@ export const ThreadPage: Component = () => {
     const { onAction, formatKey } = useShortcuts();
     const [draft, setDraft] = createSignal("");
     const [sendError, setSendError] = createSignal("");
+    const [streaming, setStreaming] = createSignal(false);
+    const [streamingText, setStreamingText] = createSignal("");
     let chatTextareaRef!: HTMLTextAreaElement;
     const [userAtBottom, setUserAtBottom] = createSignal(true);
     const [terminalHeight, setTerminalHeight] = createSignal(208);
@@ -193,7 +197,10 @@ export const ThreadPage: Component = () => {
         chatModelFromThread(threadQuery.data?.chat_model),
     );
     const canSend = createMemo(
-        () => !sendMutation.isPending && draft().trim().length > 0,
+        () =>
+            !sendMutation.isPending &&
+            !streaming() &&
+            draft().trim().length > 0,
     );
     const workingDir = createMemo(
         () =>
@@ -310,7 +317,7 @@ export const ThreadPage: Component = () => {
 
     createEffect(
         on(
-            () => [draft(), messages().length] as const,
+            () => [draft(), messages().length, streamingText()] as const,
             () => {
                 if (userAtBottom() && messagesContainerRef) {
                     requestAnimationFrame(() => {
@@ -321,6 +328,68 @@ export const ThreadPage: Component = () => {
             },
         ),
     );
+
+    createEffect(
+        on(
+            () => params.threadId,
+            (id, prev) => {
+                if (prev !== undefined && prev !== id) {
+                    setStreaming(false);
+                    setStreamingText("");
+                }
+            },
+        ),
+    );
+
+    onMount(() => {
+        const unsubs: (() => void)[] = [];
+        const tid = () => params.threadId;
+
+        unsubs.push(
+            EventsOn("chat:stream_start", (...args: unknown[]) => {
+                const p = args[0] as { thread_id?: string };
+                if (p?.thread_id !== tid()) return;
+                setStreamingText("");
+                setStreaming(true);
+            }),
+        );
+        unsubs.push(
+            EventsOn("chat:stream", (...args: unknown[]) => {
+                const p = args[0] as { thread_id?: string; delta?: string };
+                if (p?.thread_id !== tid()) return;
+                const d = p.delta ?? "";
+                if (!d) return;
+                setStreamingText((prev) => prev + d);
+            }),
+        );
+        unsubs.push(
+            EventsOn("chat:stream_done", (...args: unknown[]) => {
+                const p = args[0] as { thread_id?: string };
+                const doneId = p?.thread_id;
+                if (!doneId) return;
+                void (async () => {
+                    await queryClient.invalidateQueries({
+                        queryKey: queryKeys.threads.messages(doneId),
+                    });
+                    if (tid() === doneId) {
+                        setStreaming(false);
+                        setStreamingText("");
+                    }
+                })();
+            }),
+        );
+        unsubs.push(
+            EventsOn("chat:stream_error", (...args: unknown[]) => {
+                const p = args[0] as { thread_id?: string; error?: string };
+                if (p?.thread_id !== tid()) return;
+                setStreaming(false);
+                setStreamingText("");
+                setSendError(p?.error?.trim() || "Assistant reply failed");
+            }),
+        );
+
+        onCleanup(() => unsubs.forEach((u) => u()));
+    });
 
     const shortcutCleanups: (() => void)[] = [];
     shortcutCleanups.push(
@@ -471,7 +540,9 @@ export const ThreadPage: Component = () => {
                             >
                                 <div class="mx-auto flex w-full max-w-3xl flex-col gap-1 px-4 py-4">
                                     <Show
-                                        when={messages().length > 0}
+                                        when={
+                                            messages().length > 0 || streaming()
+                                        }
                                         fallback={
                                             <div class="flex flex-col items-center justify-center gap-3 py-16 text-center">
                                                 <div class="rounded-xl border border-slate-800/40 bg-slate-900/30 p-3">
@@ -539,6 +610,44 @@ export const ThreadPage: Component = () => {
                                                 </div>
                                             )}
                                         </For>
+                                        <Show when={streaming()}>
+                                            <div class="flex justify-start py-1">
+                                                <div class="flex max-w-[85%] gap-2.5 py-1">
+                                                    <div class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-slate-800/60">
+                                                        <Bot
+                                                            class="size-3.5 text-emerald-500/70"
+                                                            stroke-width={1.5}
+                                                        />
+                                                    </div>
+                                                    <div class="min-w-0 text-[13px] leading-relaxed text-slate-300">
+                                                        <Show
+                                                            when={
+                                                                streamingText()
+                                                                    .length > 0
+                                                            }
+                                                            fallback={
+                                                                <div class="flex items-center gap-2 text-slate-500">
+                                                                    <Loader2
+                                                                        class="size-3.5 animate-spin"
+                                                                        stroke-width={
+                                                                            2
+                                                                        }
+                                                                        aria-hidden
+                                                                    />
+                                                                    <span class="text-xs">
+                                                                        Thinking…
+                                                                    </span>
+                                                                </div>
+                                                            }
+                                                        >
+                                                            <p class="whitespace-pre-wrap wrap-break-word">
+                                                                {streamingText()}
+                                                            </p>
+                                                        </Show>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </Show>
                                     </Show>
                                 </div>
                             </div>
@@ -610,7 +719,8 @@ export const ThreadPage: Component = () => {
                                                 >
                                                     <Show
                                                         when={
-                                                            !sendMutation.isPending
+                                                            !sendMutation.isPending &&
+                                                            !streaming()
                                                         }
                                                         fallback={
                                                             <Loader2

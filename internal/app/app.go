@@ -149,22 +149,45 @@ func (a *App) SendThreadMessage(threadID, content string) ([]*store.ChatMessage,
 	if err != nil {
 		return nil, err
 	}
-	title := "New reply"
-	body := "You have a new message in your thread."
-	link := ""
-	if thread, errTh := a.service.GetThread(a.Ctx, threadID); errTh == nil && thread != nil {
-		threadLabel := strings.TrimSpace(thread.Title)
-		if threadLabel == "" {
-			threadLabel = "New thread"
+
+	emitCtx := a.Ctx
+	streamCtx := context.Background()
+	go func() {
+		runtime.EventsEmit(emitCtx, "chat:stream_start", map[string]string{"thread_id": threadID})
+		err := a.service.StreamAssistantReply(streamCtx, threadID, func(delta string) error {
+			runtime.EventsEmit(emitCtx, "chat:stream", map[string]string{
+				"thread_id": threadID,
+				"delta":     delta,
+			})
+			return nil
+		})
+		if err != nil {
+			runtime.EventsEmit(emitCtx, "chat:stream_error", map[string]string{
+				"thread_id": threadID,
+				"error":     err.Error(),
+			})
+			return
 		}
-		projName := "Project"
-		if proj, errP := a.service.GetProject(a.Ctx, thread.ProjectID); errP == nil && proj != nil {
-			projName = proj.Name
+		runtime.EventsEmit(emitCtx, "chat:stream_done", map[string]string{"thread_id": threadID})
+
+		title := "New reply"
+		body := "You have a new message in your thread."
+		link := ""
+		if thread, errTh := a.service.GetThread(a.Ctx, threadID); errTh == nil && thread != nil {
+			threadLabel := strings.TrimSpace(thread.Title)
+			if threadLabel == "" {
+				threadLabel = "New thread"
+			}
+			projName := "Project"
+			if proj, errP := a.service.GetProject(a.Ctx, thread.ProjectID); errP == nil && proj != nil {
+				projName = proj.Name
+			}
+			body = fmt.Sprintf("%s | %s", projName, threadLabel)
+			link = fmt.Sprintf("/project/%s/thread/%s", thread.ProjectID, threadID)
 		}
-		body = fmt.Sprintf("%s | %s", projName, threadLabel)
-		link = fmt.Sprintf("/project/%s/thread/%s", thread.ProjectID, threadID)
-	}
-	a.notify.Emit(notify.EventChatMessageReceived, title, body, link)
+		a.notify.Emit(notify.EventChatMessageReceived, title, body, link)
+	}()
+
 	return msgs, nil
 }
 
