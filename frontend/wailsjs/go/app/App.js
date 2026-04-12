@@ -106,6 +106,14 @@ export function SetLogStreaming(arg1) {
   return window['go']['app']['App']['SetLogStreaming'](arg1);
 }
 
+export function SetThreadChatModel(arg1, arg2) {
+  return window['go']['app']['App']['SetThreadChatModel'](arg1, arg2);
+}
+
+export function SetThreadChatProvider(arg1, arg2) {
+  return window['go']['app']['App']['SetThreadChatProvider'](arg1, arg2);
+}
+
 export function TerminalWebSocketURL() {
   return window['go']['app']['App']['TerminalWebSocketURL']();
 }

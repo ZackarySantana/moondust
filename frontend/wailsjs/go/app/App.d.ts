@@ -54,6 +54,10 @@ export function SendThreadMessage(arg1:string,arg2:string):Promise<Array<store.C
 
 export function SetLogStreaming(arg1:boolean):Promise<void>;
 
+export function SetThreadChatModel(arg1:string,arg2:string):Promise<void>;
+
+export function SetThreadChatProvider(arg1:string,arg2:string):Promise<void>;
+
 export function TerminalWebSocketURL():Promise<string>;
 
 export function UpdateProject(arg1:store.Project):Promise<void>;

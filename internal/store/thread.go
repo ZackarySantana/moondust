@@ -13,6 +13,10 @@ type Thread struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 	WorktreeDir string    `json:"worktree_dir"`
+	// ChatProvider is which upstream powers this thread (e.g. "openrouter"). Empty treated as "openrouter" in the UI.
+	ChatProvider string `json:"chat_provider,omitempty"`
+	// ChatModel is the provider-specific model id (e.g. OpenRouter's "openai/gpt-4o-mini"). Empty means not chosen yet.
+	ChatModel string `json:"chat_model,omitempty"`
 }
 
 func (t *Thread) Validate() error {

@@ -3,7 +3,6 @@ import { useParams } from "@solidjs/router";
 import ArrowLeft from "lucide-solid/icons/arrow-left";
 import ArrowUp from "lucide-solid/icons/arrow-up";
 import Bot from "lucide-solid/icons/bot";
-import ChevronDown from "lucide-solid/icons/chevron-down";
 import ChevronDownNav from "lucide-solid/icons/chevron-down";
 import ChevronUpNav from "lucide-solid/icons/chevron-up";
 import Columns2 from "lucide-solid/icons/columns-2";
@@ -28,16 +27,25 @@ import {
 import {
     GetFileDiff,
     GetProject,
+    GetSettings,
     GetThread,
     GetThreadGitReview,
     ListThreadMessages,
     RenameThread,
     SendThreadMessage,
+    SetThreadChatModel,
+    SetThreadChatProvider,
 } from "@wails/go/app/App";
+import { ChatProviderBar } from "@/components/chat-provider-bar";
 import { DiffViewer, type DiffNav } from "@/components/diff-viewer";
 import { Kbd } from "@/components/kbd";
 import { ResizeHandle } from "@/components/resize-handle";
 import { TerminalPane } from "@/components/terminal-pane";
+import {
+    chatModelFromThread,
+    chatProviderFromThread,
+    type ChatProviderId,
+} from "@/lib/chat-provider";
 import { queryKeys } from "@/lib/query-client";
 import { useShortcuts } from "@/lib/shortcut-context";
 import type { store } from "@wails/go/models";
@@ -64,6 +72,11 @@ export const ThreadPage: Component = () => {
         queryKey: queryKeys.projects.detail(params.projectId),
         queryFn: () => GetProject(params.projectId),
         enabled: !!params.projectId,
+    }));
+
+    const settingsQuery = useQuery(() => ({
+        queryKey: queryKeys.settings,
+        queryFn: GetSettings,
     }));
 
     const threadQuery = useQuery(() => ({
@@ -102,7 +115,69 @@ export const ThreadPage: Component = () => {
         },
     }));
 
+    const threadDetailKey = () => queryKeys.threads.detail(params.threadId);
+
+    const setChatProviderMutation = useMutation(() => ({
+        mutationFn: (provider: ChatProviderId) =>
+            SetThreadChatProvider(params.threadId, provider),
+        onMutate: async (provider) => {
+            await queryClient.cancelQueries({ queryKey: threadDetailKey() });
+            const prev =
+                queryClient.getQueryData<store.Thread>(threadDetailKey());
+            if (prev) {
+                queryClient.setQueryData(threadDetailKey(), {
+                    ...prev,
+                    chat_provider: provider,
+                } as store.Thread);
+            }
+            return { prev } as { prev: store.Thread | undefined };
+        },
+        onError: (_err, _provider, ctx) => {
+            if (ctx?.prev !== undefined) {
+                queryClient.setQueryData(threadDetailKey(), ctx.prev);
+            }
+        },
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({
+                queryKey: queryKeys.threads.all,
+            });
+        },
+    }));
+
+    const setChatModelMutation = useMutation(() => ({
+        mutationFn: (model: string) =>
+            SetThreadChatModel(params.threadId, model),
+        onMutate: async (model) => {
+            await queryClient.cancelQueries({ queryKey: threadDetailKey() });
+            const prev =
+                queryClient.getQueryData<store.Thread>(threadDetailKey());
+            if (prev) {
+                queryClient.setQueryData(threadDetailKey(), {
+                    ...prev,
+                    chat_model: model,
+                } as store.Thread);
+            }
+            return { prev } as { prev: store.Thread | undefined };
+        },
+        onError: (_err, _model, ctx) => {
+            if (ctx?.prev !== undefined) {
+                queryClient.setQueryData(threadDetailKey(), ctx.prev);
+            }
+        },
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({
+                queryKey: queryKeys.threads.all,
+            });
+        },
+    }));
+
     const messages = createMemo(() => messagesQuery.data ?? []);
+    const chatProvider = createMemo(() =>
+        chatProviderFromThread(threadQuery.data?.chat_provider),
+    );
+    const chatModel = createMemo(() =>
+        chatModelFromThread(threadQuery.data?.chat_model),
+    );
     const canSend = createMemo(
         () => !sendMutation.isPending && draft().trim().length > 0,
     );
@@ -181,6 +256,18 @@ export const ThreadPage: Component = () => {
         if (!text) return;
         void sendMutation.mutateAsync(text);
     }
+
+    function setProvider(id: ChatProviderId) {
+        void setChatProviderMutation.mutateAsync(id);
+    }
+
+    function setModel(modelId: string) {
+        void setChatModelMutation.mutateAsync(modelId);
+    }
+
+    const showOpenRouterKeyHint = () =>
+        chatProvider() === "openrouter" &&
+        !settingsQuery.data?.has_openrouter_api_key;
 
     async function refreshGitSidebar() {
         await queryClient.invalidateQueries({
@@ -475,26 +562,21 @@ export const ThreadPage: Component = () => {
                                                 }
                                             }}
                                         />
-                                        <div class="flex items-center justify-between px-2.5 pb-2">
-                                            <div class="flex items-center gap-1">
-                                                <button
-                                                    type="button"
-                                                    class="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-slate-500 transition-colors hover:bg-slate-800/50 hover:text-slate-300"
-                                                >
-                                                    <Bot
-                                                        class="size-3"
-                                                        stroke-width={2}
-                                                        aria-hidden
-                                                    />
-                                                    Model
-                                                    <ChevronDown
-                                                        class="size-3 text-slate-600"
-                                                        stroke-width={2}
-                                                        aria-hidden
-                                                    />
-                                                </button>
-                                            </div>
-                                            <div class="flex items-center gap-2">
+                                        <div class="flex flex-wrap items-center justify-between gap-2 px-2.5 pb-2">
+                                            <ChatProviderBar
+                                                provider={chatProvider()}
+                                                onProviderChange={setProvider}
+                                                model={chatModel()}
+                                                onModelChange={setModel}
+                                                showOpenRouterKeyHint={showOpenRouterKeyHint()}
+                                                providerDisabled={
+                                                    setChatProviderMutation.isPending
+                                                }
+                                                modelDisabled={
+                                                    setChatModelMutation.isPending
+                                                }
+                                            />
+                                            <div class="flex shrink-0 items-center gap-2">
                                                 <kbd class="hidden items-center rounded border border-slate-700/50 bg-slate-800/40 px-1.5 py-0.5 font-mono text-[9px] leading-none text-slate-600 sm:inline-flex">
                                                     Enter
                                                 </kbd>

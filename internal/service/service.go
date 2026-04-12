@@ -231,10 +231,12 @@ func (s *Service) CreateThread(ctx context.Context, projectID string, useWorktre
 		return nil, fmt.Errorf("project not found")
 	}
 	thread := &store.Thread{
-		ID:        rand.Text(),
-		ProjectID: projectID,
-		Title:     "New thread",
-		CreatedAt: time.Now().UTC(),
+		ID:           rand.Text(),
+		ProjectID:    projectID,
+		Title:        "New thread",
+		CreatedAt:    time.Now().UTC(),
+		ChatProvider: "openrouter",
+		ChatModel:    "openai/gpt-4o-mini",
 	}
 
 	if useWorktree && project.Directory != "" {
@@ -265,6 +267,43 @@ func (s *Service) RenameThread(ctx context.Context, id, title string) error {
 		return fmt.Errorf("get thread: %w", err)
 	}
 	thread.Title = title
+	return s.threadStore.Update(ctx, thread)
+}
+
+// SetThreadChatProvider persists which chat provider this thread uses (e.g. "openrouter").
+func (s *Service) SetThreadChatProvider(ctx context.Context, threadID, provider string) error {
+	provider = strings.TrimSpace(provider)
+	if provider == "" {
+		return fmt.Errorf("provider is required")
+	}
+	if provider != "openrouter" {
+		return fmt.Errorf("unsupported chat provider: %q", provider)
+	}
+	thread, err := s.threadStore.Get(ctx, threadID)
+	if err != nil {
+		return fmt.Errorf("get thread: %w", err)
+	}
+	if thread == nil {
+		return fmt.Errorf("thread not found")
+	}
+	thread.ChatProvider = provider
+	return s.threadStore.Update(ctx, thread)
+}
+
+// SetThreadChatModel persists the model id for this thread (e.g. OpenRouter model slug).
+func (s *Service) SetThreadChatModel(ctx context.Context, threadID, model string) error {
+	model = strings.TrimSpace(model)
+	if len(model) > 256 {
+		return fmt.Errorf("model id too long")
+	}
+	thread, err := s.threadStore.Get(ctx, threadID)
+	if err != nil {
+		return fmt.Errorf("get thread: %w", err)
+	}
+	if thread == nil {
+		return fmt.Errorf("thread not found")
+	}
+	thread.ChatModel = model
 	return s.threadStore.Update(ctx, thread)
 }
 

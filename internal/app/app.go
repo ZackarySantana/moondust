@@ -126,6 +126,16 @@ func (a *App) RenameThread(id, title string) error {
 	return a.service.RenameThread(a.Ctx, id, title)
 }
 
+// SetThreadChatProvider saves which chat provider this thread uses (see store.Thread.ChatProvider).
+func (a *App) SetThreadChatProvider(threadID, provider string) error {
+	return a.service.SetThreadChatProvider(a.Ctx, threadID, provider)
+}
+
+// SetThreadChatModel saves the chat model id for this thread (see store.Thread.ChatModel).
+func (a *App) SetThreadChatModel(threadID, model string) error {
+	return a.service.SetThreadChatModel(a.Ctx, threadID, model)
+}
+
 func (a *App) ListThreads() ([]*store.Thread, error) {
 	return a.service.ListThreads(a.Ctx)
 }
