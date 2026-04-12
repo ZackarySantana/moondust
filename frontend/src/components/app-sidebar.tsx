@@ -1,6 +1,4 @@
 import { A, useLocation } from "@solidjs/router";
-import { useQueryClient } from "@tanstack/solid-query";
-import ChevronRight from "lucide-solid/icons/chevron-right";
 import Plus from "lucide-solid/icons/plus";
 import SettingsIcon from "lucide-solid/icons/settings";
 import {
@@ -9,13 +7,13 @@ import {
     For,
     onCleanup,
     onMount,
-    Show,
     type Component,
 } from "solid-js";
-import { GetBuildLabel, RenameThread } from "@wails/go/app/App";
+import { GetBuildLabel } from "@wails/go/app/App";
+import { ProjectGroup } from "@/components/sidebar/project-group";
+import { ProjectThread } from "@/components/sidebar/project-thread";
 import { Kbd } from "@/components/kbd";
 import { Separator } from "@/components/ui/separator";
-import { queryKeys } from "@/lib/query-client";
 import {
     globalThreadShortcutSlots,
     sortProjectsByLatestThread,
@@ -206,169 +204,5 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                 </p>
             </footer>
         </aside>
-    );
-};
-
-/* ── Extracted sub-components for readability ── */
-
-const ProjectGroup: Component<{
-    id?: string;
-    name: string;
-    title?: string;
-    shortcutHint?: string;
-    onNewThread?: () => void;
-    children?: any;
-}> = (props) => {
-    return (
-        <details
-            class="group/project"
-            open
-        >
-            <summary class="flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-slate-300 transition-colors duration-100 hover:bg-slate-800/30 [&::-webkit-details-marker]:hidden">
-                <ChevronRight
-                    class="size-3 shrink-0 text-slate-600 transition-transform duration-150 group-open/project:rotate-90"
-                    stroke-width={2.5}
-                    aria-hidden
-                />
-                <span
-                    class="min-w-0 flex-1 truncate"
-                    title={props.title}
-                >
-                    {props.name}
-                </span>
-                {props.id && (
-                    <div class="relative shrink-0">
-                        <kbd class="pointer-events-none absolute right-full top-1/2 mr-1 -translate-y-1/2 rounded border border-slate-700/50 bg-slate-800/40 px-1 py-0.5 font-mono text-[9px] leading-none text-slate-500 opacity-0 transition-opacity group-hover/project:opacity-100">
-                            {props.shortcutHint}
-                        </kbd>
-                        <button
-                            type="button"
-                            class="cursor-pointer rounded-md p-1 text-slate-600 opacity-0 transition-all duration-100 hover:bg-slate-800/50 hover:text-slate-300 group-hover/project:opacity-100"
-                            aria-label={`New thread in ${props.name}`}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                props.onNewThread?.();
-                            }}
-                        >
-                            <Plus
-                                class="size-3.5"
-                                stroke-width={2}
-                                aria-hidden
-                            />
-                        </button>
-                    </div>
-                )}
-                {props.id && (
-                    <A
-                        href={`/project/${props.id}/settings`}
-                        class="shrink-0 cursor-pointer rounded-md p-1 text-slate-600 opacity-0 transition-all duration-100 hover:bg-slate-800/50 hover:text-slate-300 group-hover/project:opacity-100"
-                        aria-label={`${props.name} settings`}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <SettingsIcon
-                            class="size-3.5"
-                            stroke-width={2}
-                            aria-hidden
-                        />
-                    </A>
-                )}
-            </summary>
-            <div class="ml-[18px] border-l border-slate-800/30 pl-2 pt-0.5 pb-1">
-                {props.children}
-            </div>
-        </details>
-    );
-};
-
-const ProjectThread: Component<{
-    projectID: string;
-    threadID: string;
-    name: string;
-    time?: string;
-    active?: boolean;
-    shortcutHint?: string;
-}> = (props) => {
-    const queryClient = useQueryClient();
-    const [editing, setEditing] = createSignal(false);
-    const [draft, setDraft] = createSignal("");
-    let inputRef!: HTMLInputElement;
-
-    function startEditing(e: MouseEvent) {
-        e.preventDefault();
-        e.stopPropagation();
-        setDraft(props.name);
-        setEditing(true);
-        requestAnimationFrame(() => {
-            inputRef?.focus();
-            inputRef?.select();
-        });
-    }
-
-    async function commit() {
-        const trimmed = draft().trim();
-        setEditing(false);
-        if (trimmed && trimmed !== props.name) {
-            await RenameThread(props.threadID, trimmed);
-            await queryClient.invalidateQueries({
-                queryKey: queryKeys.threads.all,
-            });
-            await queryClient.invalidateQueries({
-                queryKey: queryKeys.threads.detail(props.threadID),
-            });
-        }
-    }
-
-    function onKeyDown(e: KeyboardEvent) {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            void commit();
-        } else if (e.key === "Escape") {
-            e.preventDefault();
-            setEditing(false);
-        }
-    }
-
-    return (
-        <A
-            href={`/project/${props.projectID}/thread/${props.threadID}`}
-            class={cn(
-                "group/thread flex w-full items-baseline gap-1 rounded-md px-2 py-1.5 text-left text-xs transition-colors duration-100",
-                props.active
-                    ? "bg-slate-800/55 text-slate-200"
-                    : "text-slate-500 hover:bg-slate-800/40 hover:text-slate-300",
-            )}
-            onDblClick={startEditing}
-        >
-            <Show
-                when={editing()}
-                fallback={
-                    <div class="flex min-w-0 flex-1 items-baseline gap-1.5">
-                        <span class="min-w-0 truncate">{props.name}</span>
-                        {props.shortcutHint && (
-                            <kbd class="pointer-events-none shrink-0 rounded border border-slate-700/50 bg-slate-800/40 px-1 py-0.5 font-mono text-[9px] leading-none text-slate-500 opacity-0 transition-opacity group-hover/thread:opacity-100">
-                                {props.shortcutHint}
-                            </kbd>
-                        )}
-                    </div>
-                }
-            >
-                <input
-                    ref={inputRef}
-                    type="text"
-                    value={draft()}
-                    onInput={(e) => setDraft(e.currentTarget.value)}
-                    onBlur={() => void commit()}
-                    onKeyDown={onKeyDown}
-                    onClick={(e) => e.preventDefault()}
-                    class="min-w-0 flex-1 truncate rounded bg-transparent px-0.5 text-xs text-slate-200 outline-none ring-1 ring-emerald-500/40"
-                />
-            </Show>
-            {!editing() && props.time && (
-                <span class="shrink-0 text-[10px] tabular-nums text-slate-600">
-                    {props.time}
-                </span>
-            )}
-        </A>
     );
 };
