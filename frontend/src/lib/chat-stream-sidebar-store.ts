@@ -8,8 +8,12 @@ export type SidebarStreamPhase = "thinking" | "responding" | "done";
 
 export interface SidebarStreamSnapshot {
     phase: SidebarStreamPhase;
-    reasoning: string;
-    response: string;
+    /** Full streamed reasoning (thread view); sidebar truncates when rendering. */
+    reasoningFull: string;
+    /** Full streamed assistant text (thread view). */
+    responseFull: string;
+    /** Set when the first answer token arrives after reasoning started; mirrors thread header “Thought for Xs”. */
+    thinkingDurationSec: number | null;
 }
 
 /**

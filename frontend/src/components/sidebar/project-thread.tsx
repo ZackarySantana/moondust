@@ -3,7 +3,10 @@ import { useQueryClient } from "@tanstack/solid-query";
 import { createMemo, createSignal, Show, type Component } from "solid-js";
 import { RenameThread } from "@wails/go/app/App";
 import type { SidebarStreamSnapshot } from "@/lib/chat-stream-sidebar-store";
-import { sidebarStreams } from "@/lib/chat-stream-sidebar-store";
+import {
+    sidebarStreams,
+    truncateSidebarPreview,
+} from "@/lib/chat-stream-sidebar-store";
 import { queryKeys } from "@/lib/query-client";
 import { cn } from "@/lib/utils";
 
@@ -92,7 +95,7 @@ export const ProjectThread: Component<{
     const showStreamPreview = createMemo(() => {
         const s = streamSnap();
         if (!s || s.phase === "done") return false;
-        return s.reasoning.length > 0 || s.response.length > 0;
+        return s.reasoningFull.length > 0 || s.responseFull.length > 0;
     });
 
     /** Boolean must be passed to `<Show when={…}>` (not a Memo function), or `when` is always truthy and crashes. */
@@ -149,22 +152,26 @@ export const ProjectThread: Component<{
                                     >
                                         <Show
                                             when={
-                                                (streamSnap()?.reasoning
+                                                (streamSnap()?.reasoningFull
                                                     ?.length ?? 0) > 0
                                             }
                                         >
                                             <p class="line-clamp-1 text-[9px] leading-snug text-slate-500/85">
-                                                {streamSnap()?.reasoning}
+                                                {truncateSidebarPreview(
+                                                    streamSnap()!.reasoningFull,
+                                                )}
                                             </p>
                                         </Show>
                                         <Show
                                             when={
-                                                (streamSnap()?.response
+                                                (streamSnap()?.responseFull
                                                     ?.length ?? 0) > 0
                                             }
                                         >
                                             <p class="line-clamp-1 text-[9px] leading-snug text-slate-500/85">
-                                                {streamSnap()?.response}
+                                                {truncateSidebarPreview(
+                                                    streamSnap()!.responseFull,
+                                                )}
                                             </p>
                                         </Show>
                                     </div>

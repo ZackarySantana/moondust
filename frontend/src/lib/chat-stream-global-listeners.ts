@@ -7,7 +7,6 @@ import {
     scheduleSidebarStreamClear,
     setSidebarStreams,
     sidebarStreams,
-    truncateSidebarPreview,
 } from "@/lib/chat-stream-sidebar-store";
 
 function invalidateThreadMessages(threadId: string | undefined) {
@@ -17,8 +16,15 @@ function invalidateThreadMessages(threadId: string | undefined) {
     });
 }
 
+/** First reasoning token time per thread (for “Thought for Xs”). */
+const reasoningStartMsByThread = new Map<string, number>();
+
+function clearReasoningStart(threadId: string) {
+    reasoningStartMsByThread.delete(threadId);
+}
+
 /**
- * Single subscription to chat stream events: TanStack invalidation + sidebar previews.
+ * Single subscription to chat stream events: TanStack invalidation + live thread/sidebar state.
  * Call once for the app lifetime (see ChatStreamQuerySync).
  */
 export function attachChatStreamGlobalListeners(): () => void {
@@ -30,11 +36,13 @@ export function attachChatStreamGlobalListeners(): () => void {
             const id = p?.thread_id;
             if (!id) return;
             clearSidebarDoneTimer(id);
+            clearReasoningStart(id);
             batch(() => {
                 setSidebarStreams(id, {
                     phase: "thinking",
-                    reasoning: "",
-                    response: "",
+                    reasoningFull: "",
+                    responseFull: "",
+                    thinkingDurationSec: null,
                 });
             });
         }),
@@ -58,27 +66,46 @@ export function attachChatStreamGlobalListeners(): () => void {
                 if (!cur) {
                     cur = {
                         phase: "thinking",
-                        reasoning: "",
-                        response: "",
+                        reasoningFull: "",
+                        responseFull: "",
+                        thinkingDurationSec: null,
                     };
                 }
-                const reasoning = rd
-                    ? truncateSidebarPreview(cur.reasoning + rd)
-                    : cur.reasoning;
-                const response = d
-                    ? truncateSidebarPreview(cur.response + d)
-                    : cur.response;
+                if (rd && !reasoningStartMsByThread.has(id)) {
+                    reasoningStartMsByThread.set(id, Date.now());
+                }
+                const reasoningFull = rd
+                    ? cur.reasoningFull + rd
+                    : cur.reasoningFull;
+                const responseFull = d
+                    ? cur.responseFull + d
+                    : cur.responseFull;
+                let thinkingDurationSec = cur.thinkingDurationSec;
+                if (
+                    d &&
+                    thinkingDurationSec === null &&
+                    reasoningStartMsByThread.has(id)
+                ) {
+                    thinkingDurationSec = Math.max(
+                        1,
+                        Math.round(
+                            (Date.now() - reasoningStartMsByThread.get(id)!) /
+                                1000,
+                        ),
+                    );
+                }
                 const phase =
-                    response.length > 0
+                    responseFull.length > 0
                         ? ("responding" as const)
-                        : reasoning.length > 0
+                        : reasoningFull.length > 0
                           ? ("thinking" as const)
                           : ("thinking" as const);
 
                 setSidebarStreams(id, {
                     phase,
-                    reasoning,
-                    response,
+                    reasoningFull,
+                    responseFull,
+                    thinkingDurationSec,
                 });
             });
         }),
@@ -91,12 +118,14 @@ export function attachChatStreamGlobalListeners(): () => void {
             if (!id) return;
             invalidateThreadMessages(id);
             clearSidebarDoneTimer(id);
+            clearReasoningStart(id);
             batch(() => {
                 const cur = sidebarStreams[id];
                 setSidebarStreams(id, {
                     phase: "done",
-                    reasoning: cur?.reasoning ?? "",
-                    response: cur?.response ?? "",
+                    reasoningFull: cur?.reasoningFull ?? "",
+                    responseFull: cur?.responseFull ?? "",
+                    thinkingDurationSec: cur?.thinkingDurationSec ?? null,
                 });
             });
             scheduleSidebarStreamClear(id, 2500);
@@ -109,6 +138,7 @@ export function attachChatStreamGlobalListeners(): () => void {
             const id = p?.thread_id;
             if (!id) return;
             invalidateThreadMessages(id);
+            clearReasoningStart(id);
             removeSidebarStream(id);
         }),
     );

@@ -1,125 +1,42 @@
-import type { QueryClient } from "@tanstack/solid-query";
-import { createEffect, createSignal, on, onCleanup, onMount } from "solid-js";
-import { queryKeys } from "@/lib/query-client";
+import { createMemo, onCleanup, onMount } from "solid-js";
+import { sidebarStreams } from "@/lib/chat-stream-sidebar-store";
 import { EventsOn } from "@wails/runtime/runtime";
 
 /**
- * Subscribes to Wails chat stream events for the active thread and exposes
- * streaming state for the assistant reply UI.
+ * Live assistant stream state for the thread page. Backed by the same global store
+ * as the sidebar (updated in chat-stream-global-listeners) so navigating away and
+ * back while a reply is streaming still shows the in-progress text.
  */
 export function useThreadChatStream(
     threadId: () => string,
-    queryClient: QueryClient,
     onStreamError: (message: string) => void,
 ) {
-    const [streaming, setStreaming] = createSignal(false);
-    const [streamingText, setStreamingText] = createSignal("");
-    const [streamingReasoningText, setStreamingReasoningText] =
-        createSignal("");
-    const [streamingThinkingDurationSec, setStreamingThinkingDurationSec] =
-        createSignal<number | null>(null);
+    onMount(() => {
+        const tid = () => threadId();
+        const unsub = EventsOn("chat:stream_error", (...args: unknown[]) => {
+            const p = args[0] as { thread_id?: string; error?: string };
+            if (p?.thread_id !== tid()) return;
+            onStreamError(p?.error?.trim() || "Assistant reply failed");
+        });
+        onCleanup(() => unsub());
+    });
 
-    /** Wall time when the first reasoning delta arrived; reset each stream. */
-    let reasoningStartMs: number | null = null;
+    const streaming = createMemo(() => {
+        const s = sidebarStreams[threadId()];
+        return !!s && (s.phase === "thinking" || s.phase === "responding");
+    });
 
-    createEffect(
-        on(
-            () => threadId(),
-            (id, prev) => {
-                if (prev !== undefined && prev !== id) {
-                    setStreaming(false);
-                    setStreamingText("");
-                    setStreamingReasoningText("");
-                    setStreamingThinkingDurationSec(null);
-                    reasoningStartMs = null;
-                }
-            },
-        ),
+    const streamingText = createMemo(
+        () => sidebarStreams[threadId()]?.responseFull ?? "",
     );
 
-    onMount(() => {
-        const unsubs: (() => void)[] = [];
-        const tid = () => threadId();
+    const streamingReasoningText = createMemo(
+        () => sidebarStreams[threadId()]?.reasoningFull ?? "",
+    );
 
-        unsubs.push(
-            EventsOn("chat:stream_start", (...args: unknown[]) => {
-                const p = args[0] as { thread_id?: string };
-                if (p?.thread_id !== tid()) return;
-                setStreamingText("");
-                setStreamingReasoningText("");
-                setStreamingThinkingDurationSec(null);
-                reasoningStartMs = null;
-                setStreaming(true);
-            }),
-        );
-        unsubs.push(
-            EventsOn("chat:stream", (...args: unknown[]) => {
-                const p = args[0] as {
-                    thread_id?: string;
-                    delta?: string;
-                    reasoning_delta?: string;
-                };
-                if (p?.thread_id !== tid()) return;
-                const d = p.delta ?? "";
-                const r = p.reasoning_delta ?? "";
-                if (r) {
-                    if (reasoningStartMs === null) {
-                        reasoningStartMs = Date.now();
-                    }
-                    setStreamingReasoningText((prev) => prev + r);
-                }
-                if (d) {
-                    if (
-                        reasoningStartMs !== null &&
-                        streamingThinkingDurationSec() === null
-                    ) {
-                        setStreamingThinkingDurationSec(
-                            Math.max(
-                                1,
-                                Math.round(
-                                    (Date.now() - reasoningStartMs) / 1000,
-                                ),
-                            ),
-                        );
-                    }
-                    setStreamingText((prev) => prev + d);
-                }
-            }),
-        );
-        unsubs.push(
-            EventsOn("chat:stream_done", (...args: unknown[]) => {
-                const p = args[0] as { thread_id?: string };
-                const doneId = p?.thread_id;
-                if (!doneId) return;
-                void (async () => {
-                    await queryClient.invalidateQueries({
-                        queryKey: queryKeys.threads.messages(doneId),
-                    });
-                    if (tid() === doneId) {
-                        setStreaming(false);
-                        setStreamingText("");
-                        setStreamingReasoningText("");
-                        setStreamingThinkingDurationSec(null);
-                        reasoningStartMs = null;
-                    }
-                })();
-            }),
-        );
-        unsubs.push(
-            EventsOn("chat:stream_error", (...args: unknown[]) => {
-                const p = args[0] as { thread_id?: string; error?: string };
-                if (p?.thread_id !== tid()) return;
-                setStreaming(false);
-                setStreamingText("");
-                setStreamingReasoningText("");
-                setStreamingThinkingDurationSec(null);
-                reasoningStartMs = null;
-                onStreamError(p?.error?.trim() || "Assistant reply failed");
-            }),
-        );
-
-        onCleanup(() => unsubs.forEach((u) => u()));
-    });
+    const streamingThinkingDurationSec = createMemo(
+        () => sidebarStreams[threadId()]?.thinkingDurationSec ?? null,
+    );
 
     return {
         streaming,

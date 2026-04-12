@@ -62,7 +62,6 @@ export const ThreadPage: Component = () => {
         streamingThinkingDurationSec,
     } = useThreadChatStream(
         () => params.threadId,
-        queryClient,
         (msg) => setSendError(msg),
     );
 
