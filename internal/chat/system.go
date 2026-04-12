@@ -11,5 +11,5 @@ func WithWorkspaceDir(baseSystem, workDirAbs string) string {
 	if workDirAbs == "" {
 		return baseSystem
 	}
-	return baseSystem + "\n\nYou have tools to read files and list directories. They only work inside this thread’s working directory (paths are relative to it):\n" + workDirAbs
+	return baseSystem + "\n\nYou have tools under this thread’s working directory (paths are relative): read/list/edit files; grep and find files; write new files; plus web_search for public information. Working directory:\n" + workDirAbs
 }

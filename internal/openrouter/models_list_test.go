@@ -30,3 +30,23 @@ func TestFilterChatModels(t *testing.T) {
 	assert.Len(t, got, 1)
 	assert.Equal(t, "vendor/good", got[0].ID)
 }
+
+func TestToStoreModelPricingSummary(t *testing.T) {
+	m := apiModel{
+		ID:            "openai/gpt-4o-mini",
+		Name:          "GPT-4o mini",
+		Description:   "Test model",
+		ContextLength: 128000,
+	}
+	m.Pricing.Prompt = "0.00000015"
+	m.Pricing.Completion = "0.0000006"
+	m.SupportedParameters = []string{"tools"}
+	m.Architecture.InputModalities = []string{"text"}
+	m.Architecture.OutputModalities = []string{"text"}
+
+	got := toStoreModel(m)
+	assert.Contains(t, got.PricingSummary, "Input")
+	assert.Contains(t, got.PricingSummary, "Output")
+	assert.Equal(t, "0.00000015", got.PricingPrompt)
+	assert.Equal(t, "0.0000006", got.PricingCompletion)
+}

@@ -7,6 +7,7 @@ import { ProjectGitPage } from "@/pages/project-settings/git";
 import { ProjectAgentPage } from "@/pages/project-settings/agent";
 import { ProjectEnvironmentPage } from "@/pages/project-settings/environment";
 import { ProjectDangerPage } from "@/pages/project-settings/danger";
+import { SettingsAgentToolsPage } from "@/pages/settings/agent-tools";
 import { SettingsAboutPage } from "@/pages/settings/about";
 import { SettingsEnvironmentsPage } from "@/pages/settings/environments";
 import { SettingsFeaturesPage } from "@/pages/settings/features";
@@ -91,6 +92,10 @@ export default function App() {
                 <Route
                     path="/environments"
                     component={SettingsEnvironmentsPage}
+                />
+                <Route
+                    path="/agent-tools"
+                    component={SettingsAgentToolsPage}
                 />
                 <Route
                     path="/features"

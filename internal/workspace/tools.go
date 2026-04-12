@@ -18,7 +18,7 @@ const (
 
 // ToolSchemas returns OpenAI-style tool definitions (JSON parameters as raw schema).
 func ToolSchemas() []ToolDefinition {
-	return []ToolDefinition{
+	core := []ToolDefinition{
 		{
 			Type: "function",
 			Function: ToolFunctionSpec{
@@ -35,7 +35,24 @@ func ToolSchemas() []ToolDefinition {
 				Parameters:  json.RawMessage(`{"type":"object","properties":{"path":{"type":"string","description":"Relative directory; use . or empty for root of working directory"}}}`),
 			},
 		},
+		{
+			Type: "function",
+			Function: ToolFunctionSpec{
+				Name:        "edit_workspace_file",
+				Description: "Edit a text file by replacing exactly one occurrence of old_string with new_string. Read the file first and copy the exact text to change (whitespace must match). Fails if old_string is missing or appears more than once.",
+				Parameters:  json.RawMessage(`{"type":"object","properties":{"path":{"type":"string","description":"Relative path to the file"},"old_string":{"type":"string","description":"Exact substring to replace once"},"new_string":{"type":"string","description":"Replacement text (may be empty to delete the match)"}},"required":["path","old_string","new_string"]}`),
+			},
+		},
+		{
+			Type: "function",
+			Function: ToolFunctionSpec{
+				Name:        "web_search",
+				Description: "Search the public web for current information, documentation, error messages, or facts not present in the workspace. Uses DuckDuckGo instant answers; results may be brief or empty for some queries.",
+				Parameters:  json.RawMessage(`{"type":"object","properties":{"query":{"type":"string","description":"Web search query (keywords or a short question)"}},"required":["query"]}`),
+			},
+		},
 	}
+	return append(core, OptionalToolSchemas()...)
 }
 
 // ToolDefinition is one tool entry for the chat completions API.
@@ -77,6 +94,30 @@ func RunTool(root, name, argumentsJSON string) (string, error) {
 		}
 		_ = json.Unmarshal([]byte(argumentsJSON), &args)
 		return listDirUnderRoot(root, args.Path)
+	case "edit_workspace_file":
+		var args struct {
+			Path      string `json:"path"`
+			OldString string `json:"old_string"`
+			NewString string `json:"new_string"`
+		}
+		if err := json.Unmarshal([]byte(argumentsJSON), &args); err != nil {
+			return "", fmt.Errorf("invalid arguments: %w", err)
+		}
+		return editFileUnderRoot(root, args.Path, args.OldString, args.NewString)
+	case "web_search":
+		var args struct {
+			Query string `json:"query"`
+		}
+		if err := json.Unmarshal([]byte(argumentsJSON), &args); err != nil {
+			return "", fmt.Errorf("invalid arguments: %w", err)
+		}
+		return runWebSearch(args.Query)
+	case "grep_workspace":
+		return runGrepWorkspace(root, argumentsJSON)
+	case "write_workspace_file":
+		return runWriteWorkspaceFile(root, argumentsJSON)
+	case "find_workspace_files":
+		return runFindWorkspaceFiles(root, argumentsJSON)
 	default:
 		return "", fmt.Errorf("unknown tool %q", name)
 	}

@@ -1,28 +1,33 @@
 export namespace store {
 	
-	export class ChatMessage {
-	    id: string;
-	    thread_id: string;
-	    role: string;
-	    content: string;
-	    // Go type: time
-	    created_at: any;
-	    chat_provider?: string;
-	    chat_model?: string;
+	export class OpenRouterChatMessageMetadata {
+	    prompt_tokens?: number;
+	    completion_tokens?: number;
+	    total_tokens?: number;
+	    cost_usd?: number;
 	
 	    static createFrom(source: any = {}) {
-	        return new ChatMessage(source);
+	        return new OpenRouterChatMessageMetadata(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.thread_id = source["thread_id"];
-	        this.role = source["role"];
-	        this.content = source["content"];
-	        this.created_at = this.convertValues(source["created_at"], null);
-	        this.chat_provider = source["chat_provider"];
-	        this.chat_model = source["chat_model"];
+	        this.prompt_tokens = source["prompt_tokens"];
+	        this.completion_tokens = source["completion_tokens"];
+	        this.total_tokens = source["total_tokens"];
+	        this.cost_usd = source["cost_usd"];
+	    }
+	}
+	export class ChatMessageMetadata {
+	    openrouter?: OpenRouterChatMessageMetadata;
+	
+	    static createFrom(source: any = {}) {
+	        return new ChatMessageMetadata(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.openrouter = this.convertValues(source["openrouter"], OpenRouterChatMessageMetadata);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -43,6 +48,52 @@ export namespace store {
 		    return a;
 		}
 	}
+	export class ChatMessage {
+	    id: string;
+	    thread_id: string;
+	    role: string;
+	    content: string;
+	    // Go type: time
+	    created_at: any;
+	    chat_provider?: string;
+	    chat_model?: string;
+	    metadata?: ChatMessageMetadata;
+	
+	    static createFrom(source: any = {}) {
+	        return new ChatMessage(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.thread_id = source["thread_id"];
+	        this.role = source["role"];
+	        this.content = source["content"];
+	        this.created_at = this.convertValues(source["created_at"], null);
+	        this.chat_provider = source["chat_provider"];
+	        this.chat_model = source["chat_model"];
+	        this.metadata = this.convertValues(source["metadata"], ChatMessageMetadata);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 	export class FileDiff {
 	    path: string;
 	    language: string;
@@ -218,12 +269,17 @@ export namespace store {
 	        this.slack_webhook_url = source["slack_webhook_url"];
 	    }
 	}
+	
 	export class OpenRouterChatModel {
 	    id: string;
 	    name: string;
 	    provider: string;
 	    description: string;
+	    description_full: string;
 	    pricing_tier: string;
+	    pricing_prompt: string;
+	    pricing_completion: string;
+	    pricing_summary: string;
 	    vision: boolean;
 	    reasoning: boolean;
 	    long_context: boolean;
@@ -239,7 +295,11 @@ export namespace store {
 	        this.name = source["name"];
 	        this.provider = source["provider"];
 	        this.description = source["description"];
+	        this.description_full = source["description_full"];
 	        this.pricing_tier = source["pricing_tier"];
+	        this.pricing_prompt = source["pricing_prompt"];
+	        this.pricing_completion = source["pricing_completion"];
+	        this.pricing_summary = source["pricing_summary"];
 	        this.vision = source["vision"];
 	        this.reasoning = source["reasoning"];
 	        this.long_context = source["long_context"];
@@ -272,6 +332,7 @@ export namespace store {
 	    openrouter_api_key?: string;
 	    openrouter_clear?: boolean;
 	    has_openrouter_api_key?: boolean;
+	    agent_tools_enabled?: Record<string, boolean>;
 	
 	    static createFrom(source: any = {}) {
 	        return new Settings(source);
@@ -286,6 +347,7 @@ export namespace store {
 	        this.openrouter_api_key = source["openrouter_api_key"];
 	        this.openrouter_clear = source["openrouter_clear"];
 	        this.has_openrouter_api_key = source["has_openrouter_api_key"];
+	        this.agent_tools_enabled = source["agent_tools_enabled"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

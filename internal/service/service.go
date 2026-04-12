@@ -130,9 +130,12 @@ func (s *Service) GetSettings(ctx context.Context) (*store.Settings, error) {
 		return nil, err
 	}
 	if raw == nil {
-		return &store.Settings{}, nil
+		return &store.Settings{
+			AgentToolsEnabled: store.DefaultAgentToolsEnabled(),
+		}, nil
 	}
 	out := *raw
+	out.AgentToolsEnabled = store.NormalizeAgentToolsEnabled(raw.AgentToolsEnabled)
 	out.HasOpenRouterAPIKey = strings.TrimSpace(raw.OpenRouterAPIKey) != ""
 	out.OpenRouterAPIKey = ""
 	out.OpenRouterClear = false
@@ -167,6 +170,11 @@ func mergeSettings(stored, incoming *store.Settings) *store.Settings {
 	}
 	out.OpenRouterClear = false
 	out.HasOpenRouterAPIKey = false
+	if incoming.AgentToolsEnabled != nil && len(incoming.AgentToolsEnabled) > 0 {
+		out.AgentToolsEnabled = incoming.AgentToolsEnabled
+	} else {
+		out.AgentToolsEnabled = stored.AgentToolsEnabled
+	}
 	return &out
 }
 
@@ -444,17 +452,34 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 	}
 	system := chat.WithWorkspaceDir(chat.DefaultSystemPrompt, workDir)
 	apiMessages := buildOpenRouterMessagesFromHistory(system, history)
-	tools := openrouter.ChatToolsFromWorkspace()
+	agentTools := store.NormalizeAgentToolsEnabled(st.AgentToolsEnabled)
+	tools := openrouter.ChatToolsFromWorkspace(agentTools)
 
 	const maxToolSteps = 8
 	var full strings.Builder
+	var totalCost float64
+	var sawCost bool
+	var sumPrompt, sumCompletion, sumTotal int
+	var sawTokens bool
 	for step := 0; step < maxToolSteps; step++ {
-		content, calls, err := openrouter.StreamCompletionRound(ctx, apiKey, model, apiMessages, tools, func(delta string) error {
+		content, calls, usage, err := openrouter.StreamCompletionRound(ctx, apiKey, model, apiMessages, tools, func(delta string) error {
 			full.WriteString(delta)
 			return onDelta(delta)
 		})
 		if err != nil {
 			return err
+		}
+		if usage != nil {
+			if usage.PromptTokens > 0 || usage.CompletionTokens > 0 || usage.TotalTokens > 0 {
+				sumPrompt += usage.PromptTokens
+				sumCompletion += usage.CompletionTokens
+				sumTotal += usage.TotalTokens
+				sawTokens = true
+			}
+			if usage.CostUSD != nil {
+				totalCost += *usage.CostUSD
+				sawCost = true
+			}
 		}
 		if len(calls) == 0 {
 			_ = content
@@ -491,6 +516,27 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 		CreatedAt:    now,
 		ChatProvider: prov,
 		ChatModel:    model,
+	}
+	if sawTokens || sawCost {
+		or := &store.OpenRouterChatMessageMetadata{}
+		if sawTokens {
+			if sumPrompt > 0 {
+				or.PromptTokens = &sumPrompt
+			}
+			if sumCompletion > 0 {
+				or.CompletionTokens = &sumCompletion
+			}
+			if sumTotal > 0 {
+				or.TotalTokens = &sumTotal
+			}
+		}
+		if sawCost {
+			c := totalCost
+			or.CostUSD = &c
+		}
+		if or.PromptTokens != nil || or.CompletionTokens != nil || or.TotalTokens != nil || or.CostUSD != nil {
+			replyMessage.Metadata = &store.ChatMessageMetadata{OpenRouter: or}
+		}
 	}
 	if err := replyMessage.Validate(); err != nil {
 		return err

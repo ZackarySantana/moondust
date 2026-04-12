@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 )
@@ -29,6 +30,19 @@ func (t *Thread) Validate() error {
 	return nil
 }
 
+// ChatMessageMetadata holds optional, provider-specific fields for a single message. Extend with new sub-structs per provider.
+type ChatMessageMetadata struct {
+	OpenRouter *OpenRouterChatMessageMetadata `json:"openrouter,omitempty"`
+}
+
+// OpenRouterChatMessageMetadata is usage/cost data returned by OpenRouter on streaming completions (aggregated across tool rounds).
+type OpenRouterChatMessageMetadata struct {
+	PromptTokens     *int     `json:"prompt_tokens,omitempty"`
+	CompletionTokens *int     `json:"completion_tokens,omitempty"`
+	TotalTokens      *int     `json:"total_tokens,omitempty"`
+	CostUSD          *float64 `json:"cost_usd,omitempty"`
+}
+
 type ChatMessage struct {
 	ID        string    `json:"id"`
 	ThreadID  string    `json:"thread_id"`
@@ -36,21 +50,60 @@ type ChatMessage struct {
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
 	// ChatProvider and ChatModel record which stack produced an assistant reply (e.g. openrouter + openai/gpt-4o-mini).
-	ChatProvider string `json:"chat_provider,omitempty"`
-	ChatModel    string `json:"chat_model,omitempty"`
+	ChatProvider string               `json:"chat_provider,omitempty"`
+	ChatModel    string               `json:"chat_model,omitempty"`
+	Metadata     *ChatMessageMetadata `json:"metadata,omitempty"`
+}
+
+// UnmarshalJSON merges legacy openrouter_cost_usd into Metadata.openrouter.cost_usd when metadata is absent.
+func (m *ChatMessage) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		ID           string               `json:"id"`
+		ThreadID     string               `json:"thread_id"`
+		Role         string               `json:"role"`
+		Content      string               `json:"content"`
+		CreatedAt    time.Time            `json:"created_at"`
+		ChatProvider string               `json:"chat_provider,omitempty"`
+		ChatModel    string               `json:"chat_model,omitempty"`
+		Metadata     *ChatMessageMetadata `json:"metadata,omitempty"`
+		LegacyCost   *float64             `json:"openrouter_cost_usd,omitempty"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	m.ID = raw.ID
+	m.ThreadID = raw.ThreadID
+	m.Role = raw.Role
+	m.Content = raw.Content
+	m.CreatedAt = raw.CreatedAt
+	m.ChatProvider = raw.ChatProvider
+	m.ChatModel = raw.ChatModel
+	m.Metadata = raw.Metadata
+	if m.Metadata == nil && raw.LegacyCost != nil {
+		m.Metadata = &ChatMessageMetadata{
+			OpenRouter: &OpenRouterChatMessageMetadata{
+				CostUSD: raw.LegacyCost,
+			},
+		}
+	}
+	return nil
 }
 
 // OpenRouterChatModel is a selectable model from the OpenRouter /api/v1/models list (chat + tools).
 type OpenRouterChatModel struct {
-	ID            string `json:"id"`
-	Name          string `json:"name"`
-	Provider      string `json:"provider"`       // Slug before the first "/" in id (e.g. openai).
-	Description   string `json:"description"`    // Short blurb; "TBA" if missing.
-	PricingTier   string `json:"pricing_tier"`   // Relative cost hint, e.g. "$$" or "Free".
-	Vision        bool   `json:"vision"`         // Accepts image (or video) input.
-	Reasoning     bool   `json:"reasoning"`      // Supports reasoning-style parameters.
-	LongContext   bool   `json:"long_context"`   // Large context window.
-	ContextLength int    `json:"context_length"` // Raw context_length from the API.
+	ID                string `json:"id"`
+	Name              string `json:"name"`
+	Provider          string `json:"provider"`           // Slug before the first "/" in id (e.g. openai).
+	Description       string `json:"description"`        // One-line preview for pickers; "TBA" if missing.
+	DescriptionFull   string `json:"description_full"`   // Full API description for detail UI; same as Description when short.
+	PricingTier       string `json:"pricing_tier"`       // Relative cost hint, e.g. "$$" or "Free".
+	PricingPrompt     string `json:"pricing_prompt"`     // Raw per-token USD string from OpenRouter (input).
+	PricingCompletion string `json:"pricing_completion"` // Raw per-token USD string (output).
+	PricingSummary    string `json:"pricing_summary"`    // Human-readable input/output pricing for the model card.
+	Vision            bool   `json:"vision"`             // Accepts image (or video) input.
+	Reasoning         bool   `json:"reasoning"`          // Supports reasoning-style parameters.
+	LongContext       bool   `json:"long_context"`       // Large context window.
+	ContextLength     int    `json:"context_length"`     // Raw context_length from the API.
 }
 
 func (m *ChatMessage) Validate() error {

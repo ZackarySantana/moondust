@@ -5,9 +5,11 @@ import ChevronUp from "lucide-solid/icons/chevron-up";
 import Circle from "lucide-solid/icons/circle";
 import Eye from "lucide-solid/icons/eye";
 import FileText from "lucide-solid/icons/file-text";
+import Info from "lucide-solid/icons/info";
 import Layers from "lucide-solid/icons/layers";
 import Search from "lucide-solid/icons/search";
 import Star from "lucide-solid/icons/star";
+import X from "lucide-solid/icons/x";
 import type { Component } from "solid-js";
 import {
     createMemo,
@@ -122,7 +124,21 @@ function placeholderFlagship(id: string): ModelChoice {
         label: FLAGSHIP_LABELS[id] ?? id,
         provider: slug,
         description: "TBA",
+        description_full: "TBA",
     };
+}
+
+function fullDescription(m: ModelChoice): string {
+    const full = m.description_full?.trim();
+    if (full) return full;
+    return m.description?.trim() || "TBA";
+}
+
+function formatContextTokens(n: number | undefined): string {
+    if (n == null || n <= 0) return "—";
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M tokens`;
+    if (n >= 10_000) return `${Math.round(n / 1000)}k tokens`;
+    return `${n} tokens`;
 }
 
 function resolveFlagships(rows: readonly ModelChoice[]): ModelChoice[] {
@@ -155,70 +171,86 @@ const ModelRowButton: Component<{
     m: ModelChoice;
     selected: boolean;
     onPick: () => void;
+    onInfo: () => void;
 }> = (props) => {
     const slugStr = () => props.m.provider ?? providerSlug(props.m.id);
     return (
-        <button
-            type="button"
+        <div
             role="option"
             aria-selected={props.selected}
-            title={props.m.description}
-            class={`flex w-full cursor-pointer gap-2 border-t border-slate-800/30 px-2 py-2 text-left transition-colors first:border-t-0 ${MODEL_ROW_MIN_CLASS} ${props.selected ? "bg-slate-800/45" : "hover:bg-slate-800/30"}`}
-            onClick={props.onPick}
+            class={`flex border-t border-slate-800/30 first:border-t-0 ${MODEL_ROW_MIN_CLASS} ${props.selected ? "bg-slate-800/45" : ""}`}
         >
-            <OrgBadge slug={slugStr()} />
-            <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <span class="text-[12px] font-medium text-slate-100">
-                        {props.m.label}
-                    </span>
-                    <span class="font-mono text-[10px] text-emerald-500/85">
-                        {props.m.pricing_tier ?? "—"}
-                    </span>
+            <button
+                type="button"
+                class={`flex min-w-0 flex-1 cursor-pointer gap-2 px-2 py-2 text-left transition-colors ${props.selected ? "" : "hover:bg-slate-800/30"}`}
+                onClick={props.onPick}
+            >
+                <OrgBadge slug={slugStr()} />
+                <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span class="text-[12px] font-medium text-slate-100">
+                            {props.m.label}
+                        </span>
+                        <span class="font-mono text-[10px] text-emerald-500/85">
+                            {props.m.pricing_tier ?? "—"}
+                        </span>
+                    </div>
+                    <p class="mt-0.5 truncate text-[10px] leading-snug text-slate-500">
+                        {props.m.description ?? "TBA"}
+                    </p>
                 </div>
-                <p class="mt-0.5 line-clamp-2 text-[10px] leading-snug text-slate-500">
-                    {props.m.description ?? "TBA"}
-                </p>
-            </div>
-            <div class="flex shrink-0 items-center gap-0.5 self-start pt-0.5">
-                <Show when={props.m.vision}>
-                    <span
-                        title="Vision"
-                        class="text-slate-500"
-                    >
-                        <Eye
-                            class="size-3.5"
-                            stroke-width={2}
-                            aria-hidden
-                        />
-                    </span>
-                </Show>
-                <Show when={props.m.reasoning}>
-                    <span
-                        title="Reasoning"
-                        class="text-slate-500"
-                    >
-                        <Brain
-                            class="size-3.5"
-                            stroke-width={2}
-                            aria-hidden
-                        />
-                    </span>
-                </Show>
-                <Show when={props.m.long_context}>
-                    <span
-                        title="Large context"
-                        class="text-slate-500"
-                    >
-                        <FileText
-                            class="size-3.5"
-                            stroke-width={2}
-                            aria-hidden
-                        />
-                    </span>
-                </Show>
-            </div>
-        </button>
+                <div class="flex shrink-0 items-center gap-0.5 self-start pt-0.5">
+                    <Show when={props.m.vision}>
+                        <span
+                            title="Vision"
+                            class="text-slate-500"
+                        >
+                            <Eye
+                                class="size-3.5"
+                                stroke-width={2}
+                                aria-hidden
+                            />
+                        </span>
+                    </Show>
+                    <Show when={props.m.reasoning}>
+                        <span
+                            title="Reasoning"
+                            class="text-slate-500"
+                        >
+                            <Brain
+                                class="size-3.5"
+                                stroke-width={2}
+                                aria-hidden
+                            />
+                        </span>
+                    </Show>
+                    <Show when={props.m.long_context}>
+                        <span
+                            title="Large context"
+                            class="text-slate-500"
+                        >
+                            <FileText
+                                class="size-3.5"
+                                stroke-width={2}
+                                aria-hidden
+                            />
+                        </span>
+                    </Show>
+                </div>
+            </button>
+            <button
+                type="button"
+                class="shrink-0 cursor-pointer px-2 py-2 text-slate-500 transition-colors hover:bg-slate-800/40 hover:text-slate-300"
+                title="Model details"
+                aria-label="Model details"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    props.onInfo();
+                }}
+            >
+                <Info class="size-4" stroke-width={2} aria-hidden />
+            </button>
+        </div>
     );
 };
 
@@ -235,6 +267,9 @@ export const ChatProviderBar: Component<{
     const [open, setOpen] = createSignal<"provider" | "model" | null>(null);
     const [searchQuery, setSearchQuery] = createSignal("");
     const [filterOrg, setFilterOrg] = createSignal<string | null>(null);
+    const [detailModelId, setDetailModelId] = createSignal<string | null>(
+        null,
+    );
 
     let rootEl!: HTMLDivElement;
 
@@ -242,6 +277,7 @@ export const ChatProviderBar: Component<{
         setOpen(null);
         setSearchQuery("");
         setFilterOrg(null);
+        setDetailModelId(null);
     }
 
     onMount(() => {
@@ -275,6 +311,7 @@ export const ChatProviderBar: Component<{
                     label: cur,
                     provider: slug,
                     description: "TBA",
+                    description_full: "TBA",
                 } satisfies ModelChoice,
                 ...known,
             ];
@@ -304,10 +341,12 @@ export const ChatProviderBar: Component<{
         if (q) {
             rows = rows.filter((m) => {
                 const desc = (m.description ?? "").toLowerCase();
+                const descFull = (m.description_full ?? "").toLowerCase();
                 return (
                     m.id.toLowerCase().includes(q) ||
                     m.label.toLowerCase().includes(q) ||
                     desc.includes(q) ||
+                    descFull.includes(q) ||
                     (m.provider ?? "").toLowerCase().includes(q)
                 );
             });
@@ -342,6 +381,92 @@ export const ChatProviderBar: Component<{
         if (!cur) return "Model";
         const row = modelOptions().find((m) => m.id === cur);
         return row?.label ?? cur;
+    });
+
+    function toggleModelDetail(m: ModelChoice) {
+        setDetailModelId((cur) => (cur === m.id ? null : m.id));
+    }
+
+    const detailAside = createMemo(() => {
+        const mid = detailModelId();
+        if (!mid) return null;
+        const row = modelOptions().find((m) => m.id === mid);
+        if (!row) return null;
+        return (
+            <aside
+                class="flex h-full w-[min(19rem,42vw)] shrink-0 flex-col overflow-y-auto border-l border-slate-800/60 bg-slate-900/35 p-3"
+                aria-label="Model details"
+            >
+                <div class="flex items-start justify-between gap-2 border-b border-slate-800/50 pb-2">
+                    <div class="min-w-0">
+                        <p class="text-[13px] font-medium leading-snug text-slate-100">
+                            {row.label}
+                        </p>
+                        <p class="mt-1 break-all font-mono text-[10px] text-slate-500">
+                            {row.id}
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        class="shrink-0 cursor-pointer rounded p-0.5 text-slate-500 transition-colors hover:bg-slate-800/60 hover:text-slate-300"
+                        aria-label="Close details"
+                        onClick={() => setDetailModelId(null)}
+                    >
+                        <X class="size-4" stroke-width={2} aria-hidden />
+                    </button>
+                </div>
+                <div class="mt-3 space-y-2 text-[11px] text-slate-300">
+                    <p class="whitespace-pre-wrap leading-relaxed text-slate-400">
+                        {fullDescription(row)}
+                    </p>
+                    <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 border-t border-slate-800/40 pt-3 text-[10px]">
+                        <dt class="text-slate-500">Provider</dt>
+                        <dd class="text-slate-300">
+                            {orgTitle(
+                                row.provider ?? providerSlug(row.id),
+                            )}
+                        </dd>
+                        <dt class="text-slate-500">Price</dt>
+                        <dd class="text-slate-300">
+                            <p class="whitespace-pre-wrap leading-snug">
+                                {row.pricing_summary?.trim() ||
+                                    row.pricing_tier ||
+                                    "—"}
+                            </p>
+                            <Show
+                                when={
+                                    !!row.pricing_summary?.trim() &&
+                                    !!row.pricing_tier
+                                }
+                            >
+                                <p class="mt-1 font-mono text-[10px] text-emerald-500/80">
+                                    Tier {row.pricing_tier}
+                                </p>
+                            </Show>
+                        </dd>
+                        <dt class="text-slate-500">Context</dt>
+                        <dd>{formatContextTokens(row.context_length)}</dd>
+                    </dl>
+                    <div class="flex flex-wrap gap-1 pt-1">
+                        <Show when={row.vision}>
+                            <span class="rounded border border-slate-700/50 bg-slate-950/40 px-1.5 py-0.5 text-[10px] text-slate-400">
+                                Vision
+                            </span>
+                        </Show>
+                        <Show when={row.reasoning}>
+                            <span class="rounded border border-slate-700/50 bg-slate-950/40 px-1.5 py-0.5 text-[10px] text-slate-400">
+                                Reasoning
+                            </span>
+                        </Show>
+                        <Show when={row.long_context}>
+                            <span class="rounded border border-slate-700/50 bg-slate-950/40 px-1.5 py-0.5 text-[10px] text-slate-400">
+                                Large context
+                            </span>
+                        </Show>
+                    </div>
+                </div>
+            </aside>
+        );
     });
 
     return (
@@ -412,6 +537,7 @@ export const ChatProviderBar: Component<{
                                 if (v === "model") {
                                     setSearchQuery("");
                                     setFilterOrg(null);
+                                    setDetailModelId(null);
                                     return null;
                                 }
                                 setSearchQuery("");
@@ -443,10 +569,11 @@ export const ChatProviderBar: Component<{
                     </button>
                     <Show when={open() === "model"}>
                         <div
-                            class={`${menuClass} flex ${MODEL_PANEL_HEIGHT_CLASS} w-[min(28rem,calc(100vw-2rem))] shrink-0 flex-row overflow-hidden p-0`}
+                            class={`${menuClass} flex ${MODEL_PANEL_HEIGHT_CLASS} max-w-[calc(100vw-0.75rem)] flex-row overflow-hidden p-0`}
                             role="presentation"
                             onMouseDown={(e) => e.stopPropagation()}
                         >
+                            <div class="flex h-full min-w-0 w-[min(28rem,calc(100vw-2rem))] shrink-0 flex-row overflow-hidden">
                             <aside
                                 class="flex h-full w-11 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-slate-800/60 bg-slate-950/60 py-1.5 pl-1 pr-0.5"
                                 aria-label="Filter by organization"
@@ -571,6 +698,9 @@ export const ChatProviderBar: Component<{
                                                         );
                                                         close();
                                                     }}
+                                                    onInfo={() =>
+                                                        toggleModelDetail(m)
+                                                    }
                                                 />
                                             )}
                                         </For>
@@ -590,6 +720,9 @@ export const ChatProviderBar: Component<{
                                                         );
                                                         close();
                                                     }}
+                                                    onInfo={() =>
+                                                        toggleModelDetail(m)
+                                                    }
                                                 />
                                             )}
                                         </For>
@@ -608,12 +741,17 @@ export const ChatProviderBar: Component<{
                                                         );
                                                         close();
                                                     }}
+                                                    onInfo={() =>
+                                                        toggleModelDetail(m)
+                                                    }
                                                 />
                                             )}
                                         </For>
                                     </Show>
                                 </div>
                             </div>
+                            </div>
+                            {detailAside()}
                         </div>
                     </Show>
                 </div>

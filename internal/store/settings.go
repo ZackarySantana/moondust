@@ -22,6 +22,9 @@ type Settings struct {
 	OpenRouterClear bool `json:"openrouter_clear,omitempty"`
 	// HasOpenRouterAPIKey is read-only: true if a key is stored (secret is never sent).
 	HasOpenRouterAPIKey bool `json:"has_openrouter_api_key,omitempty"`
+
+	// AgentToolsEnabled maps tool function names to whether the chat agent may use them. nil means all enabled (see NormalizeAgentToolsEnabled).
+	AgentToolsEnabled map[string]bool `json:"agent_tools_enabled,omitempty"`
 }
 
 type SettingsStore interface {

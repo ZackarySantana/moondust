@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"sort"
 	"strconv"
@@ -97,27 +98,69 @@ func providerSlug(id string) string {
 	return id[:i]
 }
 
+const maxDescriptionFullRunes = 8000
+
 func toStoreModel(m apiModel) store.OpenRouterChatModel {
 	name := strings.TrimSpace(m.Name)
 	if name == "" {
 		name = m.ID
 	}
-	desc := strings.TrimSpace(m.Description)
-	if desc == "" {
-		desc = "TBA"
+	raw := strings.TrimSpace(m.Description)
+	full := raw
+	if full == "" {
+		full = "TBA"
 	} else {
-		desc = truncateRunes(firstLine(desc), 220)
+		full = truncateRunes(full, maxDescriptionFullRunes)
 	}
+	preview := full
+	if preview != "TBA" {
+		preview = truncateRunes(firstLine(preview), 160)
+	}
+	pp := strings.TrimSpace(m.Pricing.Prompt)
+	pc := strings.TrimSpace(m.Pricing.Completion)
 	return store.OpenRouterChatModel{
-		ID:            m.ID,
-		Name:          name,
-		Provider:      providerSlug(m.ID),
-		Description:   desc,
-		PricingTier:   pricingTierDisplay(m),
-		Vision:        visionCapable(m),
-		Reasoning:     reasoningCapable(m),
-		LongContext:   m.ContextLength >= longContextThreshold,
-		ContextLength: m.ContextLength,
+		ID:                m.ID,
+		Name:              name,
+		Provider:          providerSlug(m.ID),
+		Description:       preview,
+		DescriptionFull:   full,
+		PricingTier:       pricingTierDisplay(m),
+		PricingPrompt:     pp,
+		PricingCompletion: pc,
+		PricingSummary:    pricingSummaryFromStrings(pp, pc),
+		Vision:            visionCapable(m),
+		Reasoning:         reasoningCapable(m),
+		LongContext:       m.ContextLength >= longContextThreshold,
+		ContextLength:     m.ContextLength,
+	}
+}
+
+// pricingSummaryFromStrings formats OpenRouter per-token USD strings as $/1M tokens for the model card.
+func pricingSummaryFromStrings(prompt, completion string) string {
+	a := formatUSDPer1MFromTokenPrice(prompt)
+	b := formatUSDPer1MFromTokenPrice(completion)
+	if a == "—" && b == "—" {
+		return "Free (no per-token charge listed)"
+	}
+	return fmt.Sprintf("Input %s · Output %s", a, b)
+}
+
+func formatUSDPer1MFromTokenPrice(s string) string {
+	f := parsePriceString(s)
+	if f <= 0 {
+		return "—"
+	}
+	perM := f * 1e6
+	if math.IsNaN(perM) || math.IsInf(perM, 0) || perM <= 0 {
+		return "—"
+	}
+	switch {
+	case perM < 0.0001:
+		return fmt.Sprintf("$%.8g/1M", perM)
+	case perM < 0.01:
+		return fmt.Sprintf("$%.6g/1M", perM)
+	default:
+		return fmt.Sprintf("$%.4g/1M", perM)
 	}
 }
 

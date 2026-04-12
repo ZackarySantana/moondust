@@ -8,6 +8,8 @@ import ChevronUpNav from "lucide-solid/icons/chevron-up";
 import Columns2 from "lucide-solid/icons/columns-2";
 import FolderOpen from "lucide-solid/icons/folder-open";
 import Loader2 from "lucide-solid/icons/loader-2";
+import Minus from "lucide-solid/icons/minus";
+import Plus from "lucide-solid/icons/plus";
 import PanelBottom from "lucide-solid/icons/panel-bottom";
 import PanelBottomDashed from "lucide-solid/icons/panel-bottom-dashed";
 import PanelRight from "lucide-solid/icons/panel-right";
@@ -31,6 +33,11 @@ import {
     GetSettings,
     GetThread,
     GetThreadGitReview,
+    GitCheckoutNewBranchAndCommit,
+    GitCommit,
+    GitDiscardUnstaged,
+    GitStageUnstaged,
+    GitUnstageAll,
     ListOpenRouterChatModels,
     ListThreadMessages,
     RenameThread,
@@ -38,10 +45,18 @@ import {
     SetThreadChatModel,
     SetThreadChatProvider,
 } from "@wails/go/app/App";
+import { AssistantMessageMetadataButton } from "@/components/assistant-message-metadata";
 import { ChatProviderBar } from "@/components/chat-provider-bar";
 import { DiffViewer, type DiffNav } from "@/components/diff-viewer";
 import { Kbd } from "@/components/kbd";
 import { ResizeHandle } from "@/components/resize-handle";
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogOverlay,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { TerminalPane } from "@/components/terminal-pane";
 import {
     assistantAttributionLabel,
@@ -120,10 +135,15 @@ export const ThreadPage: Component = () => {
                 label: (m.name && m.name.trim()) || m.id,
                 provider: m.provider,
                 description: m.description,
+                description_full: m.description_full,
                 pricing_tier: m.pricing_tier,
+                pricing_summary: m.pricing_summary,
+                pricing_prompt: m.pricing_prompt,
+                pricing_completion: m.pricing_completion,
                 vision: m.vision,
                 reasoning: m.reasoning,
                 long_context: m.long_context,
+                context_length: m.context_length,
             }));
         }
         return [...OPENROUTER_CHAT_MODELS_FALLBACK];
@@ -362,6 +382,29 @@ export const ThreadPage: Component = () => {
         ),
     );
 
+    // Closing the file diff swaps `Show` branches and remounts the messages scroller
+    // (scrollTop resets to 0). Re-pin to the bottom when leaving the diff view.
+    createEffect(
+        on(
+            () => diffTarget(),
+            (target, prev) => {
+                if (target !== null) return;
+                if (prev === undefined || prev === null) return;
+                queueMicrotask(() => {
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            const el = messagesContainerRef;
+                            if (el) {
+                                el.scrollTop = el.scrollHeight;
+                                setUserAtBottom(true);
+                            }
+                        });
+                    });
+                });
+            },
+        ),
+    );
+
     createEffect(
         on(
             () => params.threadId,
@@ -560,14 +603,22 @@ export const ThreadPage: Component = () => {
                             <div
                                 ref={(el) => {
                                     messagesContainerRef = el;
-                                    el.addEventListener("scroll", () => {
+                                    const onScroll = () => {
                                         const atBottom =
                                             el.scrollHeight -
                                                 el.scrollTop -
                                                 el.clientHeight <
                                             32;
                                         setUserAtBottom(atBottom);
+                                    };
+                                    el.addEventListener("scroll", onScroll, {
+                                        passive: true,
                                     });
+                                    return () =>
+                                        el.removeEventListener(
+                                            "scroll",
+                                            onScroll,
+                                        );
                                 }}
                                 class="min-h-0 flex-1 overflow-y-auto"
                             >
@@ -639,9 +690,16 @@ export const ThreadPage: Component = () => {
                                                                         {(
                                                                             line,
                                                                         ) => (
-                                                                            <p class="pl-[34px] text-[10px] leading-tight text-slate-500">
-                                                                                {line()}
-                                                                            </p>
+                                                                            <div class="flex min-w-0 items-center gap-1 pl-[34px]">
+                                                                                <p class="min-w-0 flex-1 text-[10px] leading-tight text-slate-500">
+                                                                                    {line()}
+                                                                                </p>
+                                                                                <AssistantMessageMetadataButton
+                                                                                    msg={
+                                                                                        msg
+                                                                                    }
+                                                                                />
+                                                                            </div>
                                                                         )}
                                                                     </Show>
                                                                     <div class="flex gap-2.5 py-1">
@@ -1010,6 +1068,7 @@ export const ThreadPage: Component = () => {
                 />
                 <ReviewSidebar
                     width={sidebarWidth()}
+                    threadId={params.threadId}
                     git={gitStatusQuery.data ?? null}
                     onRefresh={() => void refreshGitSidebar()}
                     onCopySummary={() => void copyReviewSummary()}
@@ -1079,32 +1138,38 @@ const CollapsibleSection: ParentComponent<{
     const [open, setOpen] = createSignal(props.defaultOpen ?? props.count > 0);
     return (
         <div class={`border-l-2 ${toneAccentMap[props.tone]} rounded-r`}>
-            <button
-                type="button"
-                class="flex w-full cursor-pointer items-center gap-1.5 px-2.5 py-1.5 text-left transition-colors hover:bg-slate-800/30"
-                onClick={() => setOpen((o) => !o)}
-            >
-                <svg
-                    class={`h-3 w-3 shrink-0 text-slate-500 transition-transform ${open() ? "rotate-90" : ""}`}
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
+            <div class="flex w-full items-center gap-1 px-2.5 py-1.5">
+                <button
+                    type="button"
+                    class="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 text-left transition-colors hover:bg-slate-800/30"
+                    onClick={() => setOpen((o) => !o)}
                 >
-                    <path
-                        fill-rule="evenodd"
-                        d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-                        clip-rule="evenodd"
-                    />
-                </svg>
-                <span class="flex-1 text-[11px] font-medium text-slate-300">
-                    {props.title}
-                </span>
-                <Show when={props.trailing}>{props.trailing}</Show>
+                    <svg
+                        class={`h-3 w-3 shrink-0 text-slate-500 transition-transform ${open() ? "rotate-90" : ""}`}
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                    >
+                        <path
+                            fill-rule="evenodd"
+                            d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+                            clip-rule="evenodd"
+                        />
+                    </svg>
+                    <span class="min-w-0 flex-1 text-[11px] font-medium text-slate-300">
+                        {props.title}
+                    </span>
+                </button>
+                <Show when={props.trailing}>
+                    <div class="flex shrink-0 items-center gap-0.5">
+                        {props.trailing}
+                    </div>
+                </Show>
                 <span
-                    class={`rounded px-1.5 py-0.5 text-[10px] leading-none ${toneBadgeMap[props.tone]}`}
+                    class={`shrink-0 rounded px-1.5 py-0.5 text-[10px] leading-none ${toneBadgeMap[props.tone]}`}
                 >
                     {props.count}
                 </span>
-            </button>
+            </div>
             <Show when={open()}>
                 <div class="px-2.5 pb-2 pt-1">{props.children}</div>
             </Show>
@@ -1232,13 +1297,95 @@ const CommitRow: Component<{
 
 const ReviewSidebar: Component<{
     width: number;
+    threadId: string;
     git: store.GitReview | null;
     onRefresh: () => void;
     onCopySummary: () => void;
     onCopyPatch: () => void;
     onFileClick?: (path: string, status: string) => void;
 }> = (props) => {
+    const queryClient = useQueryClient();
     const [commitTab, setCommitTab] = createSignal<"local" | "main">("local");
+    const [discardOpen, setDiscardOpen] = createSignal(false);
+    const [commitOpen, setCommitOpen] = createSignal(false);
+    const [branchCommitOpen, setBranchCommitOpen] = createSignal(false);
+    const [commitMsg, setCommitMsg] = createSignal("");
+    const [branchNameInput, setBranchNameInput] = createSignal("");
+    const [branchCommitMsg, setBranchCommitMsg] = createSignal("");
+    const [gitActionError, setGitActionError] = createSignal("");
+
+    const invalidateGit = () =>
+        queryClient.invalidateQueries({
+            queryKey: queryKeys.threads.gitStatus(props.threadId),
+        });
+
+    const stageMutation = useMutation(() => ({
+        mutationFn: () => GitStageUnstaged(props.threadId),
+        onSuccess: async () => {
+            setGitActionError("");
+            await invalidateGit();
+        },
+        onError: (e) =>
+            setGitActionError(e instanceof Error ? e.message : String(e)),
+    }));
+
+    const discardMutation = useMutation(() => ({
+        mutationFn: () => GitDiscardUnstaged(props.threadId),
+        onSuccess: async () => {
+            setDiscardOpen(false);
+            setGitActionError("");
+            await invalidateGit();
+        },
+        onError: (e) =>
+            setGitActionError(e instanceof Error ? e.message : String(e)),
+    }));
+
+    const unstageMutation = useMutation(() => ({
+        mutationFn: () => GitUnstageAll(props.threadId),
+        onSuccess: async () => {
+            setGitActionError("");
+            await invalidateGit();
+        },
+        onError: (e) =>
+            setGitActionError(e instanceof Error ? e.message : String(e)),
+    }));
+
+    const commitMutation = useMutation(() => ({
+        mutationFn: (message: string) => GitCommit(props.threadId, message),
+        onSuccess: async () => {
+            setCommitOpen(false);
+            setCommitMsg("");
+            setGitActionError("");
+            await invalidateGit();
+        },
+        onError: (e) =>
+            setGitActionError(e instanceof Error ? e.message : String(e)),
+    }));
+
+    const branchCommitMutation = useMutation(() => ({
+        mutationFn: (vars: { branch: string; message: string }) =>
+            GitCheckoutNewBranchAndCommit(
+                props.threadId,
+                vars.branch,
+                vars.message,
+            ),
+        onSuccess: async () => {
+            setBranchCommitOpen(false);
+            setBranchNameInput("");
+            setBranchCommitMsg("");
+            setGitActionError("");
+            await invalidateGit();
+        },
+        onError: (e) =>
+            setGitActionError(e instanceof Error ? e.message : String(e)),
+    }));
+
+    const gitBusy = () =>
+        stageMutation.isPending ||
+        discardMutation.isPending ||
+        unstageMutation.isPending ||
+        commitMutation.isPending ||
+        branchCommitMutation.isPending;
 
     const branch = () => cleanBranchName(props.git?.branch ?? "");
     const ahead = () => props.git?.ahead ?? 0;
@@ -1251,6 +1398,9 @@ const ReviewSidebar: Component<{
     const githubURL = createMemo(() => deriveGitHubURL(props.git?.remote_url));
     const activeCommits = () =>
         commitTab() === "local" ? localCommits() : mainCommits();
+
+    const gitIconBtn =
+        "flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-800/60 hover:text-slate-100 disabled:cursor-not-allowed disabled:opacity-35";
 
     return (
         <aside
@@ -1325,12 +1475,90 @@ const ReviewSidebar: Component<{
                     </div>
                 </div>
 
+                <div class="flex flex-wrap gap-1.5">
+                    <button
+                        type="button"
+                        class="rounded border border-slate-700/60 bg-slate-800/40 px-2 py-1 text-[10px] text-slate-300 transition-colors hover:bg-slate-800/70 disabled:cursor-not-allowed disabled:opacity-40"
+                        disabled={
+                            staged().length === 0 ||
+                            gitBusy() ||
+                            !props.threadId
+                        }
+                        onClick={() => {
+                            setGitActionError("");
+                            setCommitMsg("");
+                            setCommitOpen(true);
+                        }}
+                    >
+                        Commit…
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded border border-slate-700/60 bg-slate-800/40 px-2 py-1 text-[10px] text-slate-300 transition-colors hover:bg-slate-800/70 disabled:cursor-not-allowed disabled:opacity-40"
+                        disabled={
+                            staged().length === 0 ||
+                            gitBusy() ||
+                            !props.threadId
+                        }
+                        onClick={() => {
+                            setGitActionError("");
+                            setBranchNameInput("");
+                            setBranchCommitMsg("");
+                            setBranchCommitOpen(true);
+                        }}
+                    >
+                        Branch & commit…
+                    </button>
+                </div>
+                <Show
+                    when={
+                        gitActionError() &&
+                        !discardOpen() &&
+                        !commitOpen() &&
+                        !branchCommitOpen()
+                    }
+                >
+                    <p class="text-[10px] leading-snug text-red-400">
+                        {gitActionError()}
+                    </p>
+                </Show>
+
                 {/* Staged */}
                 <CollapsibleSection
                     title="Staged"
                     count={staged().length}
                     tone="emerald"
                     defaultOpen
+                    trailing={
+                        <button
+                            type="button"
+                            class={gitIconBtn}
+                            title="Unstage all (keep changes in files)"
+                            disabled={
+                                staged().length === 0 ||
+                                unstageMutation.isPending ||
+                                gitBusy()
+                            }
+                            onClick={() => unstageMutation.mutate()}
+                        >
+                            <Show
+                                when={unstageMutation.isPending}
+                                fallback={
+                                    <Minus
+                                        class="h-3.5 w-3.5"
+                                        stroke-width={2}
+                                        aria-hidden
+                                    />
+                                }
+                            >
+                                <Loader2
+                                    class="h-3.5 w-3.5 animate-spin"
+                                    stroke-width={2}
+                                    aria-hidden
+                                />
+                            </Show>
+                        </button>
+                    }
                 >
                     <Show
                         when={staged().length > 0}
@@ -1360,6 +1588,69 @@ const ReviewSidebar: Component<{
                     count={unstaged().length}
                     tone="amber"
                     defaultOpen
+                    trailing={
+                        <div class="flex items-center gap-0.5">
+                            <button
+                                type="button"
+                                class={gitIconBtn}
+                                title="Stage all unstaged changes"
+                                disabled={
+                                    unstaged().length === 0 ||
+                                    stageMutation.isPending ||
+                                    gitBusy()
+                                }
+                                onClick={() => stageMutation.mutate()}
+                            >
+                                <Show
+                                    when={stageMutation.isPending}
+                                    fallback={
+                                        <Plus
+                                            class="h-3.5 w-3.5"
+                                            stroke-width={2}
+                                            aria-hidden
+                                        />
+                                    }
+                                >
+                                    <Loader2
+                                        class="h-3.5 w-3.5 animate-spin"
+                                        stroke-width={2}
+                                        aria-hidden
+                                    />
+                                </Show>
+                            </button>
+                            <button
+                                type="button"
+                                class={gitIconBtn}
+                                title="Discard unstaged changes in the working tree"
+                                disabled={
+                                    unstaged().length === 0 ||
+                                    discardMutation.isPending ||
+                                    gitBusy()
+                                }
+                                onClick={() => {
+                                    setGitActionError("");
+                                    setDiscardOpen(true);
+                                }}
+                            >
+                                <Show
+                                    when={discardMutation.isPending}
+                                    fallback={
+                                        <Minus
+                                            class="h-3.5 w-3.5"
+                                            stroke-width={2}
+                                            aria-hidden
+                                        />
+                                    }
+                                >
+                                    <Loader2
+                                        class="h-3.5 w-3.5 animate-spin"
+                                        stroke-width={2}
+                                        aria-hidden
+                                    />
+                                </Show>
+                            </button>
+                        </div>
+                    }
                 >
                     <Show
                         when={unstaged().length > 0}
@@ -1496,6 +1787,208 @@ const ReviewSidebar: Component<{
                     </pre>
                 </CollapsibleSection>
             </div>
+
+            <Dialog open={discardOpen()}>
+                <DialogOverlay
+                    aria-label="Close dialog"
+                    onClick={() => {
+                        if (!discardMutation.isPending) {
+                            setDiscardOpen(false);
+                        }
+                    }}
+                />
+                <DialogContent
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <DialogTitle>Discard unstaged changes?</DialogTitle>
+                    <p class="mb-4 text-sm text-slate-400">
+                        Working tree edits for unstaged files will be reverted
+                        to match the index or HEAD. Staged changes are not
+                        affected.
+                    </p>
+                    <Show when={gitActionError() && discardOpen()}>
+                        <p class="mb-4 rounded-lg border border-red-900/30 bg-red-950/15 px-3 py-2 text-xs text-red-400">
+                            {gitActionError()}
+                        </p>
+                    </Show>
+                    <div class="flex justify-end gap-2">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            disabled={discardMutation.isPending}
+                            onClick={() => setDiscardOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            class="inline-flex min-w-28 items-center justify-center gap-2"
+                            disabled={discardMutation.isPending}
+                            onClick={() => discardMutation.mutate()}
+                        >
+                            <Show
+                                when={discardMutation.isPending}
+                                fallback="Discard"
+                            >
+                                <Loader2
+                                    class="size-4 shrink-0 animate-spin"
+                                    stroke-width={2}
+                                    aria-hidden
+                                />
+                            </Show>
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={commitOpen()}>
+                <DialogOverlay
+                    aria-label="Close dialog"
+                    onClick={() => {
+                        if (!commitMutation.isPending) {
+                            setCommitOpen(false);
+                        }
+                    }}
+                />
+                <DialogContent
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <DialogTitle>Commit staged changes</DialogTitle>
+                    <textarea
+                        class="mb-4 min-h-24 w-full resize-y rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:border-slate-600 focus:outline-none"
+                        placeholder="Commit message"
+                        rows={4}
+                        value={commitMsg()}
+                        disabled={commitMutation.isPending}
+                        onInput={(e) => setCommitMsg(e.currentTarget.value)}
+                    />
+                    <Show when={gitActionError() && commitOpen()}>
+                        <p class="mb-4 rounded-lg border border-red-900/30 bg-red-950/15 px-3 py-2 text-xs text-red-400">
+                            {gitActionError()}
+                        </p>
+                    </Show>
+                    <div class="flex justify-end gap-2">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            disabled={commitMutation.isPending}
+                            onClick={() => setCommitOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            class="inline-flex min-w-28 items-center justify-center gap-2"
+                            disabled={commitMutation.isPending}
+                            onClick={() => {
+                                const m = commitMsg().trim();
+                                if (!m) return;
+                                commitMutation.mutate(m);
+                            }}
+                        >
+                            <Show
+                                when={commitMutation.isPending}
+                                fallback="Commit"
+                            >
+                                <Loader2
+                                    class="size-4 shrink-0 animate-spin"
+                                    stroke-width={2}
+                                    aria-hidden
+                                />
+                            </Show>
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={branchCommitOpen()}>
+                <DialogOverlay
+                    aria-label="Close dialog"
+                    onClick={() => {
+                        if (!branchCommitMutation.isPending) {
+                            setBranchCommitOpen(false);
+                        }
+                    }}
+                />
+                <DialogContent
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <DialogTitle>New branch and commit</DialogTitle>
+                    <div class="mb-3 space-y-1.5">
+                        <label
+                            for="review-branch-name"
+                            class="text-xs text-slate-500"
+                        >
+                            Branch name
+                        </label>
+                        <input
+                            id="review-branch-name"
+                            type="text"
+                            class="w-full rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 font-mono text-sm text-slate-200 placeholder:text-slate-600 focus:border-slate-600 focus:outline-none"
+                            placeholder="feature/my-change"
+                            value={branchNameInput()}
+                            disabled={branchCommitMutation.isPending}
+                            onInput={(e) =>
+                                setBranchNameInput(e.currentTarget.value)
+                            }
+                        />
+                    </div>
+                    <textarea
+                        class="mb-4 min-h-24 w-full resize-y rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:border-slate-600 focus:outline-none"
+                        placeholder="Commit message"
+                        rows={4}
+                        value={branchCommitMsg()}
+                        disabled={branchCommitMutation.isPending}
+                        onInput={(e) =>
+                            setBranchCommitMsg(e.currentTarget.value)
+                        }
+                    />
+                    <Show when={gitActionError() && branchCommitOpen()}>
+                        <p class="mb-4 rounded-lg border border-red-900/30 bg-red-950/15 px-3 py-2 text-xs text-red-400">
+                            {gitActionError()}
+                        </p>
+                    </Show>
+                    <div class="flex justify-end gap-2">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            disabled={branchCommitMutation.isPending}
+                            onClick={() => setBranchCommitOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            class="inline-flex min-w-36 items-center justify-center gap-2"
+                            disabled={branchCommitMutation.isPending}
+                            onClick={() => {
+                                const b = branchNameInput().trim();
+                                const m = branchCommitMsg().trim();
+                                if (!b || !m) return;
+                                branchCommitMutation.mutate({
+                                    branch: b,
+                                    message: m,
+                                });
+                            }}
+                        >
+                            <Show
+                                when={branchCommitMutation.isPending}
+                                fallback="Create branch & commit"
+                            >
+                                <Loader2
+                                    class="size-4 shrink-0 animate-spin"
+                                    stroke-width={2}
+                                    aria-hidden
+                                />
+                            </Show>
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </aside>
     );
 };

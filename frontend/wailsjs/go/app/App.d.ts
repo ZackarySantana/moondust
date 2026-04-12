@@ -34,6 +34,16 @@ export function GetThreadGitReview(arg1:string):Promise<store.GitReview>;
 
 export function GetThreadGitStatus(arg1:string):Promise<store.GitStatus>;
 
+export function GitCheckoutNewBranchAndCommit(arg1:string,arg2:string,arg3:string):Promise<void>;
+
+export function GitCommit(arg1:string,arg2:string):Promise<void>;
+
+export function GitDiscardUnstaged(arg1:string):Promise<void>;
+
+export function GitStageUnstaged(arg1:string):Promise<void>;
+
+export function GitUnstageAll(arg1:string):Promise<void>;
+
 export function IsPushAvailable():Promise<boolean>;
 
 export function ListLogs():Promise<Array<store.LogLine>>;

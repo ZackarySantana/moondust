@@ -66,6 +66,26 @@ export function GetThreadGitStatus(arg1) {
   return window['go']['app']['App']['GetThreadGitStatus'](arg1);
 }
 
+export function GitCheckoutNewBranchAndCommit(arg1, arg2, arg3) {
+  return window['go']['app']['App']['GitCheckoutNewBranchAndCommit'](arg1, arg2, arg3);
+}
+
+export function GitCommit(arg1, arg2) {
+  return window['go']['app']['App']['GitCommit'](arg1, arg2);
+}
+
+export function GitDiscardUnstaged(arg1) {
+  return window['go']['app']['App']['GitDiscardUnstaged'](arg1);
+}
+
+export function GitStageUnstaged(arg1) {
+  return window['go']['app']['App']['GitStageUnstaged'](arg1);
+}
+
+export function GitUnstageAll(arg1) {
+  return window['go']['app']['App']['GitUnstageAll'](arg1);
+}
+
 export function IsPushAvailable() {
   return window['go']['app']['App']['IsPushAvailable']();
 }

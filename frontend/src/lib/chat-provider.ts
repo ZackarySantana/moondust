@@ -10,11 +10,20 @@ export type ModelChoice = {
     id: string;
     label: string;
     provider?: string;
+    /** One-line preview in the picker list. */
     description?: string;
+    /** Full API description for the detail panel. */
+    description_full?: string;
     pricing_tier?: string;
+    /** Catalog pricing (USD per 1M tokens in/out) from OpenRouter model list. */
+    pricing_summary?: string;
+    pricing_prompt?: string;
+    pricing_completion?: string;
     vision?: boolean;
     reasoning?: boolean;
     long_context?: boolean;
+    /** From OpenRouter `context_length` when available. */
+    context_length?: number;
 };
 
 /** Fallback picker when ListOpenRouterChatModels has not loaded yet or fails. */
