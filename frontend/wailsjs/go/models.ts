@@ -96,6 +96,28 @@ export namespace store {
 		}
 	}
 	
+	export class CursorCLIInfo {
+	    installed: boolean;
+	    binary_path: string;
+	    version: string;
+	    status_output: string;
+	    about_output: string;
+	    probe_error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CursorCLIInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.installed = source["installed"];
+	        this.binary_path = source["binary_path"];
+	        this.version = source["version"];
+	        this.status_output = source["status_output"];
+	        this.about_output = source["about_output"];
+	        this.probe_error = source["probe_error"];
+	    }
+	}
 	export class FileDiff {
 	    path: string;
 	    language: string;

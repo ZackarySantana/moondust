@@ -11,6 +11,7 @@ import { queryKeys } from "@/lib/query-client";
 import {
     ClearOpenRouterAPIKey,
     ConnectOpenRouterOAuth,
+    GetCursorCLIInfo,
     GetOpenRouterUsageMetrics,
     GetSettings,
     SaveSettings,
@@ -85,10 +86,7 @@ export const SettingsProvidersPage: Component = () => {
                 aria-labelledby="provider-tab-cursor"
                 class={providerTab() === "cursor" ? "" : "hidden"}
             >
-                <PlaceholderProviderTab
-                    title="Cursor"
-                    description="Connection settings for Cursor will be available here in a future release."
-                />
+                <CursorSettingsTab />
             </div>
             <div
                 id="provider-panel-claude"
@@ -116,6 +114,145 @@ const PlaceholderProviderTab: Component<{
         <p class="text-sm text-slate-500">Coming soon.</p>
     </Section>
 );
+
+const CURSOR_INSTALL_URL = "https://cursor.com/install";
+
+const CursorSettingsTab: Component = () => {
+    const queryClient = useQueryClient();
+    const cursorQuery = useQuery(() => ({
+        queryKey: queryKeys.cursorCLI,
+        queryFn: GetCursorCLIInfo,
+    }));
+
+    function refresh() {
+        void queryClient.invalidateQueries({
+            queryKey: queryKeys.cursorCLI,
+        });
+    }
+
+    return (
+        <Section
+            title="Cursor"
+            description="Moondust uses the Cursor Agent CLI (`agent`) when it is on your PATH. Install from cursor.com/install, then use Refresh if you add it without restarting this app."
+        >
+            <div class="flex flex-wrap items-center gap-2">
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={cursorQuery.isFetching}
+                    onClick={() => refresh()}
+                >
+                    {cursorQuery.isFetching ? "Refreshing…" : "Refresh"}
+                </Button>
+                <a
+                    href={CURSOR_INSTALL_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    class="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
+                >
+                    Install Cursor CLI
+                    <ExternalLink
+                        class="size-3"
+                        stroke-width={2}
+                        aria-hidden
+                    />
+                </a>
+            </div>
+
+            <Show
+                when={!cursorQuery.isLoading}
+                fallback={
+                    <p class="text-sm text-slate-500">Checking for `agent`…</p>
+                }
+            >
+                <Show
+                    when={cursorQuery.data}
+                    fallback={
+                        <p class="text-sm text-red-400/90">
+                            {cursorQuery.error instanceof Error
+                                ? cursorQuery.error.message
+                                : "Could not load Cursor CLI info."}
+                        </p>
+                    }
+                >
+                    {(data) => {
+                        const info = () => data();
+                        return (
+                            <div class="space-y-4">
+                                <Show
+                                    when={info().installed}
+                                    fallback={
+                                        <p class="rounded-md border border-amber-800/40 bg-amber-950/25 px-2.5 py-2 text-xs text-amber-100/90">
+                                            {info().probe_error ||
+                                                "Cursor Agent CLI (`agent`) not found on PATH."}
+                                        </p>
+                                    }
+                                >
+                                    <div class="space-y-1 rounded-md border border-emerald-800/35 bg-emerald-950/20 px-2.5 py-2 text-xs text-emerald-100/90">
+                                        <p>
+                                            Cursor Agent CLI (
+                                            <code class="text-emerald-200/95">
+                                                agent
+                                            </code>
+                                            ) detected
+                                        </p>
+                                        <p class="font-mono text-[11px] text-slate-400">
+                                            {info().binary_path}
+                                        </p>
+                                        <Show when={info().version}>
+                                            <p class="text-slate-500">
+                                                Version:{" "}
+                                                <span class="font-mono text-slate-300">
+                                                    {info().version}
+                                                </span>
+                                            </p>
+                                        </Show>
+                                    </div>
+                                </Show>
+
+                                <Show when={info().installed}>
+                                    <div class="space-y-3">
+                                        <div>
+                                            <p class="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                                                agent status
+                                            </p>
+                                            <pre class="max-h-48 overflow-auto rounded-md border border-slate-800/60 bg-slate-950/50 p-2.5 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-slate-300">
+                                                {info().status_output ||
+                                                    "(empty)"}
+                                            </pre>
+                                        </div>
+                                        <div>
+                                            <p class="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                                                agent about
+                                            </p>
+                                            <pre class="max-h-48 overflow-auto rounded-md border border-slate-800/60 bg-slate-950/50 p-2.5 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-slate-300">
+                                                {info().about_output ||
+                                                    "(empty)"}
+                                            </pre>
+                                        </div>
+                                    </div>
+                                </Show>
+
+                                <Show when={info().installed}>
+                                    <p class="text-xs text-slate-600">
+                                        Interactive{" "}
+                                        <code class="rounded bg-slate-900/80 px-1 py-0.5 text-[10px]">
+                                            /usage
+                                        </code>{" "}
+                                        in the agent TUI is separate; the blocks
+                                        above are what the CLI exposes for
+                                        scripts.
+                                    </p>
+                                </Show>
+                            </div>
+                        );
+                    }}
+                </Show>
+            </Show>
+        </Section>
+    );
+};
 
 const OpenRouterSettingsTab: Component = () => {
     const queryClient = useQueryClient();

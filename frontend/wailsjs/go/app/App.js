@@ -46,6 +46,10 @@ export function GetBuildLabel() {
   return window['go']['app']['App']['GetBuildLabel']();
 }
 
+export function GetCursorCLIInfo() {
+  return window['go']['app']['App']['GetCursorCLIInfo']();
+}
+
 export function GetFileDiff(arg1, arg2, arg3) {
   return window['go']['app']['App']['GetFileDiff'](arg1, arg2, arg3);
 }

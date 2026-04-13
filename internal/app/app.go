@@ -95,6 +95,11 @@ func (a *App) GetOpenRouterUsageMetrics() (*store.OpenRouterUsageMetrics, error)
 	return a.service.GetOpenRouterUsageMetrics(a.Ctx)
 }
 
+// GetCursorCLIInfo detects the Cursor Agent CLI (`agent`) and runs status/about probes.
+func (a *App) GetCursorCLIInfo() (*store.CursorCLIInfo, error) {
+	return a.service.GetCursorCLIInfo(a.Ctx)
+}
+
 // ConnectOpenRouterOAuth starts the OpenRouter OAuth (PKCE) flow in the system browser.
 // Listen for the "openrouter:oauth" event: { status: "ok" } or { error: "..." }.
 func (a *App) ConnectOpenRouterOAuth() {

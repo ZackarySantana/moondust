@@ -24,6 +24,8 @@ export function DownloadLogs():Promise<void>;
 
 export function GetBuildLabel():Promise<string>;
 
+export function GetCursorCLIInfo():Promise<store.CursorCLIInfo>;
+
 export function GetFileDiff(arg1:string,arg2:string,arg3:string):Promise<store.FileDiff>;
 
 export function GetOpenRouterUsageMetrics():Promise<store.OpenRouterUsageMetrics>;
