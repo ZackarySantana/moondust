@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
+import {
+    keepPreviousData,
+    useMutation,
+    useQuery,
+    useQueryClient,
+} from "@tanstack/solid-query";
 import { useNavigate, useParams } from "@solidjs/router";
 import type { Component } from "solid-js";
 import { createMemo, createSignal, onCleanup, Show } from "solid-js";
@@ -89,6 +94,7 @@ export const ThreadPage: Component = () => {
         enabled: !!params.threadId,
         // Chat changes often; default staleTime (30s) could hide new assistant rows after navigation.
         staleTime: 0,
+        placeholderData: keepPreviousData,
     }));
 
     const gitStatusQuery = useQuery(() => ({

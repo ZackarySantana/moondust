@@ -4,6 +4,7 @@ import Loader2 from "lucide-solid/icons/loader-2";
 import type { Component } from "solid-js";
 import { Show } from "solid-js";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /** Ghost control shown to the right of the model line when reasoning can be toggled. */
 export const AssistantReasoningToggleButton: Component<{
@@ -23,9 +24,7 @@ export const AssistantReasoningToggleButton: Component<{
             size="sm"
             class="h-7 shrink-0 gap-0.5 px-2 text-[10px] font-normal text-slate-500 hover:text-slate-400"
             aria-expanded={props.expanded}
-            aria-label={
-                props.expanded ? "Hide reasoning" : "Show reasoning"
-            }
+            aria-label={props.expanded ? "Hide reasoning" : "Show reasoning"}
             onClick={() => props.onToggle()}
         >
             <span>{label()}</span>
@@ -53,10 +52,24 @@ export const AssistantReasoningToggleButton: Component<{
 export const AssistantReasoningPanel: Component<{
     reasoningText: string;
     thinkingPhase: boolean;
+    /** `flat`: no outer frame (parent supplies the message bubble). */
+    variant?: "framed" | "flat";
 }> = (props) => (
-    <div class="mb-1 rounded-md border border-slate-700/35 bg-slate-900/40 pl-[34px]">
+    <div
+        class={cn(
+            "min-w-0 w-full max-w-full overflow-hidden",
+            props.variant === "flat"
+                ? ""
+                : "mb-1 rounded-md border border-slate-700/35 bg-slate-900/40 px-2",
+        )}
+    >
         <Show when={props.thinkingPhase}>
-            <div class="flex items-center gap-2 border-b border-slate-700/25 px-2 py-1.5">
+            <div
+                class={cn(
+                    "flex items-center gap-2 border-b border-slate-700/25 py-1.5",
+                    props.variant === "flat" ? "px-0" : "px-2",
+                )}
+            >
                 <Loader2
                     class="size-3.5 shrink-0 animate-spin text-slate-500"
                     stroke-width={2}
@@ -67,7 +80,7 @@ export const AssistantReasoningPanel: Component<{
                 </span>
             </div>
         </Show>
-        <pre class="max-h-52 overflow-y-auto whitespace-pre-wrap px-2 py-2 text-[11px] leading-snug text-slate-500">
+        <pre class="max-h-52 min-w-0 max-w-full overflow-x-auto overflow-y-auto whitespace-pre-wrap px-0 py-2 text-[11px] leading-snug text-slate-500 wrap-anywhere">
             {props.reasoningText}
         </pre>
     </div>

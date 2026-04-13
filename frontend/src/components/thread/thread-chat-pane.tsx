@@ -1,16 +1,18 @@
 import ArrowUp from "lucide-solid/icons/arrow-up";
-import Bot from "lucide-solid/icons/bot";
 import ChevronDown from "lucide-solid/icons/chevron-down";
 import Loader2 from "lucide-solid/icons/loader-2";
 import Sparkles from "lucide-solid/icons/sparkles";
 import type { Component } from "solid-js";
-import { createEffect, createSignal, For, on, Show } from "solid-js";
-import { AssistantMessageMetadataButton } from "@/components/assistant-message-metadata";
 import {
-    AssistantReasoningPanel,
-    AssistantReasoningToggleButton,
-} from "@/components/thread/assistant-reasoning";
-import { AssistantToolCallMessageRow } from "@/components/thread/assistant-tool-calls";
+    createEffect,
+    createMemo,
+    createSignal,
+    For,
+    on,
+    Show,
+} from "solid-js";
+import { AssistantMessageMetadataButton } from "@/components/assistant-message-metadata";
+import { AssistantPartMessageRow } from "@/components/thread/assistant-message-parts";
 import { ChatMarkdown } from "@/components/chat-markdown";
 import { ChatProviderBar } from "@/components/chat-provider-bar";
 import {
@@ -18,139 +20,62 @@ import {
     type ChatProviderId,
     type ModelChoice,
 } from "@/lib/chat-provider";
+import {
+    getChatFormatter,
+    streamingAssistantParts,
+} from "@/lib/chat/providers";
+import { streamPartsHaveVisibleContent } from "@/lib/chat/streaming";
 import type { StreamChunk } from "@/lib/chat-stream-sidebar-store";
 import type { store } from "@wails/go/models";
 import type { DiffTarget } from "./types";
 
-const PersistedAssistantBubble: Component<{
+/** Stored assistant turn: each part is its own row (thought / text / tool). */
+const PersistedAssistantTurn: Component<{
     msg: store.ChatMessage;
     assistantLine: () => string | null;
 }> = (props) => {
-    const [reasoningExpanded, setReasoningExpanded] = createSignal(false);
-    const reasoning = () =>
-        props.msg.metadata?.openrouter?.reasoning?.trim() ?? "";
-    const persistedSegments = () =>
-        props.msg.metadata?.openrouter?.segments ?? [];
-    const hasPersistedSegments = () => persistedSegments().length > 0;
-    const legacyToolCalls = () =>
-        props.msg.metadata?.openrouter?.tool_calls?.filter((t) =>
-            (t.name ?? "").trim(),
-        ) ?? [];
-    const toolsForHeader = () => {
-        const or = props.msg.metadata?.openrouter;
-        if (!or) return [];
-        if (or.segments?.length) {
-            const out: store.OpenRouterToolCallRecord[] = [];
-            for (const s of or.segments) {
-                if (s.tool?.name?.trim()) {
-                    out.push(s.tool);
-                }
-            }
-            return out;
-        }
-        return legacyToolCalls();
-    };
+    const parts = () =>
+        getChatFormatter(props.msg.chat_provider).persistedAssistantParts(
+            props.msg,
+        );
+    const hasTools = () => parts().some((p) => p.kind === "tool");
+    const hasThought = () => parts().some((p) => p.kind === "thought");
+    const showHeader = () =>
+        Boolean(props.assistantLine()?.trim()) || hasTools() || hasThought();
 
     return (
-        <div class="flex min-w-0 max-w-[85%] flex-col gap-1">
-            <Show
-                when={
-                    props.assistantLine() ||
-                    reasoning() ||
-                    toolsForHeader().length > 0
-                }
-            >
-                <div class="flex min-w-0 items-center gap-2 pl-[34px]">
-                    <Show
-                        when={props.assistantLine()}
-                        fallback={<span class="min-w-0 flex-1" />}
-                    >
-                        {(line) => (
-                            <p class="min-w-0 flex-1 text-[10px] leading-tight text-slate-500">
-                                {line()}
-                            </p>
-                        )}
-                    </Show>
-                    <Show when={reasoning()}>
-                        <AssistantReasoningToggleButton
-                            durationSec={null}
-                            expanded={reasoningExpanded()}
-                            onToggle={() =>
-                                setReasoningExpanded(!reasoningExpanded())
-                            }
-                        />
-                    </Show>
-                    <Show
-                        when={
-                            props.assistantLine() || toolsForHeader().length > 0
-                        }
-                    >
-                        <AssistantMessageMetadataButton msg={props.msg} />
-                    </Show>
-                </div>
-            </Show>
-            <Show when={reasoning() && reasoningExpanded()}>
-                <AssistantReasoningPanel
-                    reasoningText={reasoning()}
-                    thinkingPhase={false}
-                />
-            </Show>
-            <div class="flex gap-2.5 py-1">
-                <div class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-slate-800/60">
-                    <Bot
-                        class="size-3.5 text-emerald-500/70"
-                        stroke-width={1.5}
-                    />
-                </div>
-                <div class="flex min-w-0 flex-1 flex-col gap-1 text-slate-300">
-                    <Show when={hasPersistedSegments()}>
-                        <For each={persistedSegments()}>
-                            {(seg) => (
-                                <div class="flex flex-col gap-1">
-                                    <Show when={(seg.text ?? "").trim()}>
-                                        <ChatMarkdown
-                                            source={seg.text!}
-                                            variant="assistant"
-                                        />
-                                    </Show>
-                                    <Show when={seg.tool}>
-                                        <AssistantToolCallMessageRow
-                                            tc={seg.tool!}
-                                        />
-                                    </Show>
-                                </div>
-                            )}
-                        </For>
-                    </Show>
-                    <Show when={!hasPersistedSegments()}>
-                        <Show
-                            when={legacyToolCalls().length > 0}
-                            fallback={
-                                <ChatMarkdown
-                                    source={props.msg.content}
-                                    variant="assistant"
-                                />
-                            }
-                        >
-                            <div class="flex flex-col gap-1">
-                                <div class="flex flex-col gap-0.5">
-                                    <For each={legacyToolCalls()}>
-                                        {(tc) => (
-                                            <AssistantToolCallMessageRow
-                                                tc={tc}
-                                            />
+        <div class="flex w-full min-w-0 flex-col items-stretch">
+            <For each={parts()}>
+                {(part, index) => (
+                    <div class="flex w-full min-w-0 justify-start overflow-x-hidden py-1">
+                        <div class="flex min-w-0 max-w-full flex-1 flex-col gap-1">
+                            <Show when={index() === 0 && showHeader()}>
+                                <div class="flex min-w-0 items-center gap-2 pl-[34px]">
+                                    <Show
+                                        when={props.assistantLine()}
+                                        fallback={
+                                            <span class="min-w-0 flex-1" />
+                                        }
+                                    >
+                                        {(line) => (
+                                            <p class="min-w-0 flex-1 text-[10px] leading-tight text-slate-500">
+                                                {line()}
+                                            </p>
                                         )}
-                                    </For>
+                                    </Show>
+                                    <AssistantMessageMetadataButton
+                                        msg={props.msg}
+                                    />
                                 </div>
-                                <ChatMarkdown
-                                    source={props.msg.content}
-                                    variant="assistant"
-                                />
-                            </div>
-                        </Show>
-                    </Show>
-                </div>
-            </div>
+                            </Show>
+                            <AssistantPartMessageRow
+                                part={part}
+                                streaming={false}
+                            />
+                        </div>
+                    </div>
+                )}
+            </For>
         </div>
     );
 };
@@ -183,8 +108,19 @@ export const ThreadChatPane: Component<{
 }> = (props) => {
     let messagesContainerRef!: HTMLDivElement;
     const [userAtBottom, setUserAtBottom] = createSignal(true);
-    const [streamingReasoningExpanded, setStreamingReasoningExpanded] =
-        createSignal(false);
+    let ignoreScrollPin = false;
+
+    const BOTTOM_THRESHOLD_PX = 48;
+
+    function applyProgrammaticScrollToBottom(el: HTMLDivElement) {
+        ignoreScrollPin = true;
+        el.scrollTop = el.scrollHeight;
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                ignoreScrollPin = false;
+            });
+        });
+    }
 
     const hasStreamingTool = () =>
         props.streamingChunks().some((c) => c.kind === "tool");
@@ -194,42 +130,48 @@ export const ThreadChatPane: Component<{
         props.streamingText().length === 0 &&
         !hasStreamingTool();
 
-    /** Collapse the reasoning panel when the answer starts streaming (toggle re-opens). */
-    createEffect(() => {
-        if (!streamingThinkingPhase()) {
-            setStreamingReasoningExpanded(false);
-        }
-    });
-
-    const showStreamingReasoningToggle = () =>
-        props.streamingReasoningText().length > 0 &&
-        (props.streamingText().length > 0 || hasStreamingTool());
-
-    const showStreamingReasoningPanel = () =>
-        props.streamingReasoningText().length > 0 &&
-        (streamingThinkingPhase() || streamingReasoningExpanded());
+    const streamParts = createMemo(() =>
+        streamingAssistantParts(props.chatProvider(), {
+            reasoningFull: props.streamingReasoningText(),
+            reasoningDurationSec: props.streamingThinkingDurationSec(),
+            thinkingPhase: streamingThinkingPhase(),
+            chunks: props.streamingChunks(),
+        }),
+    );
 
     const hasStreamingAssistantContent = () =>
-        props.streamingText().trim().length > 0 || hasStreamingTool();
+        streamPartsHaveVisibleContent(streamParts());
 
     createEffect(
         on(
             () =>
                 [
-                    props.draft(),
                     props.messages().length,
+                    props.streaming(),
                     props.streamingText(),
                     props.streamingReasoningText(),
                     props.streamingThinkingDurationSec(),
                     props.streamingChunks(),
+                    streamParts(),
                 ] as const,
             () => {
-                if (userAtBottom() && messagesContainerRef) {
+                const el = messagesContainerRef;
+                if (!el || !userAtBottom()) return;
+                if (props.messages().length === 0 && !props.streaming()) return;
+                queueMicrotask(() => {
                     requestAnimationFrame(() => {
-                        messagesContainerRef.scrollTop =
-                            messagesContainerRef.scrollHeight;
+                        requestAnimationFrame(() => {
+                            const c = messagesContainerRef;
+                            if (!c || !userAtBottom()) return;
+                            if (
+                                props.messages().length === 0 &&
+                                !props.streaming()
+                            )
+                                return;
+                            applyProgrammaticScrollToBottom(c);
+                        });
                     });
-                }
+                });
             },
         ),
     );
@@ -245,7 +187,7 @@ export const ThreadChatPane: Component<{
                         requestAnimationFrame(() => {
                             const el = messagesContainerRef;
                             if (el) {
-                                el.scrollTop = el.scrollHeight;
+                                applyProgrammaticScrollToBottom(el);
                                 setUserAtBottom(true);
                             }
                         });
@@ -258,7 +200,7 @@ export const ThreadChatPane: Component<{
     function scrollChatToBottom() {
         const el = messagesContainerRef;
         if (!el) return;
-        el.scrollTop = el.scrollHeight;
+        applyProgrammaticScrollToBottom(el);
         setUserAtBottom(true);
     }
 
@@ -269,12 +211,16 @@ export const ThreadChatPane: Component<{
                     ref={(el) => {
                         messagesContainerRef = el;
                         const onScroll = () => {
-                            const atBottom =
+                            const gap =
                                 el.scrollHeight -
-                                    el.scrollTop -
-                                    el.clientHeight <
-                                32;
-                            setUserAtBottom(atBottom);
+                                el.scrollTop -
+                                el.clientHeight;
+                            if (gap >= BOTTOM_THRESHOLD_PX) {
+                                setUserAtBottom(false);
+                                return;
+                            }
+                            if (ignoreScrollPin) return;
+                            setUserAtBottom(true);
                         };
                         el.addEventListener("scroll", onScroll, {
                             passive: true,
@@ -333,13 +279,13 @@ export const ThreadChatPane: Component<{
                                             class={
                                                 msg.role === "user"
                                                     ? "flex justify-end py-1"
-                                                    : "flex justify-start py-1"
+                                                    : "flex w-full min-w-0 flex-col items-start py-1"
                                             }
                                         >
                                             <Show
                                                 when={msg.role === "user"}
                                                 fallback={
-                                                    <PersistedAssistantBubble
+                                                    <PersistedAssistantTurn
                                                         msg={msg}
                                                         assistantLine={
                                                             assistantLine
@@ -359,107 +305,54 @@ export const ThreadChatPane: Component<{
                                 }}
                             </For>
                             <Show when={props.streaming()}>
-                                <div class="flex justify-start py-1">
-                                    <div class="flex min-w-0 max-w-[85%] flex-col gap-1">
-                                        <Show
-                                            when={
-                                                props.streamingAttribution() ||
-                                                props.streamingReasoningText()
-                                                    .length > 0
-                                            }
-                                        >
-                                            <div class="flex min-w-0 items-center gap-2 pl-[34px]">
-                                                <Show
-                                                    when={props.streamingAttribution()}
-                                                    fallback={
-                                                        <span class="min-w-0 flex-1" />
-                                                    }
-                                                >
-                                                    {(line) => (
-                                                        <p class="min-w-0 flex-1 text-[10px] leading-tight text-slate-500">
-                                                            {line()}
-                                                        </p>
-                                                    )}
-                                                </Show>
-                                                <Show
-                                                    when={showStreamingReasoningToggle()}
-                                                >
-                                                    <AssistantReasoningToggleButton
-                                                        durationSec={props.streamingThinkingDurationSec()}
-                                                        expanded={streamingReasoningExpanded()}
-                                                        onToggle={() =>
-                                                            setStreamingReasoningExpanded(
-                                                                !streamingReasoningExpanded(),
-                                                            )
-                                                        }
-                                                    />
-                                                </Show>
-                                            </div>
-                                        </Show>
-                                        <Show
-                                            when={showStreamingReasoningPanel()}
-                                        >
-                                            <AssistantReasoningPanel
-                                                reasoningText={props.streamingReasoningText()}
-                                                thinkingPhase={streamingThinkingPhase()}
-                                            />
-                                        </Show>
-                                        <div class="flex gap-2.5 py-1">
-                                            <div class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-slate-800/60">
-                                                <Bot
-                                                    class="size-3.5 text-emerald-500/70"
-                                                    stroke-width={1.5}
+                                <Show
+                                    when={hasStreamingAssistantContent()}
+                                    fallback={
+                                        <div class="flex w-full min-w-0 justify-start overflow-x-hidden py-1">
+                                            <div class="flex min-w-0 max-w-[85%] items-center gap-2 text-slate-500">
+                                                <Loader2
+                                                    class="size-3.5 animate-spin"
+                                                    stroke-width={2}
+                                                    aria-hidden
                                                 />
-                                            </div>
-                                            <div class="flex min-w-0 flex-1 flex-col gap-1 text-slate-300">
-                                                <Show
-                                                    when={hasStreamingAssistantContent()}
-                                                    fallback={
-                                                        <div class="flex items-center gap-2 text-slate-500">
-                                                            <Loader2
-                                                                class="size-3.5 animate-spin"
-                                                                stroke-width={2}
-                                                                aria-hidden
-                                                            />
-                                                            <span class="text-xs">
-                                                                {props.streamingReasoningText()
-                                                                    .length > 0
-                                                                    ? "Writing…"
-                                                                    : "Thinking…"}
-                                                            </span>
-                                                        </div>
-                                                    }
-                                                >
-                                                    <For
-                                                        each={props.streamingChunks()}
-                                                    >
-                                                        {(chunk) =>
-                                                            chunk.kind ===
-                                                            "text" ? (
-                                                                <Show
-                                                                    when={chunk.text.trim()}
-                                                                >
-                                                                    <ChatMarkdown
-                                                                        source={
-                                                                            chunk.text
-                                                                        }
-                                                                        variant="assistant"
-                                                                    />
-                                                                </Show>
-                                                            ) : (
-                                                                <AssistantToolCallMessageRow
-                                                                    tc={
-                                                                        chunk.tool
-                                                                    }
-                                                                />
-                                                            )
-                                                        }
-                                                    </For>
-                                                </Show>
+                                                <span class="text-xs">
+                                                    {props.streamingReasoningText()
+                                                        .length > 0
+                                                        ? "Writing…"
+                                                        : "Thinking…"}
+                                                </span>
                                             </div>
                                         </div>
+                                    }
+                                >
+                                    <div class="flex w-full min-w-0 flex-col items-stretch">
+                                        <Show
+                                            when={props.streamingAttribution()}
+                                        >
+                                            {(line) => (
+                                                <div class="flex w-full min-w-0 justify-start overflow-x-hidden py-1">
+                                                    <div class="flex min-w-0 max-w-[85%] flex-col gap-1">
+                                                        <div class="flex min-w-0 items-center gap-2 pl-[34px]">
+                                                            <p class="min-w-0 flex-1 text-[10px] leading-tight text-slate-500">
+                                                                {line()}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </Show>
+                                        <For each={streamParts()}>
+                                            {(part) => (
+                                                <div class="flex w-full min-w-0 justify-start overflow-x-hidden py-1">
+                                                    <AssistantPartMessageRow
+                                                        part={part}
+                                                        streaming={true}
+                                                    />
+                                                </div>
+                                            )}
+                                        </For>
                                     </div>
-                                </div>
+                                </Show>
                             </Show>
                         </Show>
                     </div>
