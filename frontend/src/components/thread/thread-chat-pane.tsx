@@ -10,6 +10,7 @@ import {
     AssistantReasoningPanel,
     AssistantReasoningToggleButton,
 } from "@/components/thread/assistant-reasoning";
+import { AssistantToolCallMessageRow } from "@/components/thread/assistant-tool-calls";
 import { ChatMarkdown } from "@/components/chat-markdown";
 import { ChatProviderBar } from "@/components/chat-provider-bar";
 import {
@@ -17,6 +18,7 @@ import {
     type ChatProviderId,
     type ModelChoice,
 } from "@/lib/chat-provider";
+import type { StreamChunk } from "@/lib/chat-stream-sidebar-store";
 import type { store } from "@wails/go/models";
 import type { DiffTarget } from "./types";
 
@@ -27,10 +29,37 @@ const PersistedAssistantBubble: Component<{
     const [reasoningExpanded, setReasoningExpanded] = createSignal(false);
     const reasoning = () =>
         props.msg.metadata?.openrouter?.reasoning?.trim() ?? "";
+    const persistedSegments = () =>
+        props.msg.metadata?.openrouter?.segments ?? [];
+    const hasPersistedSegments = () => persistedSegments().length > 0;
+    const legacyToolCalls = () =>
+        props.msg.metadata?.openrouter?.tool_calls?.filter((t) =>
+            (t.name ?? "").trim(),
+        ) ?? [];
+    const toolsForHeader = () => {
+        const or = props.msg.metadata?.openrouter;
+        if (!or) return [];
+        if (or.segments?.length) {
+            const out: store.OpenRouterToolCallRecord[] = [];
+            for (const s of or.segments) {
+                if (s.tool?.name?.trim()) {
+                    out.push(s.tool);
+                }
+            }
+            return out;
+        }
+        return legacyToolCalls();
+    };
 
     return (
         <div class="flex min-w-0 max-w-[85%] flex-col gap-1">
-            <Show when={props.assistantLine() || reasoning()}>
+            <Show
+                when={
+                    props.assistantLine() ||
+                    reasoning() ||
+                    toolsForHeader().length > 0
+                }
+            >
                 <div class="flex min-w-0 items-center gap-2 pl-[34px]">
                     <Show
                         when={props.assistantLine()}
@@ -51,7 +80,11 @@ const PersistedAssistantBubble: Component<{
                             }
                         />
                     </Show>
-                    <Show when={props.assistantLine()}>
+                    <Show
+                        when={
+                            props.assistantLine() || toolsForHeader().length > 0
+                        }
+                    >
                         <AssistantMessageMetadataButton msg={props.msg} />
                     </Show>
                 </div>
@@ -69,11 +102,53 @@ const PersistedAssistantBubble: Component<{
                         stroke-width={1.5}
                     />
                 </div>
-                <div class="min-w-0 text-slate-300">
-                    <ChatMarkdown
-                        source={props.msg.content}
-                        variant="assistant"
-                    />
+                <div class="flex min-w-0 flex-1 flex-col gap-1 text-slate-300">
+                    <Show when={hasPersistedSegments()}>
+                        <For each={persistedSegments()}>
+                            {(seg) => (
+                                <div class="flex flex-col gap-1">
+                                    <Show when={(seg.text ?? "").trim()}>
+                                        <ChatMarkdown
+                                            source={seg.text!}
+                                            variant="assistant"
+                                        />
+                                    </Show>
+                                    <Show when={seg.tool}>
+                                        <AssistantToolCallMessageRow
+                                            tc={seg.tool!}
+                                        />
+                                    </Show>
+                                </div>
+                            )}
+                        </For>
+                    </Show>
+                    <Show when={!hasPersistedSegments()}>
+                        <Show
+                            when={legacyToolCalls().length > 0}
+                            fallback={
+                                <ChatMarkdown
+                                    source={props.msg.content}
+                                    variant="assistant"
+                                />
+                            }
+                        >
+                            <div class="flex flex-col gap-1">
+                                <div class="flex flex-col gap-0.5">
+                                    <For each={legacyToolCalls()}>
+                                        {(tc) => (
+                                            <AssistantToolCallMessageRow
+                                                tc={tc}
+                                            />
+                                        )}
+                                    </For>
+                                </div>
+                                <ChatMarkdown
+                                    source={props.msg.content}
+                                    variant="assistant"
+                                />
+                            </div>
+                        </Show>
+                    </Show>
                 </div>
             </div>
         </div>
@@ -90,6 +165,7 @@ export const ThreadChatPane: Component<{
     streamingText: () => string;
     streamingReasoningText: () => string;
     streamingThinkingDurationSec: () => number | null;
+    streamingChunks: () => StreamChunk[];
     streamingAttribution: () => string | null;
     threadQueryData: () => store.Thread | undefined;
     modelChoices: () => ModelChoice[];
@@ -110,9 +186,13 @@ export const ThreadChatPane: Component<{
     const [streamingReasoningExpanded, setStreamingReasoningExpanded] =
         createSignal(false);
 
+    const hasStreamingTool = () =>
+        props.streamingChunks().some((c) => c.kind === "tool");
+
     const streamingThinkingPhase = () =>
         props.streamingReasoningText().length > 0 &&
-        props.streamingText().length === 0;
+        props.streamingText().length === 0 &&
+        !hasStreamingTool();
 
     /** Collapse the reasoning panel when the answer starts streaming (toggle re-opens). */
     createEffect(() => {
@@ -123,11 +203,14 @@ export const ThreadChatPane: Component<{
 
     const showStreamingReasoningToggle = () =>
         props.streamingReasoningText().length > 0 &&
-        props.streamingText().length > 0;
+        (props.streamingText().length > 0 || hasStreamingTool());
 
     const showStreamingReasoningPanel = () =>
         props.streamingReasoningText().length > 0 &&
         (streamingThinkingPhase() || streamingReasoningExpanded());
+
+    const hasStreamingAssistantContent = () =>
+        props.streamingText().trim().length > 0 || hasStreamingTool();
 
     createEffect(
         on(
@@ -138,6 +221,7 @@ export const ThreadChatPane: Component<{
                     props.streamingText(),
                     props.streamingReasoningText(),
                     props.streamingThinkingDurationSec(),
+                    props.streamingChunks(),
                 ] as const,
             () => {
                 if (userAtBottom() && messagesContainerRef) {
@@ -312,7 +396,9 @@ export const ThreadChatPane: Component<{
                                                 </Show>
                                             </div>
                                         </Show>
-                                        <Show when={showStreamingReasoningPanel()}>
+                                        <Show
+                                            when={showStreamingReasoningPanel()}
+                                        >
                                             <AssistantReasoningPanel
                                                 reasoningText={props.streamingReasoningText()}
                                                 thinkingPhase={streamingThinkingPhase()}
@@ -325,12 +411,9 @@ export const ThreadChatPane: Component<{
                                                     stroke-width={1.5}
                                                 />
                                             </div>
-                                            <div class="min-w-0 text-slate-300">
+                                            <div class="flex min-w-0 flex-1 flex-col gap-1 text-slate-300">
                                                 <Show
-                                                    when={
-                                                        props.streamingText()
-                                                            .length > 0
-                                                    }
+                                                    when={hasStreamingAssistantContent()}
                                                     fallback={
                                                         <div class="flex items-center gap-2 text-slate-500">
                                                             <Loader2
@@ -347,10 +430,31 @@ export const ThreadChatPane: Component<{
                                                         </div>
                                                     }
                                                 >
-                                                    <ChatMarkdown
-                                                        source={props.streamingText()}
-                                                        variant="assistant"
-                                                    />
+                                                    <For
+                                                        each={props.streamingChunks()}
+                                                    >
+                                                        {(chunk) =>
+                                                            chunk.kind ===
+                                                            "text" ? (
+                                                                <Show
+                                                                    when={chunk.text.trim()}
+                                                                >
+                                                                    <ChatMarkdown
+                                                                        source={
+                                                                            chunk.text
+                                                                        }
+                                                                        variant="assistant"
+                                                                    />
+                                                                </Show>
+                                                            ) : (
+                                                                <AssistantToolCallMessageRow
+                                                                    tc={
+                                                                        chunk.tool
+                                                                    }
+                                                                />
+                                                            )
+                                                        }
+                                                    </For>
                                                 </Show>
                                             </div>
                                         </div>

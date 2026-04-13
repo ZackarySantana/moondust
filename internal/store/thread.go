@@ -35,6 +35,22 @@ type ChatMessageMetadata struct {
 	OpenRouter *OpenRouterChatMessageMetadata `json:"openrouter,omitempty"`
 }
 
+// OpenRouterToolCallRecord is one tool invocation from an assistant turn (persisted for history).
+type OpenRouterToolCallRecord struct {
+	ID        string `json:"id,omitempty"`
+	Name      string `json:"name"`
+	Arguments string `json:"arguments,omitempty"`
+	// Output is the workspace tool result string (truncated when stored).
+	Output string `json:"output,omitempty"`
+}
+
+// AssistantTurnSegment is one ordered piece of an assistant reply: markdown text or a tool invocation.
+// Exactly one of Text or Tool should be set.
+type AssistantTurnSegment struct {
+	Text string                    `json:"text,omitempty"`
+	Tool *OpenRouterToolCallRecord `json:"tool,omitempty"`
+}
+
 // OpenRouterChatMessageMetadata is usage/cost data returned by OpenRouter on streaming completions (aggregated across tool rounds).
 type OpenRouterChatMessageMetadata struct {
 	PromptTokens     *int     `json:"prompt_tokens,omitempty"`
@@ -43,6 +59,10 @@ type OpenRouterChatMessageMetadata struct {
 	CostUSD          *float64 `json:"cost_usd,omitempty"`
 	// Reasoning is the model's streamed reasoning / thinking trace when the provider exposes it (e.g. OpenRouter delta.reasoning).
 	Reasoning *string `json:"reasoning,omitempty"`
+	// Segments interleaves streamed text and tool calls in execution order (set when any tool ran).
+	Segments []AssistantTurnSegment `json:"segments,omitempty"`
+	// ToolCalls is the flat list of tools for backward compatibility and counts (same order as in Segments).
+	ToolCalls []OpenRouterToolCallRecord `json:"tool_calls,omitempty"`
 }
 
 type ChatMessage struct {

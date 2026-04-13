@@ -38,3 +38,29 @@ func TestChatMessageMarshalUsesMetadataNotLegacyField(t *testing.T) {
 	assert.Contains(t, s, `"metadata"`)
 	assert.NotContains(t, s, `"openrouter_cost_usd"`)
 }
+
+func TestChatMessageMarshalRoundTripToolCalls(t *testing.T) {
+	m := ChatMessage{
+		ID:        "x",
+		ThreadID:  "t",
+		Role:      "assistant",
+		Content:   "Done.",
+		CreatedAt: time.Unix(0, 0).UTC(),
+		Metadata: &ChatMessageMetadata{
+			OpenRouter: &OpenRouterChatMessageMetadata{
+				ToolCalls: []OpenRouterToolCallRecord{
+					{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`, Output: "package main\n"},
+				},
+			},
+		},
+	}
+	b, err := json.Marshal(m)
+	require.NoError(t, err)
+	var out ChatMessage
+	require.NoError(t, json.Unmarshal(b, &out))
+	require.Len(t, out.Metadata.OpenRouter.ToolCalls, 1)
+	assert.Equal(t, "call_1", out.Metadata.OpenRouter.ToolCalls[0].ID)
+	assert.Equal(t, "read_file", out.Metadata.OpenRouter.ToolCalls[0].Name)
+	assert.Contains(t, out.Metadata.OpenRouter.ToolCalls[0].Arguments, "a.go")
+	assert.Contains(t, out.Metadata.OpenRouter.ToolCalls[0].Output, "package main")
+}

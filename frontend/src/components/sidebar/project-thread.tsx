@@ -95,7 +95,10 @@ export const ProjectThread: Component<{
     const showStreamPreview = createMemo(() => {
         const s = streamSnap();
         if (!s || s.phase === "done") return false;
-        return s.reasoningFull.length > 0 || s.responseFull.length > 0;
+        const hasTool = (s.responseChunks ?? []).some((c) => c.kind === "tool");
+        return (
+            s.reasoningFull.length > 0 || s.responseFull.length > 0 || hasTool
+        );
     });
 
     /** Boolean must be passed to `<Show when={…}>` (not a Memo function), or `when` is always truthy and crashes. */

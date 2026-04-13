@@ -2,11 +2,13 @@ import { batch } from "solid-js";
 import { EventsOn } from "@wails/runtime/runtime";
 import { queryKeys, queryClient } from "@/lib/query-client";
 import {
+    appendStreamTextDelta,
     clearSidebarDoneTimer,
     removeSidebarStream,
     scheduleSidebarStreamClear,
     setSidebarStreams,
     sidebarStreams,
+    type StreamToolPayload,
 } from "@/lib/chat-stream-sidebar-store";
 
 function invalidateThreadMessages(threadId: string | undefined) {
@@ -48,6 +50,7 @@ export function attachChatStreamGlobalListeners(): () => void {
                     phase: "thinking",
                     reasoningFull: "",
                     responseFull: "",
+                    responseChunks: [{ kind: "text", text: "" }],
                     thinkingDurationSec: null,
                 });
             });
@@ -74,6 +77,7 @@ export function attachChatStreamGlobalListeners(): () => void {
                         phase: "thinking",
                         reasoningFull: "",
                         responseFull: "",
+                        responseChunks: [{ kind: "text", text: "" }],
                         thinkingDurationSec: null,
                     };
                 }
@@ -86,6 +90,9 @@ export function attachChatStreamGlobalListeners(): () => void {
                 const responseFull = d
                     ? cur.responseFull + d
                     : cur.responseFull;
+                const responseChunks = d
+                    ? appendStreamTextDelta(cur.responseChunks, d)
+                    : (cur.responseChunks ?? [{ kind: "text", text: "" }]);
                 let thinkingDurationSec = cur.thinkingDurationSec;
                 if (
                     d &&
@@ -111,7 +118,43 @@ export function attachChatStreamGlobalListeners(): () => void {
                     phase,
                     reasoningFull,
                     responseFull,
+                    responseChunks,
                     thinkingDurationSec,
+                });
+            });
+        }),
+    );
+
+    unsubs.push(
+        EventsOn("chat:stream_tool", (...args: unknown[]) => {
+            const p = args[0] as {
+                thread_id?: string;
+                tools_json?: string;
+            };
+            const id = p?.thread_id;
+            if (!id || !p.tools_json?.trim()) return;
+            let tools: StreamToolPayload[];
+            try {
+                tools = JSON.parse(p.tools_json) as StreamToolPayload[];
+            } catch {
+                return;
+            }
+            if (!tools.length) return;
+            batch(() => {
+                const cur = sidebarStreams[id];
+                const base = [
+                    ...(cur?.responseChunks ?? [{ kind: "text", text: "" }]),
+                ];
+                for (const t of tools) {
+                    base.push({ kind: "tool", tool: t });
+                }
+                base.push({ kind: "text", text: "" });
+                setSidebarStreams(id, {
+                    phase: "responding",
+                    reasoningFull: cur?.reasoningFull ?? "",
+                    responseFull: cur?.responseFull ?? "",
+                    responseChunks: base,
+                    thinkingDurationSec: cur?.thinkingDurationSec ?? null,
                 });
             });
         }),
@@ -132,6 +175,9 @@ export function attachChatStreamGlobalListeners(): () => void {
                     phase: "done",
                     reasoningFull: cur?.reasoningFull ?? "",
                     responseFull: cur?.responseFull ?? "",
+                    responseChunks: cur?.responseChunks ?? [
+                        { kind: "text", text: "" },
+                    ],
                     thinkingDurationSec: cur?.thinkingDurationSec ?? null,
                 });
             });

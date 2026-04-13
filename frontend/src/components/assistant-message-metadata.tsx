@@ -11,7 +11,8 @@ function hasOpenRouterMeta(
         m.prompt_tokens != null ||
         m.completion_tokens != null ||
         m.total_tokens != null ||
-        m.cost_usd != null
+        m.cost_usd != null ||
+        (m.tool_calls != null && m.tool_calls.length > 0)
     );
 }
 
@@ -88,6 +89,12 @@ export const AssistantMessageMetadataButton: Component<{
                             {formatUsd(m.cost_usd!)}
                         </dd>
                     </Show>
+                    <Show when={(m.tool_calls?.length ?? 0) > 0}>
+                        <dt class="text-slate-500">Tool calls</dt>
+                        <dd class="font-mono text-slate-200">
+                            {formatInt(m.tool_calls!.length)}
+                        </dd>
+                    </Show>
                 </dl>
             </div>
         );
@@ -95,7 +102,10 @@ export const AssistantMessageMetadataButton: Component<{
 
     return (
         <Show when={assistantMessageHasMetadata(props.msg)}>
-            <div class="relative inline-flex shrink-0" ref={root}>
+            <div
+                class="relative inline-flex shrink-0"
+                ref={root}
+            >
                 <button
                     type="button"
                     class="rounded p-0.5 text-slate-500 transition-colors hover:bg-slate-800/60 hover:text-slate-300"
@@ -103,7 +113,11 @@ export const AssistantMessageMetadataButton: Component<{
                     aria-expanded={open()}
                     onClick={() => setOpen(!open())}
                 >
-                    <Info class="size-3.5" stroke-width={2} aria-hidden />
+                    <Info
+                        class="size-3.5"
+                        stroke-width={2}
+                        aria-hidden
+                    />
                 </button>
                 {panel()}
             </div>

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"moondust/internal/browseropen"
 	"moondust/internal/buildinfo"
@@ -187,6 +188,16 @@ func (a *App) SendThreadMessage(threadID, content string) ([]*store.ChatMessage,
 			runtime.EventsEmit(emitCtx, "chat:stream", map[string]string{
 				"thread_id":       threadID,
 				"reasoning_delta": reasoningDelta,
+			})
+			return nil
+		}, func(round []store.OpenRouterToolCallRecord) error {
+			b, err := json.Marshal(round)
+			if err != nil {
+				return err
+			}
+			runtime.EventsEmit(emitCtx, "chat:stream_tool", map[string]string{
+				"thread_id":  threadID,
+				"tools_json": string(b),
 			})
 			return nil
 		})

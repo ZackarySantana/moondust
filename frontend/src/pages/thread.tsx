@@ -60,6 +60,7 @@ export const ThreadPage: Component = () => {
         streamingText,
         streamingReasoningText,
         streamingThinkingDurationSec,
+        streamingChunks,
     } = useThreadChatStream(
         () => params.threadId,
         (msg) => setSendError(msg),
@@ -420,6 +421,7 @@ export const ThreadPage: Component = () => {
                             streamingThinkingDurationSec={
                                 streamingThinkingDurationSec
                             }
+                            streamingChunks={streamingChunks}
                             streamingAttribution={streamingAttribution}
                             threadQueryData={() => threadQuery.data}
                             modelChoices={modelChoices}

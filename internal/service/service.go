@@ -449,7 +449,8 @@ func (s *Service) SendThreadMessage(ctx context.Context, threadID, content strin
 
 // StreamAssistantReply loads the thread transcript (including the latest user message), streams the model reply, and appends the assistant message on success.
 // onReasoningDelta is optional; when non-nil, receives streamed reasoning / thinking tokens when the API sends them.
-func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onDelta func(string) error, onReasoningDelta func(string) error) error {
+// onToolRound is optional; when non-nil, called after each tool batch with persisted records (for live UI).
+func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onDelta func(string) error, onReasoningDelta func(string) error, onToolRound func([]store.OpenRouterToolCallRecord) error) error {
 	thread, project, err := s.resolveThreadProject(ctx, threadID)
 	if err != nil {
 		return err
@@ -498,14 +499,29 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 	tools := openrouter.ChatToolsFromWorkspace(agentTools)
 
 	const maxToolSteps = 8
+	// Cap stored JSON per tool call; arguments can be large (e.g. write payload).
+	const maxPersistedToolArgLen = 8000
+	const maxPersistedToolOutLen = 16000
+
 	var full strings.Builder
 	var reasoningFull strings.Builder
 	var totalCost float64
 	var sawCost bool
 	var sumPrompt, sumCompletion, sumTotal int
 	var sawTokens bool
+	var toolRecords []store.OpenRouterToolCallRecord
+	var segments []store.AssistantTurnSegment
+	appendSegText := func(round *strings.Builder) {
+		t := strings.TrimSpace(round.String())
+		if t == "" {
+			return
+		}
+		segments = append(segments, store.AssistantTurnSegment{Text: t})
+	}
 	for step := 0; step < maxToolSteps; step++ {
+		var roundText strings.Builder
 		content, calls, usage, err := openrouter.StreamCompletionRound(ctx, apiKey, model, apiMessages, tools, func(delta string) error {
+			roundText.WriteString(delta)
 			full.WriteString(delta)
 			return onDelta(delta)
 		}, func(rdelta string) error {
@@ -535,18 +551,46 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 		}
 		if len(calls) == 0 {
 			_ = content
+			appendSegText(&roundText)
 			break
 		}
+		appendSegText(&roundText)
 		if step == maxToolSteps-1 {
 			return fmt.Errorf("assistant requested tools too many times (max %d rounds)", maxToolSteps)
 		}
 		apiMessages = append(apiMessages, openrouter.AssistantWithToolCalls(content, calls))
+		var roundTools []store.OpenRouterToolCallRecord
 		for _, tc := range calls {
 			out, terr := workspace.RunTool(workDir, tc.Name, tc.Arguments)
 			if terr != nil {
 				out = "Error: " + terr.Error()
 			}
+			args := tc.Arguments
+			if len(args) > maxPersistedToolArgLen {
+				args = args[:maxPersistedToolArgLen] + "…"
+			}
+			outPersist := out
+			if len(outPersist) > maxPersistedToolOutLen {
+				outPersist = outPersist[:maxPersistedToolOutLen] + "…"
+			}
+			r := store.OpenRouterToolCallRecord{
+				ID:        tc.ID,
+				Name:      tc.Name,
+				Arguments: args,
+				Output:    outPersist,
+			}
+			toolRecords = append(toolRecords, r)
+			roundTools = append(roundTools, r)
 			apiMessages = append(apiMessages, openrouter.ToolResultMessage(tc.ID, out))
+		}
+		for i := range roundTools {
+			r := roundTools[i]
+			segments = append(segments, store.AssistantTurnSegment{Tool: &r})
+		}
+		if onToolRound != nil && len(roundTools) > 0 {
+			if err := onToolRound(roundTools); err != nil {
+				return err
+			}
 		}
 	}
 	replyText := strings.TrimSpace(full.String())
@@ -570,7 +614,7 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 		ChatModel:    model,
 	}
 	reasoningTrim := strings.TrimSpace(reasoningFull.String())
-	if sawTokens || sawCost || reasoningTrim != "" {
+	if sawTokens || sawCost || reasoningTrim != "" || len(toolRecords) > 0 {
 		or := &store.OpenRouterChatMessageMetadata{}
 		if sawTokens {
 			if sumPrompt > 0 {
@@ -590,7 +634,11 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 		if reasoningTrim != "" {
 			or.Reasoning = &reasoningTrim
 		}
-		if or.PromptTokens != nil || or.CompletionTokens != nil || or.TotalTokens != nil || or.CostUSD != nil || or.Reasoning != nil {
+		if len(toolRecords) > 0 {
+			or.ToolCalls = toolRecords
+			or.Segments = segments
+		}
+		if or.PromptTokens != nil || or.CompletionTokens != nil || or.TotalTokens != nil || or.CostUSD != nil || or.Reasoning != nil || len(or.ToolCalls) > 0 || len(or.Segments) > 0 {
 			replyMessage.Metadata = &store.ChatMessageMetadata{OpenRouter: or}
 		}
 	}

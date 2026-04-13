@@ -1,11 +1,63 @@
 export namespace store {
 	
+	export class OpenRouterToolCallRecord {
+	    id?: string;
+	    name: string;
+	    arguments?: string;
+	    output?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new OpenRouterToolCallRecord(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.arguments = source["arguments"];
+	        this.output = source["output"];
+	    }
+	}
+	export class AssistantTurnSegment {
+	    text?: string;
+	    tool?: OpenRouterToolCallRecord;
+	
+	    static createFrom(source: any = {}) {
+	        return new AssistantTurnSegment(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.text = source["text"];
+	        this.tool = this.convertValues(source["tool"], OpenRouterToolCallRecord);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class OpenRouterChatMessageMetadata {
 	    prompt_tokens?: number;
 	    completion_tokens?: number;
 	    total_tokens?: number;
 	    cost_usd?: number;
 	    reasoning?: string;
+	    segments?: AssistantTurnSegment[];
+	    tool_calls?: OpenRouterToolCallRecord[];
 	
 	    static createFrom(source: any = {}) {
 	        return new OpenRouterChatMessageMetadata(source);
@@ -18,7 +70,27 @@ export namespace store {
 	        this.total_tokens = source["total_tokens"];
 	        this.cost_usd = source["cost_usd"];
 	        this.reasoning = source["reasoning"];
+	        this.segments = this.convertValues(source["segments"], AssistantTurnSegment);
+	        this.tool_calls = this.convertValues(source["tool_calls"], OpenRouterToolCallRecord);
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class ChatMessageMetadata {
 	    openrouter?: OpenRouterChatMessageMetadata;
@@ -418,6 +490,7 @@ export namespace store {
 		    return a;
 		}
 	}
+	
 	export class OpenRouterUsageMetrics {
 	    total_assistant_messages: number;
 	    distinct_models: number;
