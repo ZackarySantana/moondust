@@ -1,11 +1,12 @@
 import Bot from "lucide-solid/icons/bot";
+import ChevronDown from "lucide-solid/icons/chevron-down";
+import ChevronRight from "lucide-solid/icons/chevron-right";
+import Loader2 from "lucide-solid/icons/loader-2";
 import Sparkles from "lucide-solid/icons/sparkles";
 import type { Component } from "solid-js";
 import { createEffect, createSignal, Show } from "solid-js";
-import {
-    AssistantReasoningPanel,
-    AssistantReasoningToggleButton,
-} from "@/components/thread/assistant-reasoning";
+import { Button } from "@/components/ui/button";
+import { AssistantReasoningPanel } from "@/components/thread/assistant-reasoning";
 import { AssistantToolCallMessageRow } from "@/components/thread/assistant-tool-calls";
 import { ChatMarkdown } from "@/components/chat-markdown";
 import type { AssistantPart } from "@/lib/chat/types";
@@ -14,9 +15,15 @@ const ThoughtPartBlock: Component<{
     part: Extract<AssistantPart, { kind: "thought" }>;
     collapseOnThinkingEnd: boolean;
 }> = (props) => {
-    const [expanded, setExpanded] = createSignal(false);
-
     const thinking = () => !!props.part.thinkingPhase;
+
+    const [expanded, setExpanded] = createSignal(thinking());
+
+    createEffect(() => {
+        if (thinking()) {
+            setExpanded(true);
+        }
+    });
 
     createEffect(() => {
         if (props.collapseOnThinkingEnd && !props.part.thinkingPhase) {
@@ -24,45 +31,61 @@ const ThoughtPartBlock: Component<{
         }
     });
 
+    const buttonLabel = () =>
+        thinking()
+            ? "Thinking"
+            : props.part.durationSec != null
+              ? `Thought for ${props.part.durationSec}s`
+              : "Thought";
+
     return (
-        <Show
-            when={thinking() && !props.part.text.trim()}
-            fallback={
-                <Show
-                    when={thinking()}
-                    fallback={
-                        <div class="flex flex-col gap-1">
-                            <div class="flex min-w-0 items-center gap-2">
-                                <AssistantReasoningToggleButton
-                                    durationSec={props.part.durationSec}
-                                    expanded={expanded()}
-                                    onToggle={() => setExpanded(!expanded())}
-                                />
-                            </div>
-                            <Show when={expanded()}>
-                                <AssistantReasoningPanel
-                                    reasoningText={props.part.text}
-                                    thinkingPhase={false}
-                                    variant="flat"
-                                />
-                            </Show>
-                        </div>
-                    }
-                >
-                    <AssistantReasoningPanel
-                        reasoningText={props.part.text}
-                        thinkingPhase={true}
-                        variant="flat"
+        <div class="flex min-w-0 flex-1 flex-col gap-1">
+            <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                class="h-7 w-fit shrink-0 gap-0.5 px-2 text-[10px] font-normal text-slate-500 hover:text-slate-400"
+                aria-expanded={expanded()}
+                aria-label={
+                    expanded() ? "Hide thought details" : "Show thought details"
+                }
+                onClick={() => setExpanded(!expanded())}
+            >
+                <Show when={thinking()}>
+                    <Loader2
+                        class="size-3 shrink-0 animate-spin text-slate-500"
+                        stroke-width={2}
+                        aria-hidden
                     />
                 </Show>
-            }
-        >
-            <AssistantReasoningPanel
-                reasoningText=""
-                thinkingPhase={true}
-                variant="flat"
-            />
-        </Show>
+                <span>{buttonLabel()}</span>
+                <Show
+                    when={expanded()}
+                    fallback={
+                        <ChevronRight
+                            class="size-3 text-slate-500"
+                            stroke-width={2}
+                            aria-hidden
+                        />
+                    }
+                >
+                    <ChevronDown
+                        class="size-3 text-slate-500"
+                        stroke-width={2}
+                        aria-hidden
+                    />
+                </Show>
+            </Button>
+            <Show when={expanded()}>
+                <div class="rounded-md border border-slate-700/35 bg-slate-900/40 px-2 pb-2 pt-1">
+                    <AssistantReasoningPanel
+                        reasoningText={props.part.text}
+                        thinkingPhase={false}
+                        variant="flat"
+                    />
+                </div>
+            </Show>
+        </div>
     );
 };
 
@@ -87,21 +110,19 @@ export const AssistantPartMessageRow: Component<{
     const p = props.part;
     if (p.kind === "thought") {
         return (
-            <div class="flex min-w-0 w-full max-w-[85%] gap-2.5 py-1">
-                <div class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-violet-500/15">
-                    <Sparkles
-                        class="size-3.5 text-violet-400/75"
-                        stroke-width={1.5}
-                        aria-hidden
-                    />
-                </div>
-                <div class="min-w-0 flex-1 overflow-hidden text-slate-300">
-                    <div class="min-w-0 max-w-full rounded-2xl rounded-bl-md border border-violet-500/30 bg-violet-950/35 px-3.5 py-2.5 shadow-sm">
-                        <ThoughtPartBlock
-                            part={p}
-                            collapseOnThinkingEnd={props.streaming}
+            <div class="flex w-full min-w-0 max-w-[85%] flex-col">
+                <div class="flex gap-2.5 py-1">
+                    <div class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-slate-800/50">
+                        <Sparkles
+                            class="size-3.5 text-slate-500/80"
+                            stroke-width={1.5}
+                            aria-hidden
                         />
                     </div>
+                    <ThoughtPartBlock
+                        part={p}
+                        collapseOnThinkingEnd={props.streaming}
+                    />
                 </div>
             </div>
         );

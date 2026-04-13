@@ -1,52 +1,7 @@
-import ChevronDown from "lucide-solid/icons/chevron-down";
-import ChevronRight from "lucide-solid/icons/chevron-right";
 import Loader2 from "lucide-solid/icons/loader-2";
 import type { Component } from "solid-js";
 import { Show } from "solid-js";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-/** Ghost control shown to the right of the model line when reasoning can be toggled. */
-export const AssistantReasoningToggleButton: Component<{
-    durationSec: number | null;
-    expanded: boolean;
-    onToggle: () => void;
-}> = (props) => {
-    const label = () =>
-        props.durationSec != null
-            ? `Thought for ${props.durationSec}s`
-            : "Thought";
-
-    return (
-        <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-7 shrink-0 gap-0.5 px-2 text-[10px] font-normal text-slate-500 hover:text-slate-400"
-            aria-expanded={props.expanded}
-            aria-label={props.expanded ? "Hide reasoning" : "Show reasoning"}
-            onClick={() => props.onToggle()}
-        >
-            <span>{label()}</span>
-            <Show
-                when={props.expanded}
-                fallback={
-                    <ChevronRight
-                        class="size-3 text-slate-500"
-                        stroke-width={2}
-                        aria-hidden
-                    />
-                }
-            >
-                <ChevronDown
-                    class="size-3 text-slate-500"
-                    stroke-width={2}
-                    aria-hidden
-                />
-            </Show>
-        </Button>
-    );
-};
 
 /** Bordered reasoning body: optional “Thinking” strip while tokens are streaming only. */
 export const AssistantReasoningPanel: Component<{
