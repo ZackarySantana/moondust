@@ -33,10 +33,12 @@ func stripANSI(s string) string {
 func Probe(ctx context.Context) (*store.CursorCLIInfo, error) {
 	path, err := lookAgent()
 	if err != nil {
-		return &store.CursorCLIInfo{
+		info := &store.CursorCLIInfo{
 			Installed:  false,
 			ProbeError: "Cursor Agent CLI (`agent`) not found on PATH. Install from cursor.com/install and restart your terminal.",
-		}, nil
+		}
+		probeFillUsage(ctx, info)
+		return info, nil
 	}
 
 	info := &store.CursorCLIInfo{
@@ -66,7 +68,22 @@ func Probe(ctx context.Context) (*store.CursorCLIInfo, error) {
 	info.StatusOutput = run("status")
 	info.AboutOutput = run("about")
 
+	probeFillUsage(ctx, info)
 	return info, nil
+}
+
+func probeFillUsage(ctx context.Context, info *store.CursorCLIInfo) {
+	tok, err := readCursorAccessToken()
+	if err != nil {
+		info.UsageError = "No Cursor login session found. Sign in with the Cursor app or run `agent login`."
+		return
+	}
+	u, err := fetchCurrentPeriodUsage(ctx, tok)
+	if err != nil {
+		info.UsageError = err.Error()
+		return
+	}
+	info.Usage = u
 }
 
 func lookAgent() (string, error) {

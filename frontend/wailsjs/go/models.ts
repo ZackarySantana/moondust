@@ -96,12 +96,36 @@ export namespace store {
 		}
 	}
 	
+	export class CursorUsageSnapshot {
+	    auto_percent_used?: number;
+	    api_percent_used?: number;
+	    total_percent_used?: number;
+	    display_message?: string;
+	    auto_usage_message?: string;
+	    api_usage_message?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CursorUsageSnapshot(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.auto_percent_used = source["auto_percent_used"];
+	        this.api_percent_used = source["api_percent_used"];
+	        this.total_percent_used = source["total_percent_used"];
+	        this.display_message = source["display_message"];
+	        this.auto_usage_message = source["auto_usage_message"];
+	        this.api_usage_message = source["api_usage_message"];
+	    }
+	}
 	export class CursorCLIInfo {
 	    installed: boolean;
 	    binary_path: string;
 	    version: string;
 	    status_output: string;
 	    about_output: string;
+	    usage?: CursorUsageSnapshot;
+	    usage_error?: string;
 	    probe_error?: string;
 	
 	    static createFrom(source: any = {}) {
@@ -115,9 +139,30 @@ export namespace store {
 	        this.version = source["version"];
 	        this.status_output = source["status_output"];
 	        this.about_output = source["about_output"];
+	        this.usage = this.convertValues(source["usage"], CursorUsageSnapshot);
+	        this.usage_error = source["usage_error"];
 	        this.probe_error = source["probe_error"];
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
+	
 	export class FileDiff {
 	    path: string;
 	    language: string;

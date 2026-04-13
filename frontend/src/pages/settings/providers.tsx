@@ -116,6 +116,14 @@ const PlaceholderProviderTab: Component<{
 );
 
 const CURSOR_INSTALL_URL = "https://cursor.com/install";
+const CURSOR_DASHBOARD_URL = "https://cursor.com/dashboard";
+
+function formatCursorPct(n: number | undefined): string {
+    if (n === undefined || !Number.isFinite(n)) {
+        return "—";
+    }
+    return `${n.toFixed(1)}%`;
+}
 
 const CursorSettingsTab: Component = () => {
     const queryClient = useQueryClient();
@@ -211,6 +219,116 @@ const CursorSettingsTab: Component = () => {
                                     </div>
                                 </Show>
 
+                                <Show when={info().usage || info().usage_error}>
+                                    <div class="space-y-2">
+                                        <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                                            Account usage
+                                        </p>
+                                        <p class="text-xs text-slate-600">
+                                            Composer (auto) vs API model usage
+                                            for your billing period — same
+                                            buckets as{" "}
+                                            <code class="rounded bg-slate-900/80 px-1 py-0.5 text-[10px]">
+                                                /usage
+                                            </code>{" "}
+                                            in the agent. From Cursor’s
+                                            dashboard API; details also on{" "}
+                                            <a
+                                                href={CURSOR_DASHBOARD_URL}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                class="text-emerald-400/95 hover:underline"
+                                            >
+                                                cursor.com/dashboard
+                                            </a>
+                                            .
+                                        </p>
+                                        {info().usage_error ? (
+                                            <p class="rounded-md border border-amber-800/40 bg-amber-950/25 px-2.5 py-2 text-xs text-amber-100/90">
+                                                {info().usage_error}
+                                            </p>
+                                        ) : (
+                                            <Show when={info().usage}>
+                                                <div class="grid gap-2 sm:grid-cols-2">
+                                                    <div class="rounded-md border border-slate-800/60 bg-slate-950/40 p-2.5">
+                                                        <p class="text-[11px] font-medium text-slate-500">
+                                                            Composer (auto)
+                                                        </p>
+                                                        <p class="mt-1 font-mono text-lg text-slate-200 tabular-nums">
+                                                            {formatCursorPct(
+                                                                info().usage
+                                                                    ?.auto_percent_used,
+                                                            )}
+                                                        </p>
+                                                        <Show
+                                                            when={
+                                                                info().usage
+                                                                    ?.auto_usage_message
+                                                            }
+                                                        >
+                                                            <p class="mt-2 text-xs leading-snug text-slate-500">
+                                                                {
+                                                                    info().usage
+                                                                        ?.auto_usage_message
+                                                                }
+                                                            </p>
+                                                        </Show>
+                                                    </div>
+                                                    <div class="rounded-md border border-slate-800/60 bg-slate-950/40 p-2.5">
+                                                        <p class="text-[11px] font-medium text-slate-500">
+                                                            API
+                                                        </p>
+                                                        <p class="mt-1 font-mono text-lg text-slate-200 tabular-nums">
+                                                            {formatCursorPct(
+                                                                info().usage
+                                                                    ?.api_percent_used,
+                                                            )}
+                                                        </p>
+                                                        <Show
+                                                            when={
+                                                                info().usage
+                                                                    ?.api_usage_message
+                                                            }
+                                                        >
+                                                            <p class="mt-2 text-xs leading-snug text-slate-500">
+                                                                {
+                                                                    info().usage
+                                                                        ?.api_usage_message
+                                                                }
+                                                            </p>
+                                                        </Show>
+                                                    </div>
+                                                    <div class="sm:col-span-2 rounded-md border border-slate-800/50 bg-slate-950/30 p-2.5">
+                                                        <p class="text-[11px] font-medium text-slate-500">
+                                                            Total (included
+                                                            usage)
+                                                        </p>
+                                                        <p class="mt-1 font-mono text-sm text-slate-300 tabular-nums">
+                                                            {formatCursorPct(
+                                                                info().usage
+                                                                    ?.total_percent_used,
+                                                            )}
+                                                        </p>
+                                                        <Show
+                                                            when={
+                                                                info().usage
+                                                                    ?.display_message
+                                                            }
+                                                        >
+                                                            <p class="mt-2 text-xs text-slate-400">
+                                                                {
+                                                                    info().usage
+                                                                        ?.display_message
+                                                                }
+                                                            </p>
+                                                        </Show>
+                                                    </div>
+                                                </div>
+                                            </Show>
+                                        )}
+                                    </div>
+                                </Show>
+
                                 <Show when={info().installed}>
                                     <div class="space-y-3">
                                         <div>
@@ -232,18 +350,6 @@ const CursorSettingsTab: Component = () => {
                                             </pre>
                                         </div>
                                     </div>
-                                </Show>
-
-                                <Show when={info().installed}>
-                                    <p class="text-xs text-slate-600">
-                                        Interactive{" "}
-                                        <code class="rounded bg-slate-900/80 px-1 py-0.5 text-[10px]">
-                                            /usage
-                                        </code>{" "}
-                                        in the agent TUI is separate; the blocks
-                                        above are what the CLI exposes for
-                                        scripts.
-                                    </p>
                                 </Show>
                             </div>
                         );
