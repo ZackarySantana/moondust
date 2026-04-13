@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import ExternalLink from "lucide-solid/icons/external-link";
 import type { Component, JSX } from "solid-js";
-import { createSignal, onCleanup, onMount, Show } from "solid-js";
+import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +18,106 @@ import {
 import { store } from "@wails/go/models";
 import { EventsOn } from "@wails/runtime/runtime";
 
+type ProviderTabId = "openrouter" | "cursor" | "claude";
+
+const PROVIDER_TABS: { id: ProviderTabId; label: string }[] = [
+    { id: "openrouter", label: "OpenRouter" },
+    { id: "cursor", label: "Cursor" },
+    { id: "claude", label: "Claude" },
+];
+
 export const SettingsProvidersPage: Component = () => {
+    const [providerTab, setProviderTab] =
+        createSignal<ProviderTabId>("openrouter");
+
+    return (
+        <div class="space-y-8">
+            <div>
+                <p class="text-base font-medium text-slate-200">Providers</p>
+                <p class="mt-1 text-sm text-slate-500">
+                    Connect model providers for chat. Keys stay on this device
+                    only.
+                </p>
+            </div>
+
+            <Separator />
+
+            <div
+                role="tablist"
+                aria-label="Provider"
+                class="flex flex-wrap gap-1 border-b border-slate-800/60 pb-px"
+            >
+                <For each={PROVIDER_TABS}>
+                    {(tab) => {
+                        const selected = () => providerTab() === tab.id;
+                        return (
+                            <button
+                                type="button"
+                                role="tab"
+                                id={`provider-tab-${tab.id}`}
+                                aria-selected={selected()}
+                                aria-controls={`provider-panel-${tab.id}`}
+                                class={`rounded-t-md border border-b-0 px-3 py-2 text-sm transition-colors ${
+                                    selected()
+                                        ? "border-slate-700/80 bg-slate-900/80 text-slate-100"
+                                        : "border-transparent text-slate-500 hover:bg-slate-900/40 hover:text-slate-300"
+                                }`}
+                                onClick={() => setProviderTab(tab.id)}
+                            >
+                                {tab.label}
+                            </button>
+                        );
+                    }}
+                </For>
+            </div>
+
+            <div
+                id="provider-panel-openrouter"
+                role="tabpanel"
+                aria-labelledby="provider-tab-openrouter"
+                class={providerTab() === "openrouter" ? "" : "hidden"}
+            >
+                <OpenRouterSettingsTab />
+            </div>
+            <div
+                id="provider-panel-cursor"
+                role="tabpanel"
+                aria-labelledby="provider-tab-cursor"
+                class={providerTab() === "cursor" ? "" : "hidden"}
+            >
+                <PlaceholderProviderTab
+                    title="Cursor"
+                    description="Connection settings for Cursor will be available here in a future release."
+                />
+            </div>
+            <div
+                id="provider-panel-claude"
+                role="tabpanel"
+                aria-labelledby="provider-tab-claude"
+                class={providerTab() === "claude" ? "" : "hidden"}
+            >
+                <PlaceholderProviderTab
+                    title="Claude"
+                    description="Anthropic / Claude provider settings will be available here in a future release."
+                />
+            </div>
+        </div>
+    );
+};
+
+const PlaceholderProviderTab: Component<{
+    title: string;
+    description: string;
+}> = (props) => (
+    <Section
+        title={props.title}
+        description={props.description}
+    >
+        <p class="text-sm text-slate-500">Coming soon.</p>
+    </Section>
+);
+
+const OpenRouterSettingsTab: Component = () => {
     const queryClient = useQueryClient();
 
     const settingsQuery = useQuery(() => ({
@@ -97,130 +196,116 @@ export const SettingsProvidersPage: Component = () => {
     }
 
     return (
-        <div class="space-y-8">
-            <div>
-                <p class="text-base font-medium text-slate-200">Providers</p>
-                <p class="mt-1 text-sm text-slate-500">
-                    Connect model providers for chat. Keys stay on this device
-                    only.
-                </p>
-            </div>
+        <Section
+            title="OpenRouter"
+            description="Multi-model access. Connecting opens the browser (localhost:3000 must be free) or paste a key from openrouter.ai/keys."
+        >
+            <div class="space-y-3">
+                <Show when={banner() === "saved"}>
+                    <p class="rounded-md border border-emerald-800/40 bg-emerald-950/30 px-2.5 py-1.5 text-xs text-emerald-200/90">
+                        Saved locally. The key is not shown again here.
+                    </p>
+                </Show>
+                <Show when={banner() === "cleared"}>
+                    <p class="rounded-md border border-slate-700/50 bg-slate-900/50 px-2.5 py-1.5 text-xs text-slate-400">
+                        OpenRouter key removed.
+                    </p>
+                </Show>
 
-            <Separator />
+                <Show
+                    when={hasKey()}
+                    fallback={
+                        <>
+                            <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                                <Button
+                                    type="button"
+                                    variant="default"
+                                    size="sm"
+                                    disabled={oauthBusy()}
+                                    onClick={() => startOAuth()}
+                                >
+                                    {oauthBusy()
+                                        ? "Waiting for browser…"
+                                        : "Connect OpenRouter"}
+                                </Button>
+                                <a
+                                    href="https://openrouter.ai/docs/guides/overview/auth/oauth"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    class="inline-flex cursor-pointer items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
+                                >
+                                    OAuth docs
+                                    <ExternalLink
+                                        class="size-3"
+                                        stroke-width={2}
+                                        aria-hidden
+                                    />
+                                </a>
+                            </div>
 
-            <Section
-                title="OpenRouter"
-                description="Multi-model access. Connecting opens the browser (localhost:3000 must be free) or paste a key from openrouter.ai/keys."
-            >
-                <div class="space-y-3">
-                    <Show when={banner() === "saved"}>
-                        <p class="rounded-md border border-emerald-800/40 bg-emerald-950/30 px-2.5 py-1.5 text-xs text-emerald-200/90">
-                            Saved locally. The key is not shown again here.
-                        </p>
-                    </Show>
-                    <Show when={banner() === "cleared"}>
-                        <p class="rounded-md border border-slate-700/50 bg-slate-900/50 px-2.5 py-1.5 text-xs text-slate-400">
-                            OpenRouter key removed.
-                        </p>
-                    </Show>
+                            <Show when={oauthError()}>
+                                {(err) => (
+                                    <p class="text-xs text-red-400/90">
+                                        {err()}
+                                    </p>
+                                )}
+                            </Show>
 
-                    <Show
-                        when={hasKey()}
-                        fallback={
-                            <>
-                                <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                            <div class="border-t border-slate-800/40 pt-3">
+                                <div class="flex max-w-md flex-col gap-2 sm:flex-row sm:items-end">
+                                    <div class="min-w-0 flex-1 space-y-1">
+                                        <Label
+                                            for="openrouter-api-key"
+                                            class="text-[11px] font-normal text-slate-600"
+                                        >
+                                            Or paste sk-or-…
+                                        </Label>
+                                        <Input
+                                            id="openrouter-api-key"
+                                            type="password"
+                                            autocomplete="off"
+                                            placeholder="sk-or-…"
+                                            class="h-8 text-sm"
+                                            value={manualKey()}
+                                            onInput={(e) =>
+                                                setManualKey(
+                                                    e.currentTarget.value,
+                                                )
+                                            }
+                                        />
+                                    </div>
                                     <Button
                                         type="button"
-                                        variant="default"
                                         size="sm"
-                                        disabled={oauthBusy()}
-                                        onClick={() => startOAuth()}
+                                        variant="secondary"
+                                        class="shrink-0"
+                                        disabled={
+                                            !manualKey().trim() ||
+                                            saveKeyMutation.isPending
+                                        }
+                                        onClick={() => saveKeyMutation.mutate()}
                                     >
-                                        {oauthBusy()
-                                            ? "Waiting for browser…"
-                                            : "Connect OpenRouter"}
+                                        Save
                                     </Button>
-                                    <a
-                                        href="https://openrouter.ai/docs/guides/overview/auth/oauth"
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        class="inline-flex cursor-pointer items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
-                                    >
-                                        OAuth docs
-                                        <ExternalLink
-                                            class="size-3"
-                                            stroke-width={2}
-                                            aria-hidden
-                                        />
-                                    </a>
                                 </div>
-
-                                <Show when={oauthError()}>
-                                    {(err) => (
-                                        <p class="text-xs text-red-400/90">
-                                            {err()}
-                                        </p>
-                                    )}
-                                </Show>
-
-                                <div class="border-t border-slate-800/40 pt-3">
-                                    <div class="flex max-w-md flex-col gap-2 sm:flex-row sm:items-end">
-                                        <div class="min-w-0 flex-1 space-y-1">
-                                            <Label
-                                                for="openrouter-api-key"
-                                                class="text-[11px] font-normal text-slate-600"
-                                            >
-                                                Or paste sk-or-…
-                                            </Label>
-                                            <Input
-                                                id="openrouter-api-key"
-                                                type="password"
-                                                autocomplete="off"
-                                                placeholder="sk-or-…"
-                                                class="h-8 text-sm"
-                                                value={manualKey()}
-                                                onInput={(e) =>
-                                                    setManualKey(
-                                                        e.currentTarget.value,
-                                                    )
-                                                }
-                                            />
-                                        </div>
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="secondary"
-                                            class="shrink-0"
-                                            disabled={
-                                                !manualKey().trim() ||
-                                                saveKeyMutation.isPending
-                                            }
-                                            onClick={() =>
-                                                saveKeyMutation.mutate()
-                                            }
-                                        >
-                                            Save
-                                        </Button>
-                                    </div>
-                                </div>
-                            </>
-                        }
+                            </div>
+                        </>
+                    }
+                >
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        disabled={clearMutation.isPending}
+                        onClick={() => clearMutation.mutate()}
                     >
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            disabled={clearMutation.isPending}
-                            onClick={() => clearMutation.mutate()}
-                        >
-                            Disconnect OpenRouter
-                        </Button>
-                    </Show>
+                        Disconnect OpenRouter
+                    </Button>
+                </Show>
 
-                    <OpenRouterUsageMetricsPanel />
-                </div>
-            </Section>
-        </div>
+                <OpenRouterUsageMetricsPanel />
+            </div>
+        </Section>
     );
 };
 
