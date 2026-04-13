@@ -79,6 +79,21 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
+/* Native <button> often uses the default arrow; match link-style affordance. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="tab"]:not([aria-disabled="true"]),
+[role="option"]:not([aria-disabled="true"]),
+a[href],
+summary {
+    cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+    cursor: not-allowed;
+}
+
 /* ── Scrollbar ── */
 * {
     scrollbar-width: thin;
@@ -198,7 +213,8 @@ body {
 }
 
 .chat-markdown code {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    font-family:
+        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
         "Liberation Mono", "Courier New", monospace;
     font-size: 0.8em;
     padding: 0.1em 0.35em;
