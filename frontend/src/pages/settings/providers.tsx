@@ -198,7 +198,7 @@ const OpenRouterSettingsTab: Component = () => {
     return (
         <Section
             title="OpenRouter"
-            description="Multi-model access. Connecting opens the browser (localhost:3000 must be free) or paste a key from openrouter.ai/keys."
+            description="Multi-model access. Connect via OAuth (localhost:3000 must be free) or paste an API key from your OpenRouter workspace."
         >
             <div class="space-y-3">
                 <Show when={banner() === "saved"}>
@@ -228,6 +228,19 @@ const OpenRouterSettingsTab: Component = () => {
                                         ? "Waiting for browser…"
                                         : "Connect OpenRouter"}
                                 </Button>
+                                <a
+                                    href="https://openrouter.ai/workspaces/default/keys"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    class="inline-flex cursor-pointer items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
+                                >
+                                    API keys
+                                    <ExternalLink
+                                        class="size-3"
+                                        stroke-width={2}
+                                        aria-hidden
+                                    />
+                                </a>
                                 <a
                                     href="https://openrouter.ai/docs/guides/overview/auth/oauth"
                                     target="_blank"
