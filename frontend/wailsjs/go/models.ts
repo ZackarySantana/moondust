@@ -56,6 +56,7 @@ export namespace store {
 	    total_tokens?: number;
 	    cost_usd?: number;
 	    reasoning?: string;
+	    reasoning_duration_sec?: number;
 	    segments?: AssistantTurnSegment[];
 	    tool_calls?: OpenRouterToolCallRecord[];
 	
@@ -70,6 +71,7 @@ export namespace store {
 	        this.total_tokens = source["total_tokens"];
 	        this.cost_usd = source["cost_usd"];
 	        this.reasoning = source["reasoning"];
+	        this.reasoning_duration_sec = source["reasoning_duration_sec"];
 	        this.segments = this.convertValues(source["segments"], AssistantTurnSegment);
 	        this.tool_calls = this.convertValues(source["tool_calls"], OpenRouterToolCallRecord);
 	    }

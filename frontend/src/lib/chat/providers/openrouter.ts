@@ -9,10 +9,13 @@ export function openRouterPersistedAssistantParts(
 
     const reasoning = (or?.reasoning ?? "").trim();
     if (reasoning.length > 0) {
+        const rawDur = or?.reasoning_duration_sec;
+        const durationSec =
+            rawDur != null ? Math.max(1, Math.round(rawDur)) : null;
         parts.push({
             kind: "thought",
             text: reasoning,
-            durationSec: null,
+            durationSec,
         });
     }
 

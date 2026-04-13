@@ -50,13 +50,8 @@ const PersistedAssistantTurn: Component<{
                     <div class="flex w-full min-w-0 justify-start overflow-x-hidden py-1">
                         <div class="flex min-w-0 max-w-full flex-1 flex-col gap-1">
                             <Show when={index() === 0 && showHeader()}>
-                                <div class="flex min-w-0 items-center gap-2 pl-[34px]">
-                                    <Show
-                                        when={props.assistantLine()}
-                                        fallback={
-                                            <span class="min-w-0 flex-1" />
-                                        }
-                                    >
+                                <div class="flex min-w-0 items-center gap-2">
+                                    <Show when={props.assistantLine()}>
                                         {(line) => (
                                             <p class="min-w-0 flex-1 text-[10px] leading-tight text-slate-500">
                                                 {line()}
@@ -316,10 +311,7 @@ export const ThreadChatPane: Component<{
                                                     aria-hidden
                                                 />
                                                 <span class="text-xs">
-                                                    {props.streamingReasoningText()
-                                                        .length > 0
-                                                        ? "Writing…"
-                                                        : "Thinking…"}
+                                                    Thinking…
                                                 </span>
                                             </div>
                                         </div>
@@ -331,13 +323,9 @@ export const ThreadChatPane: Component<{
                                         >
                                             {(line) => (
                                                 <div class="flex w-full min-w-0 justify-start overflow-x-hidden py-1">
-                                                    <div class="flex min-w-0 max-w-[85%] flex-col gap-1">
-                                                        <div class="flex min-w-0 items-center gap-2 pl-[34px]">
-                                                            <p class="min-w-0 flex-1 text-[10px] leading-tight text-slate-500">
-                                                                {line()}
-                                                            </p>
-                                                        </div>
-                                                    </div>
+                                                    <p class="min-w-0 max-w-[85%] text-[10px] leading-tight text-slate-500">
+                                                        {line()}
+                                                    </p>
                                                 </div>
                                             )}
                                         </Show>

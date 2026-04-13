@@ -511,6 +511,10 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 	var sawTokens bool
 	var toolRecords []store.OpenRouterToolCallRecord
 	var segments []store.AssistantTurnSegment
+	var reasoningStartTime time.Time
+	var reasoningDurationSec float64
+	var sawReasoningStart bool
+	var sawFirstResponseToken bool
 	appendSegText := func(round *strings.Builder) {
 		t := strings.TrimSpace(round.String())
 		if t == "" {
@@ -523,10 +527,18 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 		content, calls, usage, err := openrouter.StreamCompletionRound(ctx, apiKey, model, apiMessages, tools, func(delta string) error {
 			roundText.WriteString(delta)
 			full.WriteString(delta)
+			if sawReasoningStart && !sawFirstResponseToken {
+				reasoningDurationSec = time.Since(reasoningStartTime).Seconds()
+				sawFirstResponseToken = true
+			}
 			return onDelta(delta)
 		}, func(rdelta string) error {
 			if rdelta == "" {
 				return nil
+			}
+			if !sawReasoningStart {
+				reasoningStartTime = time.Now()
+				sawReasoningStart = true
 			}
 			reasoningFull.WriteString(rdelta)
 			if onReasoningDelta != nil {
@@ -633,6 +645,10 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 		}
 		if reasoningTrim != "" {
 			or.Reasoning = &reasoningTrim
+			if sawReasoningStart && sawFirstResponseToken {
+				dur := reasoningDurationSec
+				or.ReasoningDurationSec = &dur
+			}
 		}
 		if len(toolRecords) > 0 {
 			or.ToolCalls = toolRecords

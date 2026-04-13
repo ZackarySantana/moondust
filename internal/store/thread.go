@@ -59,6 +59,8 @@ type OpenRouterChatMessageMetadata struct {
 	CostUSD          *float64 `json:"cost_usd,omitempty"`
 	// Reasoning is the model's streamed reasoning / thinking trace when the provider exposes it (e.g. OpenRouter delta.reasoning).
 	Reasoning *string `json:"reasoning,omitempty"`
+	// ReasoningDurationSec is the wall-clock seconds from the first reasoning token to the first response token.
+	ReasoningDurationSec *float64 `json:"reasoning_duration_sec,omitempty"`
 	// Segments interleaves streamed text and tool calls in execution order (set when any tool ran).
 	Segments []AssistantTurnSegment `json:"segments,omitempty"`
 	// ToolCalls is the flat list of tools for backward compatibility and counts (same order as in Segments).
