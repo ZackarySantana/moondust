@@ -123,7 +123,14 @@ export function chatModelFromThread(raw: string | undefined): string {
     return (raw ?? "").trim();
 }
 
-/** Resolve display name for a model id using API list, then fallback slugs. */
+/**
+ * Resolve display name for a model id.
+ * Prefer bundled fallbacks before the live `choices` list so past messages stay
+ * stable when the thread’s active provider changes: `choices` is only the
+ * *current* provider’s catalog, so e.g. Cursor API labels (with CLI suffixes)
+ * would otherwise disagree with OpenRouter-time lookup that falls through to
+ * static Cursor fallbacks.
+ */
 export function modelDisplayName(
     modelId: string | undefined,
     choices: readonly ModelChoice[],
@@ -131,9 +138,9 @@ export function modelDisplayName(
     const mid = (modelId ?? "").trim();
     if (!mid) return "";
     return (
-        choices.find((m) => m.id === mid)?.label ??
-        OPENROUTER_CHAT_MODELS_FALLBACK.find((m) => m.id === mid)?.label ??
         CURSOR_CHAT_MODELS_FALLBACK.find((m) => m.id === mid)?.label ??
+        OPENROUTER_CHAT_MODELS_FALLBACK.find((m) => m.id === mid)?.label ??
+        choices.find((m) => m.id === mid)?.label ??
         mid
     );
 }

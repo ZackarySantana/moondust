@@ -14,6 +14,22 @@ const listModelsTimeout = 60 * time.Second
 
 var modelLineRE = regexp.MustCompile(`^\s*(\S+)\s+-\s+(.+?)\s*$`)
 
+// cursorModelLabelSuffixRE strips trailing flags from agent --list-models labels, e.g.
+// "Composer 2 Fast (current, default)" → "Composer 2 Fast".
+var cursorModelLabelSuffixRE = regexp.MustCompile(
+	`(?i)\s*\(\s*(current\s*,\s*default|current|default)\s*\)\s*$`,
+)
+
+func sanitizeCursorModelDisplayName(s string) string {
+	s = strings.TrimSpace(s)
+	prev := ""
+	for s != prev {
+		prev = s
+		s = strings.TrimSpace(cursorModelLabelSuffixRE.ReplaceAllString(s, ""))
+	}
+	return s
+}
+
 // ListChatModels runs `agent --list-models` and parses the model list (id — label).
 func ListChatModels(ctx context.Context) ([]store.OpenRouterChatModel, error) {
 	path, err := lookAgent()
@@ -41,7 +57,7 @@ func ListChatModels(ctx context.Context) ([]store.OpenRouterChatModel, error) {
 			continue
 		}
 		id := strings.TrimSpace(m[1])
-		name := strings.TrimSpace(m[2])
+		name := sanitizeCursorModelDisplayName(m[2])
 		if id == "" || name == "" {
 			continue
 		}
