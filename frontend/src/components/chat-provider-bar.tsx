@@ -517,20 +517,6 @@ export const ChatProviderBar: Component<{
                                             }
                                         />
                                     </div>
-                                    <button
-                                        type="button"
-                                        role="option"
-                                        aria-selected={props.model === ""}
-                                        class={`flex w-full shrink-0 cursor-pointer gap-2 px-2 py-2 text-left text-[11px] transition-colors ${props.model === "" ? "bg-slate-800/50 text-slate-200" : "text-slate-400 hover:bg-slate-800/35"}`}
-                                        onClick={() => {
-                                            props.onModelChange("");
-                                            close();
-                                        }}
-                                    >
-                                        <span class="pl-1 text-slate-500">
-                                            Choose model…
-                                        </span>
-                                    </button>
                                     <div
                                         class={`${MODEL_LIST_VIEWPORT_CLASS} min-h-0 shrink-0 overflow-y-auto overscroll-contain`}
                                         role="listbox"

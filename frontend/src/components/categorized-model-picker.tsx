@@ -16,7 +16,7 @@ import {
 export const MODEL_ROW_MIN_CLASS = "min-h-[3.75rem]";
 /** Scroll viewport: five model rows (5×3.75rem) plus a little room for section labels. */
 export const MODEL_LIST_VIEWPORT_CLASS = "h-[22rem]";
-/** Fixed panel: list viewport + search + “Choose model…” (no layout shift). */
+/** Fixed panel: list viewport + search (no layout shift). */
 export const MODEL_PANEL_HEIGHT_CLASS = "h-[28rem]";
 
 export const OrgBadge: Component<{ slug: string }> = (props) => {
