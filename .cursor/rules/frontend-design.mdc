@@ -95,6 +95,10 @@ Defined in `components/ui/button.tsx`. Variants: `default`, `destructive`, `outl
 - **Sidebar nav**: Native `<button>` or `<A>` with `rounded-lg px-2.5 py-2` and `transition-colors duration-100`
 - **Settings nav** (`vertical-nav.tsx`): Supports optional `icon` prop per item. Active state shows accent-colored icon.
 
+### Chat markdown (`ChatMarkdown`)
+
+Thread bodies use `components/chat-markdown.tsx`: **marked** renders Markdown to HTML, then **`innerHTML`** injects it. Inner elements (`p`, `pre`, `code`, tables, …) are **not** JSX, so they do **not** get Tailwind utilities. All prose appearance is controlled by **scoped CSS** in `style.css` under `.chat-markdown` (assistant) and `.chat-markdown--user` (user bubble on emerald). When changing chat typography or code-block look, edit those rules—not child `class` in TSX. Pipeline: GFM + `breaks`, DOMPurify sanitize, external links forced safe.
+
 ## Animations
 
 Defined as `@keyframes` in `style.css`, exposed via `@theme` as `--animate-*`:

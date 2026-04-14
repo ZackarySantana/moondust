@@ -7,7 +7,8 @@
 ## Stack
 
 - **SolidJS** (not React): signals, `createMemo`, `createEffect`; file-based components under `src/`.
-- **Styling:** Tailwind CSS v4 via `@theme` in [`src/style.css`](src/style.css); merge classes with `cn()` from [`src/lib/utils.ts`](src/lib/utils.ts).
+- **Styling:** **Tailwind-only for component UI** — use utility classes on `class` (that is how Tailwind works); merge with `cn()` from [`src/lib/utils.ts`](src/lib/utils.ts). Put design tokens, base layers, and `@keyframes` in [`src/style.css`](src/style.css). Avoid inline `style={…}` and ad-hoc `<style>` in components except where a third-party API requires it (e.g. editor integrations).
+- **Chat markdown is different:** [`ChatMarkdown`](src/components/chat-markdown.tsx) turns message text into HTML via `marked` and sets `innerHTML`, so inner tags are **not** Solid elements and **cannot** use Tailwind per-node. Prose styling lives under `.chat-markdown` / `.chat-markdown--user` in [`src/style.css`](src/style.css) (lists, code blocks, user-bubble contrast). Do not try to “fix” chat typography by sprinkling utilities on children—extend those scoped rules. Output is sanitized (DOMPurify) and links get `target="_blank"` + `rel`.
 - **Design tokens & UI rules:** [`.cursor/rules/frontend-design.mdc`](../.cursor/rules/frontend-design.mdc) (colors, spacing, icons, typography).
 - **Aliases:** `@/` → `src/`, `@wails` → `wailsjs` (see [`vite.config.ts`](vite.config.ts)).
 

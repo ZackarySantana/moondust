@@ -23,7 +23,12 @@ function markdownToSafeHtml(source: string): string {
     return doc.body.innerHTML;
 }
 
-/** Renders markdown as sanitized HTML (user + assistant chat bodies). */
+/**
+ * Renders assistant/user message bodies as sanitized HTML.
+ *
+ * **Not normal Tailwind:** content is produced by `marked` and injected as HTML, so inner nodes
+ * are styled via `.chat-markdown` / `.chat-markdown--user` in `style.css`, not per-element utilities.
+ */
 export const ChatMarkdown: Component<{
     source: string;
     class?: string;
