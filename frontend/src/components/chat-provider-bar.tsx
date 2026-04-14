@@ -1,29 +1,44 @@
 import { A } from "@solidjs/router";
 import Bot from "lucide-solid/icons/bot";
-import Brain from "lucide-solid/icons/brain";
 import ChevronUp from "lucide-solid/icons/chevron-up";
 import Circle from "lucide-solid/icons/circle";
-import Eye from "lucide-solid/icons/eye";
-import FileText from "lucide-solid/icons/file-text";
-import Info from "lucide-solid/icons/info";
 import Layers from "lucide-solid/icons/layers";
 import Search from "lucide-solid/icons/search";
 import Star from "lucide-solid/icons/star";
 import X from "lucide-solid/icons/x";
 import type { Component } from "solid-js";
 import {
+    createEffect,
     createMemo,
     createSignal,
     For,
+    on,
     onCleanup,
     onMount,
     Show,
 } from "solid-js";
 import {
+    CategorizedModelList,
+    MODEL_LIST_VIEWPORT_CLASS,
+    MODEL_PANEL_HEIGHT_CLASS,
+} from "@/components/categorized-model-picker";
+import {
     CHAT_PROVIDERS,
     type ChatProviderId,
     type ModelChoice,
 } from "@/lib/chat-provider";
+import {
+    buildCursorModelCategories,
+    buildOpenRouterSplitCategories,
+    FAVORITES_FILTER,
+    isPriorityOrg,
+    MISC_FILTER,
+    orgBadgeClass,
+    orgTitle,
+    PRIORITY_ORGS,
+    providerSlug,
+    resolveOpenRouterFlagships,
+} from "@/lib/model-picker-categories";
 
 const triggerClass =
     "inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-slate-500 transition-colors hover:bg-slate-800/50 hover:text-slate-300 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-40";
@@ -32,101 +47,12 @@ const triggerClass =
 const menuClass =
     "absolute left-0 bottom-full z-50 mb-0.5 rounded-md border border-slate-800/60 bg-slate-950/95 shadow-lg backdrop-blur-sm";
 
-/** Row min height so ~5 rows fill the list viewport. */
-const MODEL_ROW_MIN_CLASS = "min-h-[3.75rem]";
-/** Scroll viewport: five model rows (5×3.75rem) plus a little room for section labels. */
-const MODEL_LIST_VIEWPORT_CLASS = "h-[22rem]";
-/** Fixed panel: list viewport + search + “Choose model…” (no layout shift). */
-const MODEL_PANEL_HEIGHT_CLASS = "h-[28rem]";
-
 const menuItemClass =
     "flex w-full cursor-pointer items-center px-2 py-1 text-left text-[11px] text-slate-400 transition-colors hover:bg-slate-800/60 hover:text-slate-200";
 
 /** Left rail org / filter buttons (always pointer). */
 const railFilterBtnClass =
     "flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors";
-
-const ORG_BADGE: Record<string, string> = {
-    openai: "bg-emerald-900/55 text-emerald-100",
-    anthropic: "bg-amber-900/45 text-amber-100",
-    google: "bg-sky-900/45 text-sky-100",
-    "meta-llama": "bg-indigo-900/45 text-indigo-100",
-    "x-ai": "bg-slate-700/80 text-slate-100",
-    deepseek: "bg-violet-900/45 text-violet-100",
-    qwen: "bg-cyan-900/40 text-cyan-100",
-    mistralai: "bg-orange-900/40 text-orange-100",
-    nvidia: "bg-lime-900/35 text-lime-100",
-    "z-ai": "bg-fuchsia-900/40 text-fuchsia-100",
-    bytedance: "bg-rose-900/35 text-rose-100",
-    cohere: "bg-blue-900/40 text-blue-100",
-    perplexity: "bg-purple-900/40 text-purple-100",
-};
-
-const ORG_TITLE: Record<string, string> = {
-    openai: "OpenAI",
-    anthropic: "Anthropic",
-    google: "Google",
-    "meta-llama": "Meta",
-    "x-ai": "xAI",
-    deepseek: "DeepSeek",
-    qwen: "Qwen",
-    mistralai: "Mistral",
-    nvidia: "NVIDIA",
-    "z-ai": "Z.AI",
-    bytedance: "ByteDance",
-    cohere: "Cohere",
-    perplexity: "Perplexity",
-};
-
-function providerSlug(id: string): string {
-    const i = id.indexOf("/");
-    return i > 0 ? id.slice(0, i) : "other";
-}
-
-function orgBadgeClass(slug: string): string {
-    if (slug.startsWith("meta-")) {
-        return ORG_BADGE["meta-llama"] ?? "bg-slate-800/80 text-slate-200";
-    }
-    return ORG_BADGE[slug] ?? "bg-slate-800/80 text-slate-200";
-}
-
-function orgTitle(slug: string): string {
-    if (slug.startsWith("meta-")) return ORG_TITLE["meta-llama"] ?? slug;
-    return ORG_TITLE[slug] ?? slug;
-}
-
-/** Sidebar filter: favorites only. */
-const FAVORITES_FILTER = "__favorites__";
-/** Sidebar filter: every org not in PRIORITY_ORGS. */
-const MISC_FILTER = "__misc__";
-
-const PRIORITY_ORGS = ["anthropic", "openai", "google", "deepseek"] as const;
-
-/** Flagship model id per big-four org (OpenRouter ids). Shown under Favorites. */
-const FLAGSHIP_ORDER: readonly string[] = [
-    "anthropic/claude-sonnet-4.6",
-    "openai/gpt-5.4",
-    "google/gemini-3.1-pro-preview",
-    "deepseek/deepseek-r1-0528",
-];
-
-const FLAGSHIP_LABELS: Record<string, string> = {
-    "anthropic/claude-sonnet-4.6": "Anthropic: Claude Sonnet 4.6",
-    "openai/gpt-5.4": "OpenAI: GPT-5.4",
-    "google/gemini-3.1-pro-preview": "Google: Gemini 3.1 Pro Preview",
-    "deepseek/deepseek-r1-0528": "DeepSeek: R1",
-};
-
-function placeholderFlagship(id: string): ModelChoice {
-    const slug = providerSlug(id);
-    return {
-        id,
-        label: FLAGSHIP_LABELS[id] ?? id,
-        provider: slug,
-        description: "TBA",
-        description_full: "TBA",
-    };
-}
 
 function fullDescription(m: ModelChoice): string {
     const full = m.description_full?.trim();
@@ -140,123 +66,6 @@ function formatContextTokens(n: number | undefined): string {
     if (n >= 10_000) return `${Math.round(n / 1000)}k tokens`;
     return `${n} tokens`;
 }
-
-function resolveFlagships(rows: readonly ModelChoice[]): ModelChoice[] {
-    const byId = new Map(rows.map((m) => [m.id, m]));
-    return FLAGSHIP_ORDER.map((id) => byId.get(id) ?? placeholderFlagship(id));
-}
-
-function providerRank(slug: string): number {
-    const i = PRIORITY_ORGS.indexOf(slug as (typeof PRIORITY_ORGS)[number]);
-    return i >= 0 ? i : 1000;
-}
-
-function isPriorityOrg(slug: string): boolean {
-    return PRIORITY_ORGS.includes(slug as (typeof PRIORITY_ORGS)[number]);
-}
-
-function OrgBadge(props: { slug: string }) {
-    const letter = () => (props.slug[0] ?? "?").toUpperCase();
-    return (
-        <div
-            class={`flex size-7 shrink-0 items-center justify-center rounded-md text-[10px] font-semibold ${orgBadgeClass(props.slug)}`}
-            title={orgTitle(props.slug)}
-        >
-            {letter()}
-        </div>
-    );
-}
-
-const ModelRowButton: Component<{
-    m: ModelChoice;
-    selected: boolean;
-    onPick: () => void;
-    onInfo: () => void;
-}> = (props) => {
-    const slugStr = () => props.m.provider ?? providerSlug(props.m.id);
-    return (
-        <div
-            role="option"
-            aria-selected={props.selected}
-            class={`flex border-t border-slate-800/30 first:border-t-0 ${MODEL_ROW_MIN_CLASS} ${props.selected ? "bg-slate-800/45" : ""}`}
-        >
-            <button
-                type="button"
-                class={`flex min-w-0 flex-1 cursor-pointer gap-2 px-2 py-2 text-left transition-colors ${props.selected ? "" : "hover:bg-slate-800/30"}`}
-                onClick={props.onPick}
-            >
-                <OrgBadge slug={slugStr()} />
-                <div class="min-w-0 flex-1">
-                    <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                        <span class="text-[12px] font-medium text-slate-100">
-                            {props.m.label}
-                        </span>
-                        <span class="font-mono text-[10px] text-emerald-500/85">
-                            {props.m.pricing_tier ?? "—"}
-                        </span>
-                    </div>
-                    <p class="mt-0.5 truncate text-[10px] leading-snug text-slate-500">
-                        {props.m.description ?? "TBA"}
-                    </p>
-                </div>
-                <div class="flex shrink-0 items-center gap-0.5 self-start pt-0.5">
-                    <Show when={props.m.vision}>
-                        <span
-                            title="Vision"
-                            class="text-slate-500"
-                        >
-                            <Eye
-                                class="size-3.5"
-                                stroke-width={2}
-                                aria-hidden
-                            />
-                        </span>
-                    </Show>
-                    <Show when={props.m.reasoning}>
-                        <span
-                            title="Reasoning"
-                            class="text-slate-500"
-                        >
-                            <Brain
-                                class="size-3.5"
-                                stroke-width={2}
-                                aria-hidden
-                            />
-                        </span>
-                    </Show>
-                    <Show when={props.m.long_context}>
-                        <span
-                            title="Large context"
-                            class="text-slate-500"
-                        >
-                            <FileText
-                                class="size-3.5"
-                                stroke-width={2}
-                                aria-hidden
-                            />
-                        </span>
-                    </Show>
-                </div>
-            </button>
-            <button
-                type="button"
-                class="shrink-0 cursor-pointer px-2 py-2 text-slate-500 transition-colors hover:bg-slate-800/40 hover:text-slate-300"
-                title="Model details"
-                aria-label="Model details"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    props.onInfo();
-                }}
-            >
-                <Info
-                    class="size-4"
-                    stroke-width={2}
-                    aria-hidden
-                />
-            </button>
-        </div>
-    );
-};
 
 export const ChatProviderBar: Component<{
     provider: ChatProviderId;
@@ -302,6 +111,20 @@ export const ChatProviderBar: Component<{
         });
     });
 
+    const isCursorProvider = () => props.provider === "cursor";
+
+    createEffect(
+        on(
+            () => props.provider,
+            (p) => {
+                if (p === "cursor") {
+                    setFilterOrg(null);
+                    setSearchQuery("");
+                }
+            },
+        ),
+    );
+
     const modelOptions = createMemo(() => {
         const cur = props.model.trim();
         const known = [...props.modelChoices];
@@ -328,7 +151,10 @@ export const ChatProviderBar: Component<{
         const org = filterOrg();
         let rows = modelOptions();
         if (org === FAVORITES_FILTER) {
-            return resolveFlagships(rows);
+            if (isCursorProvider()) {
+                return [...rows].sort((a, b) => a.label.localeCompare(b.label));
+            }
+            return resolveOpenRouterFlagships(rows);
         }
         if (org === MISC_FILTER) {
             rows = rows.filter((m) => {
@@ -356,27 +182,39 @@ export const ChatProviderBar: Component<{
         return rows;
     });
 
-    const favoriteRows = createMemo(() => resolveFlagships(modelOptions()));
+    const showSplitAllView = createMemo(
+        () => !isCursorProvider() && filterOrg() === null && !hasSearch(),
+    );
 
-    const restRows = createMemo(() => {
-        if (filterOrg() !== null || hasSearch()) return [];
-        const favSet = new Set(FLAGSHIP_ORDER);
-        const rest = modelOptions().filter((m) => !favSet.has(m.id));
-        rest.sort((a, b) => {
-            const sa = a.provider ?? providerSlug(a.id);
-            const sb = b.provider ?? providerSlug(b.id);
-            const ra = providerRank(sa);
-            const rb = providerRank(sb);
-            if (ra !== rb) return ra - rb;
-            if (sa !== sb) return sa.localeCompare(sb);
-            return a.label.localeCompare(b.label);
-        });
-        return rest;
+    const modelPickerCategories = createMemo(() => {
+        if (isCursorProvider()) {
+            if (hasSearch()) {
+                const q = searchQuery().trim().toLowerCase();
+                const rows = modelOptions().filter((m) => {
+                    const desc = (m.description ?? "").toLowerCase();
+                    const descFull = (m.description_full ?? "").toLowerCase();
+                    return (
+                        m.id.toLowerCase().includes(q) ||
+                        m.label.toLowerCase().includes(q) ||
+                        desc.includes(q) ||
+                        descFull.includes(q) ||
+                        (m.provider ?? "").toLowerCase().includes(q)
+                    );
+                });
+                return [{ id: "match", label: "", models: rows }];
+            }
+            return buildCursorModelCategories(modelOptions());
+        }
+        if (showSplitAllView()) {
+            return buildOpenRouterSplitCategories(modelOptions());
+        }
+        return [{ id: "filtered", label: "", models: filteredModels() }];
     });
 
-    const showSplitAllView = createMemo(
-        () => filterOrg() === null && !hasSearch(),
-    );
+    const showSectionHeaders = createMemo(() => {
+        if (isCursorProvider()) return !hasSearch();
+        return showSplitAllView();
+    });
 
     const modelChipLabel = createMemo(() => {
         const cur = props.model.trim();
@@ -546,7 +384,11 @@ export const ChatProviderBar: Component<{
                                     return null;
                                 }
                                 setSearchQuery("");
-                                setFilterOrg(FAVORITES_FILTER);
+                                setFilterOrg(
+                                    isCursorProvider()
+                                        ? null
+                                        : FAVORITES_FILTER,
+                                );
                                 return "model";
                             });
                         }}
@@ -578,78 +420,84 @@ export const ChatProviderBar: Component<{
                             role="presentation"
                             onMouseDown={(e) => e.stopPropagation()}
                         >
-                            <div class="flex h-full min-w-0 w-[min(28rem,calc(100vw-2rem))] shrink-0 flex-row overflow-hidden">
-                                <aside
-                                    class="flex h-full w-11 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-slate-800/60 bg-slate-950/60 py-1.5 pl-1 pr-0.5"
-                                    aria-label="Filter by organization"
-                                >
-                                    <button
-                                        type="button"
-                                        title="All models"
-                                        class={`${railFilterBtnClass} ${filterOrg() === null ? "bg-violet-600/30 text-violet-200" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
-                                        onClick={() => setFilterOrg(null)}
+                            <div
+                                class={`flex h-full min-w-0 shrink-0 flex-row overflow-hidden ${isCursorProvider() ? "w-full max-w-[min(36rem,calc(100vw-2rem))]" : "w-[min(28rem,calc(100vw-2rem))]"}`}
+                            >
+                                <Show when={!isCursorProvider()}>
+                                    <aside
+                                        class="flex h-full w-11 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-slate-800/60 bg-slate-950/60 py-1.5 pl-1 pr-0.5"
+                                        aria-label="Filter by organization"
                                     >
-                                        <Circle
-                                            class="size-3.5"
-                                            stroke-width={2}
-                                            aria-hidden
-                                        />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        title="Favorites (coming soon)"
-                                        class={`${railFilterBtnClass} ${filterOrg() === FAVORITES_FILTER ? "bg-amber-500/25 text-amber-100 ring-1 ring-amber-500/40" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
-                                        onClick={() =>
-                                            setFilterOrg((cur) =>
-                                                cur === FAVORITES_FILTER
-                                                    ? null
-                                                    : FAVORITES_FILTER,
-                                            )
-                                        }
-                                    >
-                                        <Star
-                                            class="size-3.5"
-                                            stroke-width={2}
-                                            aria-hidden
-                                        />
-                                    </button>
-                                    <For each={[...PRIORITY_ORGS]}>
-                                        {(slug) => (
-                                            <button
-                                                type="button"
-                                                title={orgTitle(slug)}
-                                                class={`${railFilterBtnClass} text-[10px] font-semibold ${filterOrg() === slug ? "ring-1 ring-violet-500/50" : ""} ${orgBadgeClass(slug)}`}
-                                                onClick={() =>
-                                                    setFilterOrg((cur) =>
-                                                        cur === slug
-                                                            ? null
-                                                            : slug,
-                                                    )
-                                                }
-                                            >
-                                                {(slug[0] ?? "?").toUpperCase()}
-                                            </button>
-                                        )}
-                                    </For>
-                                    <button
-                                        type="button"
-                                        title="Misc — all other providers"
-                                        class={`${railFilterBtnClass} ${filterOrg() === MISC_FILTER ? "bg-violet-600/30 text-violet-200 ring-1 ring-violet-500/50" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
-                                        onClick={() =>
-                                            setFilterOrg((cur) =>
-                                                cur === MISC_FILTER
-                                                    ? null
-                                                    : MISC_FILTER,
-                                            )
-                                        }
-                                    >
-                                        <Layers
-                                            class="size-3.5"
-                                            stroke-width={2}
-                                            aria-hidden
-                                        />
-                                    </button>
-                                </aside>
+                                        <button
+                                            type="button"
+                                            title="All models"
+                                            class={`${railFilterBtnClass} ${filterOrg() === null ? "bg-violet-600/30 text-violet-200" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
+                                            onClick={() => setFilterOrg(null)}
+                                        >
+                                            <Circle
+                                                class="size-3.5"
+                                                stroke-width={2}
+                                                aria-hidden
+                                            />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            title="Favorites (coming soon)"
+                                            class={`${railFilterBtnClass} ${filterOrg() === FAVORITES_FILTER ? "bg-amber-500/25 text-amber-100 ring-1 ring-amber-500/40" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
+                                            onClick={() =>
+                                                setFilterOrg((cur) =>
+                                                    cur === FAVORITES_FILTER
+                                                        ? null
+                                                        : FAVORITES_FILTER,
+                                                )
+                                            }
+                                        >
+                                            <Star
+                                                class="size-3.5"
+                                                stroke-width={2}
+                                                aria-hidden
+                                            />
+                                        </button>
+                                        <For each={[...PRIORITY_ORGS]}>
+                                            {(slug) => (
+                                                <button
+                                                    type="button"
+                                                    title={orgTitle(slug)}
+                                                    class={`${railFilterBtnClass} text-[10px] font-semibold ${filterOrg() === slug ? "ring-1 ring-violet-500/50" : ""} ${orgBadgeClass(slug)}`}
+                                                    onClick={() =>
+                                                        setFilterOrg((cur) =>
+                                                            cur === slug
+                                                                ? null
+                                                                : slug,
+                                                        )
+                                                    }
+                                                >
+                                                    {(
+                                                        slug[0] ?? "?"
+                                                    ).toUpperCase()}
+                                                </button>
+                                            )}
+                                        </For>
+                                        <button
+                                            type="button"
+                                            title="Misc — all other providers"
+                                            class={`${railFilterBtnClass} ${filterOrg() === MISC_FILTER ? "bg-violet-600/30 text-violet-200 ring-1 ring-violet-500/50" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
+                                            onClick={() =>
+                                                setFilterOrg((cur) =>
+                                                    cur === MISC_FILTER
+                                                        ? null
+                                                        : MISC_FILTER,
+                                                )
+                                            }
+                                        >
+                                            <Layers
+                                                class="size-3.5"
+                                                stroke-width={2}
+                                                aria-hidden
+                                            />
+                                        </button>
+                                    </aside>
+                                </Show>
                                 <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                                     <div class="flex shrink-0 items-center gap-1.5 border-b border-slate-800/60 px-2 py-1.5">
                                         <Search
@@ -688,73 +536,16 @@ export const ChatProviderBar: Component<{
                                         role="listbox"
                                         aria-label="Model"
                                     >
-                                        <Show when={showSplitAllView()}>
-                                            <p class="border-t border-slate-800/30 px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                                                Favorites
-                                            </p>
-                                            <For each={favoriteRows()}>
-                                                {(m) => (
-                                                    <ModelRowButton
-                                                        m={m}
-                                                        selected={
-                                                            props.model === m.id
-                                                        }
-                                                        onPick={() => {
-                                                            props.onModelChange(
-                                                                m.id,
-                                                            );
-                                                            close();
-                                                        }}
-                                                        onInfo={() =>
-                                                            toggleModelDetail(m)
-                                                        }
-                                                    />
-                                                )}
-                                            </For>
-                                            <p class="border-t border-slate-800/30 px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                                                All models
-                                            </p>
-                                            <For each={restRows()}>
-                                                {(m) => (
-                                                    <ModelRowButton
-                                                        m={m}
-                                                        selected={
-                                                            props.model === m.id
-                                                        }
-                                                        onPick={() => {
-                                                            props.onModelChange(
-                                                                m.id,
-                                                            );
-                                                            close();
-                                                        }}
-                                                        onInfo={() =>
-                                                            toggleModelDetail(m)
-                                                        }
-                                                    />
-                                                )}
-                                            </For>
-                                        </Show>
-                                        <Show when={!showSplitAllView()}>
-                                            <For each={filteredModels()}>
-                                                {(m) => (
-                                                    <ModelRowButton
-                                                        m={m}
-                                                        selected={
-                                                            props.model === m.id
-                                                        }
-                                                        onPick={() => {
-                                                            props.onModelChange(
-                                                                m.id,
-                                                            );
-                                                            close();
-                                                        }}
-                                                        onInfo={() =>
-                                                            toggleModelDetail(m)
-                                                        }
-                                                    />
-                                                )}
-                                            </For>
-                                        </Show>
+                                        <CategorizedModelList
+                                            categories={modelPickerCategories()}
+                                            selectedId={props.model}
+                                            onPick={(id) => {
+                                                props.onModelChange(id);
+                                                close();
+                                            }}
+                                            onInfo={toggleModelDetail}
+                                            showSectionHeaders={showSectionHeaders()}
+                                        />
                                     </div>
                                 </div>
                             </div>

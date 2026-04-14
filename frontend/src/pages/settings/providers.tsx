@@ -225,9 +225,21 @@ const CursorSettingsTab: Component = () => {
                                             Account usage
                                         </p>
                                         <p class="text-xs text-slate-600">
-                                            Composer (auto) vs API model usage
-                                            for your billing period — same
-                                            buckets as{" "}
+                                            Three numbers:{" "}
+                                            <span class="font-medium text-slate-500">
+                                                Composer (auto)
+                                            </span>{" "}
+                                            and{" "}
+                                            <span class="font-medium text-slate-500">
+                                                API
+                                            </span>{" "}
+                                            are the split Cursor reports for
+                                            agent routing vs API models;{" "}
+                                            <span class="font-medium text-slate-500">
+                                                Total
+                                            </span>{" "}
+                                            is overall included usage (all
+                                            buckets). Same fields as{" "}
                                             <code class="rounded bg-slate-900/80 px-1 py-0.5 text-[10px]">
                                                 /usage
                                             </code>{" "}
@@ -249,10 +261,13 @@ const CursorSettingsTab: Component = () => {
                                             </p>
                                         ) : (
                                             <Show when={info().usage}>
-                                                <div class="grid gap-2 sm:grid-cols-2">
+                                                <div class="grid gap-2 sm:grid-cols-3">
                                                     <div class="rounded-md border border-slate-800/60 bg-slate-950/40 p-2.5">
                                                         <p class="text-[11px] font-medium text-slate-500">
                                                             Composer (auto)
+                                                        </p>
+                                                        <p class="text-[10px] text-slate-600">
+                                                            Auto / agent routing
                                                         </p>
                                                         <p class="mt-1 font-mono text-lg text-slate-200 tabular-nums">
                                                             {formatCursorPct(
@@ -278,6 +293,9 @@ const CursorSettingsTab: Component = () => {
                                                         <p class="text-[11px] font-medium text-slate-500">
                                                             API
                                                         </p>
+                                                        <p class="text-[10px] text-slate-600">
+                                                            Named / API models
+                                                        </p>
                                                         <p class="mt-1 font-mono text-lg text-slate-200 tabular-nums">
                                                             {formatCursorPct(
                                                                 info().usage
@@ -298,12 +316,14 @@ const CursorSettingsTab: Component = () => {
                                                             </p>
                                                         </Show>
                                                     </div>
-                                                    <div class="sm:col-span-2 rounded-md border border-slate-800/50 bg-slate-950/30 p-2.5">
+                                                    <div class="rounded-md border border-slate-800/50 bg-slate-950/30 p-2.5 sm:min-h-0">
                                                         <p class="text-[11px] font-medium text-slate-500">
-                                                            Total (included
-                                                            usage)
+                                                            Total
                                                         </p>
-                                                        <p class="mt-1 font-mono text-sm text-slate-300 tabular-nums">
+                                                        <p class="text-[10px] text-slate-600">
+                                                            All included usage
+                                                        </p>
+                                                        <p class="mt-1 font-mono text-lg text-slate-200 tabular-nums">
                                                             {formatCursorPct(
                                                                 info().usage
                                                                     ?.total_percent_used,

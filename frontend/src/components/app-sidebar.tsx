@@ -13,6 +13,7 @@ import { GetBuildLabel } from "@wails/go/app/App";
 import { ProjectGroup } from "@/components/sidebar/project-group";
 import { ProjectThread } from "@/components/sidebar/project-thread";
 import { Kbd } from "@/components/kbd";
+import { SidebarProviderUsage } from "@/components/sidebar-provider-usage";
 import { Separator } from "@/components/ui/separator";
 import {
     globalThreadShortcutSlots,
@@ -157,6 +158,8 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
             {/* ── Footer ── */}
             <footer class="mt-auto border-t border-slate-800/35 px-3 py-3 space-y-3">
+                <SidebarProviderUsage />
+
                 <A
                     href="/settings"
                     class={cn(
@@ -175,26 +178,6 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                         <Kbd combo={formatKey("open_settings")} />
                     </span>
                 </A>
-
-                <div class="space-y-1.5 px-1">
-                    <div class="flex items-baseline justify-between">
-                        <span class="text-[11px] font-medium text-slate-500">
-                            Usage
-                        </span>
-                        <span class="text-[11px] tabular-nums text-slate-600">
-                            40%
-                        </span>
-                    </div>
-                    <div
-                        class="h-1.5 w-full overflow-hidden rounded-full bg-slate-800/60"
-                        role="progressbar"
-                        aria-valuenow={40}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                    >
-                        <div class="h-full w-[40%] rounded-full bg-linear-to-r from-emerald-700/80 to-emerald-500/70 transition-all duration-500" />
-                    </div>
-                </div>
 
                 <p
                     class="min-h-[14px] px-1 pt-1 text-left text-[10px] leading-snug text-slate-600 select-none"
