@@ -1,3 +1,10 @@
+import {
+    autoUpdate,
+    computePosition,
+    flip,
+    offset,
+    shift,
+} from "@floating-ui/dom";
 import Info from "lucide-solid/icons/info";
 import type { Component } from "solid-js";
 import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
@@ -62,24 +69,10 @@ export const AssistantMessageMetadataButton: Component<{
     msg: store.ChatMessage;
 }> = (props) => {
     const [open, setOpen] = createSignal(false);
-    const [fixedPos, setFixedPos] = createSignal<{
-        top: number;
-        left: number;
-    } | null>(null);
+    const [pos, setPos] = createSignal<{ x: number; y: number } | null>(null);
 
     let buttonEl!: HTMLButtonElement;
     let panelEl!: HTMLDivElement;
-
-    function layoutPanelFromButton() {
-        if (!buttonEl) return;
-        const r = buttonEl.getBoundingClientRect();
-        const maxW = Math.min(256, window.innerWidth - 16);
-        let left = r.left;
-        if (left + maxW > window.innerWidth - 8) {
-            left = Math.max(8, window.innerWidth - maxW - 8);
-        }
-        setFixedPos({ top: r.bottom + 4, left });
-    }
 
     onMount(() => {
         const onDoc = (e: MouseEvent) => {
@@ -87,17 +80,73 @@ export const AssistantMessageMetadataButton: Component<{
             const t = e.target as Node;
             if (buttonEl?.contains(t) || panelEl?.contains(t)) return;
             setOpen(false);
-            setFixedPos(null);
+            setPos(null);
         };
         document.addEventListener("mousedown", onDoc);
         onCleanup(() => document.removeEventListener("mousedown", onDoc));
     });
 
     createEffect(() => {
-        if (!open()) return;
-        const onResize = () => layoutPanelFromButton();
-        window.addEventListener("resize", onResize);
-        onCleanup(() => window.removeEventListener("resize", onResize));
+        if (!open()) {
+            setPos(null);
+            return;
+        }
+
+        let stopAutoUpdate: (() => void) | undefined;
+        let cancelled = false;
+        let rafOuter = 0;
+        let rafInner = 0;
+
+        const start = () => {
+            const reference = buttonEl;
+            const floating = panelEl;
+            if (!reference || !floating || cancelled) return;
+
+            async function updatePosition() {
+                const { x, y } = await computePosition(reference, floating, {
+                    placement: "bottom-start",
+                    strategy: "fixed",
+                    middleware: [
+                        offset(4),
+                        flip({
+                            padding: 8,
+                            fallbackPlacements: [
+                                "top-start",
+                                "bottom-end",
+                                "top-end",
+                                "left-start",
+                                "right-start",
+                            ],
+                        }),
+                        shift({
+                            padding: 8,
+                            crossAxis: true,
+                        }),
+                    ],
+                });
+                if (!cancelled) {
+                    setPos({ x, y });
+                }
+            }
+
+            void updatePosition();
+            stopAutoUpdate = autoUpdate(reference, floating, () => {
+                void updatePosition();
+            });
+        };
+
+        // Portal + first paint: ensure the floating node has layout before measuring.
+        rafOuter = requestAnimationFrame(() => {
+            rafInner = requestAnimationFrame(start);
+        });
+
+        onCleanup(() => {
+            cancelled = true;
+            cancelAnimationFrame(rafOuter);
+            cancelAnimationFrame(rafInner);
+            stopAutoUpdate?.();
+            setPos(null);
+        });
     });
 
     const or = () => props.msg.metadata?.openrouter;
@@ -117,9 +166,8 @@ export const AssistantMessageMetadataButton: Component<{
                     onClick={() => {
                         if (open()) {
                             setOpen(false);
-                            setFixedPos(null);
+                            setPos(null);
                         } else {
-                            layoutPanelFromButton();
                             setOpen(true);
                         }
                     }}
@@ -130,16 +178,19 @@ export const AssistantMessageMetadataButton: Component<{
                         aria-hidden
                     />
                 </button>
-                <Show when={open() && fixedPos() && (or() || cur())}>
+                <Show when={open() && (or() || cur())}>
                     <Portal mount={document.body}>
                         <div
                             ref={(el) => {
                                 panelEl = el;
                             }}
-                            class="fixed z-100 w-[min(18rem,calc(100vw-2rem))] rounded-md border border-slate-800/60 bg-slate-950/98 px-3 py-2 text-[11px] text-slate-300 shadow-lg backdrop-blur-sm"
+                            class="fixed z-100 max-w-[min(18rem,calc(100vw-1rem))] rounded-md border border-slate-800/60 bg-slate-950/98 px-3 py-2 text-[11px] text-slate-300 shadow-lg backdrop-blur-sm"
                             style={{
-                                top: `${fixedPos()!.top}px`,
-                                left: `${fixedPos()!.left}px`,
+                                left:
+                                    pos() != null ? `${pos()!.x}px` : "-9999px",
+                                top: pos() != null ? `${pos()!.y}px` : "0px",
+                                visibility:
+                                    pos() != null ? "visible" : "hidden",
                             }}
                             role="dialog"
                             aria-label="Message usage details"
@@ -157,12 +208,16 @@ export const AssistantMessageMetadataButton: Component<{
                                             {formatInt(or()!.prompt_tokens!)}
                                         </dd>
                                     </Show>
-                                    <Show when={or()!.completion_tokens != null}>
+                                    <Show
+                                        when={or()!.completion_tokens != null}
+                                    >
                                         <dt class="text-slate-500">
                                             Completion tokens
                                         </dt>
                                         <dd class="font-mono text-slate-200">
-                                            {formatInt(or()!.completion_tokens!)}
+                                            {formatInt(
+                                                or()!.completion_tokens!,
+                                            )}
                                         </dd>
                                     </Show>
                                     <Show when={or()!.total_tokens != null}>
@@ -180,13 +235,17 @@ export const AssistantMessageMetadataButton: Component<{
                                         </dd>
                                     </Show>
                                     <Show
-                                        when={(or()!.tool_calls?.length ?? 0) > 0}
+                                        when={
+                                            (or()!.tool_calls?.length ?? 0) > 0
+                                        }
                                     >
                                         <dt class="text-slate-500">
                                             Tool calls
                                         </dt>
                                         <dd class="font-mono text-slate-200">
-                                            {formatInt(or()!.tool_calls!.length)}
+                                            {formatInt(
+                                                or()!.tool_calls!.length,
+                                            )}
                                         </dd>
                                     </Show>
                                 </dl>
@@ -218,24 +277,35 @@ export const AssistantMessageMetadataButton: Component<{
                                             {formatInt(cur()!.output_tokens!)}
                                         </dd>
                                     </Show>
-                                    <Show when={cur()!.cache_read_tokens != null}>
+                                    <Show
+                                        when={cur()!.cache_read_tokens != null}
+                                    >
                                         <dt class="text-slate-500">
                                             Cache read
                                         </dt>
                                         <dd class="font-mono text-slate-200">
-                                            {formatInt(cur()!.cache_read_tokens!)}
+                                            {formatInt(
+                                                cur()!.cache_read_tokens!,
+                                            )}
                                         </dd>
                                     </Show>
-                                    <Show when={cur()!.cache_write_tokens != null}>
+                                    <Show
+                                        when={cur()!.cache_write_tokens != null}
+                                    >
                                         <dt class="text-slate-500">
                                             Cache write
                                         </dt>
                                         <dd class="font-mono text-slate-200">
-                                            {formatInt(cur()!.cache_write_tokens!)}
+                                            {formatInt(
+                                                cur()!.cache_write_tokens!,
+                                            )}
                                         </dd>
                                     </Show>
                                     <Show
-                                        when={cur()!.plan_auto_percent_delta != null}
+                                        when={
+                                            cur()!.plan_auto_percent_delta !=
+                                            null
+                                        }
                                     >
                                         <dt class="text-slate-500">Auto Δ</dt>
                                         <dd class="font-mono text-slate-200">
@@ -245,7 +315,10 @@ export const AssistantMessageMetadataButton: Component<{
                                         </dd>
                                     </Show>
                                     <Show
-                                        when={cur()!.plan_api_percent_delta != null}
+                                        when={
+                                            cur()!.plan_api_percent_delta !=
+                                            null
+                                        }
                                     >
                                         <dt class="text-slate-500">API Δ</dt>
                                         <dd class="font-mono text-slate-200">
@@ -268,9 +341,9 @@ export const AssistantMessageMetadataButton: Component<{
                                 </dl>
                                 <p class="mt-2 text-[9px] leading-snug text-slate-600">
                                     Auto/API deltas are the change in plan usage
-                                    percentages around this request (same buckets
-                                    as Settings → Cursor). Other Cursor activity
-                                    can affect them.
+                                    percentages around this request (same
+                                    buckets as Settings → Cursor). Other Cursor
+                                    activity can affect them.
                                 </p>
                             </Show>
                         </div>
