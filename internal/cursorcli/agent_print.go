@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"moondust/internal/store"
 	"os/exec"
 	"strings"
 	"time"
@@ -50,10 +51,12 @@ type streamJSONLine struct {
 // StreamPrintHeadless runs `agent --print` with stream-json and calls onDelta for each
 // partial assistant text segment (events that include timestamp_ms). Returns the final
 // assistant text from the result line when successful.
+// onToolRound is optional; when non-nil, receives each completed tool_call from the stream.
 func StreamPrintHeadless(
 	ctx context.Context,
 	agentPath, workspace, model, prompt string,
 	onDelta func(string) error,
+	onToolRound func([]store.OpenRouterToolCallRecord) error,
 ) (final string, usage *AgentStreamUsage, err error) {
 	prompt = strings.TrimSpace(prompt)
 	if prompt == "" {
@@ -86,7 +89,7 @@ func StreamPrintHeadless(
 		return "", nil, fmt.Errorf("cursor agent: %w", err)
 	}
 
-	finalText, usage, scanErr := consumeAgentStreamJSON(stdout, onDelta)
+	finalText, usage, scanErr := consumeAgentStreamJSON(stdout, onDelta, onToolRound)
 	waitErr := cmd.Wait()
 	if waitErr != nil {
 		msg := strings.TrimSpace(stderrBuf.String())
@@ -101,7 +104,11 @@ func StreamPrintHeadless(
 	return finalText, usage, nil
 }
 
-func consumeAgentStreamJSON(r io.Reader, onDelta func(string) error) (string, *AgentStreamUsage, error) {
+func consumeAgentStreamJSON(
+	r io.Reader,
+	onDelta func(string) error,
+	onToolRound func([]store.OpenRouterToolCallRecord) error,
+) (string, *AgentStreamUsage, error) {
 	sc := bufio.NewScanner(r)
 	// Long JSON lines
 	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
@@ -119,6 +126,28 @@ func consumeAgentStreamJSON(r io.Reader, onDelta func(string) error) (string, *A
 			continue
 		}
 		switch ev.Type {
+		case "tool_call":
+			if onToolRound == nil {
+				continue
+			}
+			var tc struct {
+				Subtype  string          `json:"subtype"`
+				CallID   string          `json:"call_id"`
+				ToolCall json.RawMessage `json:"tool_call"`
+			}
+			if err := json.Unmarshal([]byte(line), &tc); err != nil {
+				continue
+			}
+			if tc.Subtype != "completed" {
+				continue
+			}
+			rec, ok := ParseCompletedCursorToolCall(tc.CallID, tc.ToolCall)
+			if !ok {
+				continue
+			}
+			if err := onToolRound([]store.OpenRouterToolCallRecord{rec}); err != nil {
+				return "", nil, err
+			}
 		case "assistant":
 			if ev.TimestampMs == 0 {
 				continue

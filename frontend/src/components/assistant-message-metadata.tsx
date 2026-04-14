@@ -35,7 +35,8 @@ function hasCursorMeta(
         m.cache_write_tokens != null ||
         (m.request_id != null && m.request_id !== "") ||
         m.plan_auto_percent_delta != null ||
-        m.plan_api_percent_delta != null
+        m.plan_api_percent_delta != null ||
+        (m.tool_calls != null && m.tool_calls.length > 0)
     );
 }
 
@@ -336,6 +337,20 @@ export const AssistantMessageMetadataButton: Component<{
                                         <dt class="text-slate-500">Request</dt>
                                         <dd class="break-all font-mono text-[10px] text-slate-400">
                                             {cur()!.request_id}
+                                        </dd>
+                                    </Show>
+                                    <Show
+                                        when={
+                                            (cur()!.tool_calls?.length ?? 0) > 0
+                                        }
+                                    >
+                                        <dt class="text-slate-500">
+                                            Tool calls
+                                        </dt>
+                                        <dd class="font-mono text-slate-200">
+                                            {formatInt(
+                                                cur()!.tool_calls!.length,
+                                            )}
                                         </dd>
                                     </Show>
                                 </dl>

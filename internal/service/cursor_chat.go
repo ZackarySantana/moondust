@@ -53,7 +53,6 @@ func (s *Service) streamAssistantCursor(
 	onToolRound func([]store.OpenRouterToolCallRecord) error,
 ) error {
 	_ = onReasoningDelta
-	_ = onToolRound
 
 	agentPath, err := cursorcli.LookAgent()
 	if err != nil {
@@ -89,7 +88,16 @@ func (s *Service) streamAssistantCursor(
 		usageBefore = u
 	}
 
-	final, usage, err := cursorcli.StreamPrintHeadless(ctx, agentPath, workDir, model, prompt, onDelta)
+	var toolRecords []store.OpenRouterToolCallRecord
+	onTool := func(round []store.OpenRouterToolCallRecord) error {
+		toolRecords = append(toolRecords, round...)
+		if onToolRound != nil {
+			return onToolRound(round)
+		}
+		return nil
+	}
+
+	final, usage, err := cursorcli.StreamPrintHeadless(ctx, agentPath, workDir, model, prompt, onDelta, onTool)
 	if err != nil {
 		return err
 	}
@@ -113,8 +121,9 @@ func (s *Service) streamAssistantCursor(
 		usageAfter = u
 	}
 
+	var cur *store.CursorChatMessageMetadata
 	if usage != nil || (usageBefore != nil && usageAfter != nil) {
-		cur := &store.CursorChatMessageMetadata{}
+		cur = &store.CursorChatMessageMetadata{}
 		if usage != nil {
 			if usage.InputTokens > 0 {
 				v := usage.InputTokens
@@ -144,9 +153,15 @@ func (s *Service) streamAssistantCursor(
 				cur.PlanAPIPercentDelta = d
 			}
 		}
-		if cursorChatMetadataNonEmpty(cur) {
-			replyMessage.Metadata = &store.ChatMessageMetadata{Cursor: cur}
+	}
+	if len(toolRecords) > 0 {
+		if cur == nil {
+			cur = &store.CursorChatMessageMetadata{}
 		}
+		cur.ToolCalls = toolRecords
+	}
+	if cursorChatMetadataNonEmpty(cur) {
+		replyMessage.Metadata = &store.ChatMessageMetadata{Cursor: cur}
 	}
 	if err := replyMessage.Validate(); err != nil {
 		return err
@@ -170,5 +185,5 @@ func cursorChatMetadataNonEmpty(cur *store.CursorChatMessageMetadata) bool {
 		return false
 	}
 	return cur.InputTokens != nil || cur.OutputTokens != nil || cur.CacheReadTokens != nil || cur.CacheWriteTokens != nil ||
-		cur.RequestID != "" || cur.PlanAutoPercentDelta != nil || cur.PlanAPIPercentDelta != nil
+		cur.RequestID != "" || cur.PlanAutoPercentDelta != nil || cur.PlanAPIPercentDelta != nil || len(cur.ToolCalls) > 0
 }

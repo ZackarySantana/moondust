@@ -48,6 +48,8 @@ type CursorChatMessageMetadata struct {
 	// this turn. Best-effort: other concurrent Cursor usage can skew the delta.
 	PlanAutoPercentDelta *float64 `json:"plan_auto_percent_delta,omitempty"`
 	PlanAPIPercentDelta  *float64 `json:"plan_api_percent_delta,omitempty"`
+	// ToolCalls are best-effort from Cursor stream-json tool_call / completed events (same shape as OpenRouter).
+	ToolCalls []OpenRouterToolCallRecord `json:"tool_calls,omitempty"`
 }
 
 // OpenRouterToolCallRecord is one tool invocation from an assistant turn (persisted for history).

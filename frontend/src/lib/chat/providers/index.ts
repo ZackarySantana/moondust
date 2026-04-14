@@ -1,6 +1,7 @@
 import type { AssistantPart, StreamingAssistantArgs } from "@/lib/chat/types";
 import { streamPartsFromSnapshot } from "@/lib/chat/streaming";
 import { plainPersistedAssistantParts } from "@/lib/chat/providers/defaults";
+import { cursorPersistedAssistantParts } from "@/lib/chat/providers/cursor";
 import { openRouterPersistedAssistantParts } from "@/lib/chat/providers/openrouter";
 import type { store } from "@wails/go/models";
 
@@ -21,12 +22,16 @@ const defaultFormatter: ChatProviderFormatter = {
     persistedAssistantParts: plainPersistedAssistantParts,
 };
 
+const cursorFormatter: ChatProviderFormatter = {
+    persistedAssistantParts: cursorPersistedAssistantParts,
+};
+
 export function getChatFormatter(
     providerId: string | undefined,
 ): ChatProviderFormatter {
     const id = (providerId ?? "openrouter").toLowerCase();
     if (id === "openrouter") return openRouterFormatter;
-    // Cursor (and other) providers: plain text in `msg.content` until we persist Cursor-specific metadata in parts.
+    if (id === "cursor") return cursorFormatter;
     return defaultFormatter;
 }
 
@@ -38,5 +43,9 @@ export function streamingAssistantParts(
     return f.streamingParts?.(args) ?? streamPartsFromSnapshot(args);
 }
 
-export { openRouterPersistedAssistantParts, plainPersistedAssistantParts };
+export {
+    cursorPersistedAssistantParts,
+    openRouterPersistedAssistantParts,
+    plainPersistedAssistantParts,
+};
 export { streamPartsFromSnapshot } from "@/lib/chat/streaming";
