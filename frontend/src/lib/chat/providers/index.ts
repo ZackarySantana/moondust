@@ -26,6 +26,7 @@ export function getChatFormatter(
 ): ChatProviderFormatter {
     const id = (providerId ?? "openrouter").toLowerCase();
     if (id === "openrouter") return openRouterFormatter;
+    // Cursor (and other) providers: plain text in `msg.content` until we persist Cursor-specific metadata in parts.
     return defaultFormatter;
 }
 

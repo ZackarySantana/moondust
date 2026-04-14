@@ -50,6 +50,26 @@ export namespace store {
 		    return a;
 		}
 	}
+	export class CursorChatMessageMetadata {
+	    input_tokens?: number;
+	    output_tokens?: number;
+	    cache_read_tokens?: number;
+	    cache_write_tokens?: number;
+	    request_id?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CursorChatMessageMetadata(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.input_tokens = source["input_tokens"];
+	        this.output_tokens = source["output_tokens"];
+	        this.cache_read_tokens = source["cache_read_tokens"];
+	        this.cache_write_tokens = source["cache_write_tokens"];
+	        this.request_id = source["request_id"];
+	    }
+	}
 	export class OpenRouterChatMessageMetadata {
 	    prompt_tokens?: number;
 	    completion_tokens?: number;
@@ -96,6 +116,7 @@ export namespace store {
 	}
 	export class ChatMessageMetadata {
 	    openrouter?: OpenRouterChatMessageMetadata;
+	    cursor?: CursorChatMessageMetadata;
 	
 	    static createFrom(source: any = {}) {
 	        return new ChatMessageMetadata(source);
@@ -104,6 +125,7 @@ export namespace store {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.openrouter = this.convertValues(source["openrouter"], OpenRouterChatMessageMetadata);
+	        this.cursor = this.convertValues(source["cursor"], CursorChatMessageMetadata);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -236,6 +258,7 @@ export namespace store {
 		    return a;
 		}
 	}
+	
 	
 	export class FileDiff {
 	    path: string;

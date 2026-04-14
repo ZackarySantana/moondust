@@ -1,10 +1,13 @@
 /** Which upstream powers chat completions. Extend as more providers are added. */
-export type ChatProviderId = "openrouter";
+export type ChatProviderId = "openrouter" | "cursor";
 
 export const CHAT_PROVIDERS: readonly {
     id: ChatProviderId;
     label: string;
-}[] = [{ id: "openrouter", label: "OpenRouter" }];
+}[] = [
+    { id: "openrouter", label: "OpenRouter" },
+    { id: "cursor", label: "Cursor" },
+];
 
 export type ModelChoice = {
     id: string;
@@ -90,12 +93,28 @@ export const OPENROUTER_CHAT_MODELS_FALLBACK: readonly ModelChoice[] = [
     },
 ];
 
+/** Minimal Cursor Agent models when `ListCursorChatModels` has not loaded yet. */
+export const CURSOR_CHAT_MODELS_FALLBACK: readonly ModelChoice[] = [
+    {
+        id: "composer-2-fast",
+        label: "Composer 2 Fast",
+        provider: "cursor",
+        description: "Default",
+    },
+    {
+        id: "composer-2",
+        label: "Composer 2",
+        provider: "cursor",
+        description: "TBA",
+    },
+];
+
 /** Normalize persisted thread.chat_provider (empty legacy threads default to OpenRouter). */
 export function chatProviderFromThread(
     raw: string | undefined,
 ): ChatProviderId {
     const t = (raw ?? "").trim();
-    if (t === "openrouter") return "openrouter";
+    if (t === "cursor") return "cursor";
     return "openrouter";
 }
 
@@ -114,6 +133,7 @@ export function modelDisplayName(
     return (
         choices.find((m) => m.id === mid)?.label ??
         OPENROUTER_CHAT_MODELS_FALLBACK.find((m) => m.id === mid)?.label ??
+        CURSOR_CHAT_MODELS_FALLBACK.find((m) => m.id === mid)?.label ??
         mid
     );
 }

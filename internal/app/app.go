@@ -91,6 +91,11 @@ func (a *App) ListOpenRouterChatModels() ([]store.OpenRouterChatModel, error) {
 	return a.service.ListOpenRouterChatModels(a.Ctx)
 }
 
+// ListCursorChatModels returns models from `agent --list-models` when the Cursor CLI is installed.
+func (a *App) ListCursorChatModels() ([]store.OpenRouterChatModel, error) {
+	return a.service.ListCursorChatModels(a.Ctx)
+}
+
 // GetOpenRouterUsageMetrics returns per-model usage and cost from stored assistant messages.
 func (a *App) GetOpenRouterUsageMetrics() (*store.OpenRouterUsageMetrics, error) {
 	return a.service.GetOpenRouterUsageMetrics(a.Ctx)

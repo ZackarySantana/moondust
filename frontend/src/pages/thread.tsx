@@ -14,6 +14,7 @@ import {
     GetSettings,
     GetThread,
     GetThreadGitReview,
+    ListCursorChatModels,
     ListOpenRouterChatModels,
     ListThreadMessages,
     RenameThread,
@@ -32,6 +33,7 @@ import {
     assistantAttributionLabel,
     chatModelFromThread,
     chatProviderFromThread,
+    CURSOR_CHAT_MODELS_FALLBACK,
     OPENROUTER_CHAT_MODELS_FALLBACK,
     type ChatProviderId,
 } from "@/lib/chat-provider";
@@ -105,13 +107,46 @@ export const ThreadPage: Component = () => {
         refetchInterval: 5_000,
     }));
 
+    const chatProvider = createMemo(() =>
+        chatProviderFromThread(threadQuery.data?.chat_provider),
+    );
+
     const openRouterModelsQuery = useQuery(() => ({
         queryKey: queryKeys.openRouterModels,
         queryFn: ListOpenRouterChatModels,
         staleTime: 60 * 60 * 1000,
+        enabled: chatProvider() === "openrouter",
+    }));
+
+    const cursorModelsQuery = useQuery(() => ({
+        queryKey: queryKeys.cursorChatModels,
+        queryFn: ListCursorChatModels,
+        staleTime: 60 * 60 * 1000,
+        enabled: chatProvider() === "cursor",
     }));
 
     const modelChoices = createMemo(() => {
+        if (chatProvider() === "cursor") {
+            const rows = cursorModelsQuery.data;
+            if (rows && rows.length > 0) {
+                return rows.map((m) => ({
+                    id: m.id,
+                    label: (m.name && m.name.trim()) || m.id,
+                    provider: m.provider ?? "cursor",
+                    description: m.description,
+                    description_full: m.description_full,
+                    pricing_tier: m.pricing_tier,
+                    pricing_summary: m.pricing_summary,
+                    pricing_prompt: m.pricing_prompt,
+                    pricing_completion: m.pricing_completion,
+                    vision: m.vision,
+                    reasoning: m.reasoning,
+                    long_context: m.long_context,
+                    context_length: m.context_length,
+                }));
+            }
+            return [...CURSOR_CHAT_MODELS_FALLBACK];
+        }
         const rows = openRouterModelsQuery.data;
         if (rows && rows.length > 0) {
             return rows.map((m) => ({
@@ -166,16 +201,27 @@ export const ThreadPage: Component = () => {
     const threadDetailKey = () => queryKeys.threads.detail(params.threadId);
 
     const setChatProviderMutation = useMutation(() => ({
-        mutationFn: (provider: ChatProviderId) =>
-            SetThreadChatProvider(params.threadId, provider),
+        mutationFn: async (provider: ChatProviderId) => {
+            await SetThreadChatProvider(params.threadId, provider);
+            if (provider === "cursor") {
+                await SetThreadChatModel(params.threadId, "composer-2-fast");
+            } else {
+                await SetThreadChatModel(params.threadId, "openai/gpt-4o-mini");
+            }
+        },
         onMutate: async (provider) => {
             await queryClient.cancelQueries({ queryKey: threadDetailKey() });
             const prev =
                 queryClient.getQueryData<store.Thread>(threadDetailKey());
             if (prev) {
+                const nextModel =
+                    provider === "cursor"
+                        ? "composer-2-fast"
+                        : "openai/gpt-4o-mini";
                 queryClient.setQueryData(threadDetailKey(), {
                     ...prev,
                     chat_provider: provider,
+                    chat_model: nextModel,
                 } as store.Thread);
             }
             return { prev } as { prev: store.Thread | undefined };
@@ -220,9 +266,6 @@ export const ThreadPage: Component = () => {
     }));
 
     const messages = createMemo(() => messagesQuery.data ?? []);
-    const chatProvider = createMemo(() =>
-        chatProviderFromThread(threadQuery.data?.chat_provider),
-    );
     const chatModel = createMemo(() =>
         chatModelFromThread(threadQuery.data?.chat_model),
     );

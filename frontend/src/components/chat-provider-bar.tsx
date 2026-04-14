@@ -248,7 +248,11 @@ const ModelRowButton: Component<{
                     props.onInfo();
                 }}
             >
-                <Info class="size-4" stroke-width={2} aria-hidden />
+                <Info
+                    class="size-4"
+                    stroke-width={2}
+                    aria-hidden
+                />
             </button>
         </div>
     );
@@ -267,9 +271,7 @@ export const ChatProviderBar: Component<{
     const [open, setOpen] = createSignal<"provider" | "model" | null>(null);
     const [searchQuery, setSearchQuery] = createSignal("");
     const [filterOrg, setFilterOrg] = createSignal<string | null>(null);
-    const [detailModelId, setDetailModelId] = createSignal<string | null>(
-        null,
-    );
+    const [detailModelId, setDetailModelId] = createSignal<string | null>(null);
 
     let rootEl!: HTMLDivElement;
 
@@ -412,7 +414,11 @@ export const ChatProviderBar: Component<{
                         aria-label="Close details"
                         onClick={() => setDetailModelId(null)}
                     >
-                        <X class="size-4" stroke-width={2} aria-hidden />
+                        <X
+                            class="size-4"
+                            stroke-width={2}
+                            aria-hidden
+                        />
                     </button>
                 </div>
                 <div class="mt-3 space-y-2 text-[11px] text-slate-300">
@@ -422,9 +428,7 @@ export const ChatProviderBar: Component<{
                     <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 border-t border-slate-800/40 pt-3 text-[10px]">
                         <dt class="text-slate-500">Provider</dt>
                         <dd class="text-slate-300">
-                            {orgTitle(
-                                row.provider ?? providerSlug(row.id),
-                            )}
+                            {orgTitle(row.provider ?? providerSlug(row.id))}
                         </dd>
                         <dt class="text-slate-500">Price</dt>
                         <dd class="text-slate-300">
@@ -488,7 +492,8 @@ export const ChatProviderBar: Component<{
                             )
                         }
                     >
-                        OpenRouter
+                        {CHAT_PROVIDERS.find((p) => p.id === props.provider)
+                            ?.label ?? props.provider}
                         <ChevronUp
                             class="size-3 shrink-0 text-slate-600"
                             stroke-width={2}
@@ -574,182 +579,184 @@ export const ChatProviderBar: Component<{
                             onMouseDown={(e) => e.stopPropagation()}
                         >
                             <div class="flex h-full min-w-0 w-[min(28rem,calc(100vw-2rem))] shrink-0 flex-row overflow-hidden">
-                            <aside
-                                class="flex h-full w-11 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-slate-800/60 bg-slate-950/60 py-1.5 pl-1 pr-0.5"
-                                aria-label="Filter by organization"
-                            >
-                                <button
-                                    type="button"
-                                    title="All models"
-                                    class={`${railFilterBtnClass} ${filterOrg() === null ? "bg-violet-600/30 text-violet-200" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
-                                    onClick={() => setFilterOrg(null)}
+                                <aside
+                                    class="flex h-full w-11 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-slate-800/60 bg-slate-950/60 py-1.5 pl-1 pr-0.5"
+                                    aria-label="Filter by organization"
                                 >
-                                    <Circle
-                                        class="size-3.5"
-                                        stroke-width={2}
-                                        aria-hidden
-                                    />
-                                </button>
-                                <button
-                                    type="button"
-                                    title="Favorites (coming soon)"
-                                    class={`${railFilterBtnClass} ${filterOrg() === FAVORITES_FILTER ? "bg-amber-500/25 text-amber-100 ring-1 ring-amber-500/40" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
-                                    onClick={() =>
-                                        setFilterOrg((cur) =>
-                                            cur === FAVORITES_FILTER
-                                                ? null
-                                                : FAVORITES_FILTER,
-                                        )
-                                    }
-                                >
-                                    <Star
-                                        class="size-3.5"
-                                        stroke-width={2}
-                                        aria-hidden
-                                    />
-                                </button>
-                                <For each={[...PRIORITY_ORGS]}>
-                                    {(slug) => (
-                                        <button
-                                            type="button"
-                                            title={orgTitle(slug)}
-                                            class={`${railFilterBtnClass} text-[10px] font-semibold ${filterOrg() === slug ? "ring-1 ring-violet-500/50" : ""} ${orgBadgeClass(slug)}`}
-                                            onClick={() =>
-                                                setFilterOrg((cur) =>
-                                                    cur === slug ? null : slug,
-                                                )
-                                            }
-                                        >
-                                            {(slug[0] ?? "?").toUpperCase()}
-                                        </button>
-                                    )}
-                                </For>
-                                <button
-                                    type="button"
-                                    title="Misc — all other providers"
-                                    class={`${railFilterBtnClass} ${filterOrg() === MISC_FILTER ? "bg-violet-600/30 text-violet-200 ring-1 ring-violet-500/50" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
-                                    onClick={() =>
-                                        setFilterOrg((cur) =>
-                                            cur === MISC_FILTER
-                                                ? null
-                                                : MISC_FILTER,
-                                        )
-                                    }
-                                >
-                                    <Layers
-                                        class="size-3.5"
-                                        stroke-width={2}
-                                        aria-hidden
-                                    />
-                                </button>
-                            </aside>
-                            <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-                                <div class="flex shrink-0 items-center gap-1.5 border-b border-slate-800/60 px-2 py-1.5">
-                                    <Search
-                                        class="size-3.5 shrink-0 text-slate-600"
-                                        stroke-width={2}
-                                        aria-hidden
-                                    />
-                                    <input
-                                        type="search"
-                                        placeholder="Search models…"
-                                        class="min-w-0 flex-1 bg-transparent text-[11px] text-slate-200 outline-none placeholder:text-slate-600"
-                                        value={searchQuery()}
-                                        onInput={(e) =>
-                                            setSearchQuery(
-                                                e.currentTarget.value,
+                                    <button
+                                        type="button"
+                                        title="All models"
+                                        class={`${railFilterBtnClass} ${filterOrg() === null ? "bg-violet-600/30 text-violet-200" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
+                                        onClick={() => setFilterOrg(null)}
+                                    >
+                                        <Circle
+                                            class="size-3.5"
+                                            stroke-width={2}
+                                            aria-hidden
+                                        />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        title="Favorites (coming soon)"
+                                        class={`${railFilterBtnClass} ${filterOrg() === FAVORITES_FILTER ? "bg-amber-500/25 text-amber-100 ring-1 ring-amber-500/40" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
+                                        onClick={() =>
+                                            setFilterOrg((cur) =>
+                                                cur === FAVORITES_FILTER
+                                                    ? null
+                                                    : FAVORITES_FILTER,
                                             )
                                         }
-                                    />
+                                    >
+                                        <Star
+                                            class="size-3.5"
+                                            stroke-width={2}
+                                            aria-hidden
+                                        />
+                                    </button>
+                                    <For each={[...PRIORITY_ORGS]}>
+                                        {(slug) => (
+                                            <button
+                                                type="button"
+                                                title={orgTitle(slug)}
+                                                class={`${railFilterBtnClass} text-[10px] font-semibold ${filterOrg() === slug ? "ring-1 ring-violet-500/50" : ""} ${orgBadgeClass(slug)}`}
+                                                onClick={() =>
+                                                    setFilterOrg((cur) =>
+                                                        cur === slug
+                                                            ? null
+                                                            : slug,
+                                                    )
+                                                }
+                                            >
+                                                {(slug[0] ?? "?").toUpperCase()}
+                                            </button>
+                                        )}
+                                    </For>
+                                    <button
+                                        type="button"
+                                        title="Misc — all other providers"
+                                        class={`${railFilterBtnClass} ${filterOrg() === MISC_FILTER ? "bg-violet-600/30 text-violet-200 ring-1 ring-violet-500/50" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
+                                        onClick={() =>
+                                            setFilterOrg((cur) =>
+                                                cur === MISC_FILTER
+                                                    ? null
+                                                    : MISC_FILTER,
+                                            )
+                                        }
+                                    >
+                                        <Layers
+                                            class="size-3.5"
+                                            stroke-width={2}
+                                            aria-hidden
+                                        />
+                                    </button>
+                                </aside>
+                                <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+                                    <div class="flex shrink-0 items-center gap-1.5 border-b border-slate-800/60 px-2 py-1.5">
+                                        <Search
+                                            class="size-3.5 shrink-0 text-slate-600"
+                                            stroke-width={2}
+                                            aria-hidden
+                                        />
+                                        <input
+                                            type="search"
+                                            placeholder="Search models…"
+                                            class="min-w-0 flex-1 bg-transparent text-[11px] text-slate-200 outline-none placeholder:text-slate-600"
+                                            value={searchQuery()}
+                                            onInput={(e) =>
+                                                setSearchQuery(
+                                                    e.currentTarget.value,
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        role="option"
+                                        aria-selected={props.model === ""}
+                                        class={`flex w-full shrink-0 cursor-pointer gap-2 px-2 py-2 text-left text-[11px] transition-colors ${props.model === "" ? "bg-slate-800/50 text-slate-200" : "text-slate-400 hover:bg-slate-800/35"}`}
+                                        onClick={() => {
+                                            props.onModelChange("");
+                                            close();
+                                        }}
+                                    >
+                                        <span class="pl-1 text-slate-500">
+                                            Choose model…
+                                        </span>
+                                    </button>
+                                    <div
+                                        class={`${MODEL_LIST_VIEWPORT_CLASS} min-h-0 shrink-0 overflow-y-auto overscroll-contain`}
+                                        role="listbox"
+                                        aria-label="Model"
+                                    >
+                                        <Show when={showSplitAllView()}>
+                                            <p class="border-t border-slate-800/30 px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                                Favorites
+                                            </p>
+                                            <For each={favoriteRows()}>
+                                                {(m) => (
+                                                    <ModelRowButton
+                                                        m={m}
+                                                        selected={
+                                                            props.model === m.id
+                                                        }
+                                                        onPick={() => {
+                                                            props.onModelChange(
+                                                                m.id,
+                                                            );
+                                                            close();
+                                                        }}
+                                                        onInfo={() =>
+                                                            toggleModelDetail(m)
+                                                        }
+                                                    />
+                                                )}
+                                            </For>
+                                            <p class="border-t border-slate-800/30 px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                                All models
+                                            </p>
+                                            <For each={restRows()}>
+                                                {(m) => (
+                                                    <ModelRowButton
+                                                        m={m}
+                                                        selected={
+                                                            props.model === m.id
+                                                        }
+                                                        onPick={() => {
+                                                            props.onModelChange(
+                                                                m.id,
+                                                            );
+                                                            close();
+                                                        }}
+                                                        onInfo={() =>
+                                                            toggleModelDetail(m)
+                                                        }
+                                                    />
+                                                )}
+                                            </For>
+                                        </Show>
+                                        <Show when={!showSplitAllView()}>
+                                            <For each={filteredModels()}>
+                                                {(m) => (
+                                                    <ModelRowButton
+                                                        m={m}
+                                                        selected={
+                                                            props.model === m.id
+                                                        }
+                                                        onPick={() => {
+                                                            props.onModelChange(
+                                                                m.id,
+                                                            );
+                                                            close();
+                                                        }}
+                                                        onInfo={() =>
+                                                            toggleModelDetail(m)
+                                                        }
+                                                    />
+                                                )}
+                                            </For>
+                                        </Show>
+                                    </div>
                                 </div>
-                                <button
-                                    type="button"
-                                    role="option"
-                                    aria-selected={props.model === ""}
-                                    class={`flex w-full shrink-0 cursor-pointer gap-2 px-2 py-2 text-left text-[11px] transition-colors ${props.model === "" ? "bg-slate-800/50 text-slate-200" : "text-slate-400 hover:bg-slate-800/35"}`}
-                                    onClick={() => {
-                                        props.onModelChange("");
-                                        close();
-                                    }}
-                                >
-                                    <span class="pl-1 text-slate-500">
-                                        Choose model…
-                                    </span>
-                                </button>
-                                <div
-                                    class={`${MODEL_LIST_VIEWPORT_CLASS} min-h-0 shrink-0 overflow-y-auto overscroll-contain`}
-                                    role="listbox"
-                                    aria-label="Model"
-                                >
-                                    <Show when={showSplitAllView()}>
-                                        <p class="border-t border-slate-800/30 px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                                            Favorites
-                                        </p>
-                                        <For each={favoriteRows()}>
-                                            {(m) => (
-                                                <ModelRowButton
-                                                    m={m}
-                                                    selected={
-                                                        props.model === m.id
-                                                    }
-                                                    onPick={() => {
-                                                        props.onModelChange(
-                                                            m.id,
-                                                        );
-                                                        close();
-                                                    }}
-                                                    onInfo={() =>
-                                                        toggleModelDetail(m)
-                                                    }
-                                                />
-                                            )}
-                                        </For>
-                                        <p class="border-t border-slate-800/30 px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                                            All models
-                                        </p>
-                                        <For each={restRows()}>
-                                            {(m) => (
-                                                <ModelRowButton
-                                                    m={m}
-                                                    selected={
-                                                        props.model === m.id
-                                                    }
-                                                    onPick={() => {
-                                                        props.onModelChange(
-                                                            m.id,
-                                                        );
-                                                        close();
-                                                    }}
-                                                    onInfo={() =>
-                                                        toggleModelDetail(m)
-                                                    }
-                                                />
-                                            )}
-                                        </For>
-                                    </Show>
-                                    <Show when={!showSplitAllView()}>
-                                        <For each={filteredModels()}>
-                                            {(m) => (
-                                                <ModelRowButton
-                                                    m={m}
-                                                    selected={
-                                                        props.model === m.id
-                                                    }
-                                                    onPick={() => {
-                                                        props.onModelChange(
-                                                            m.id,
-                                                        );
-                                                        close();
-                                                    }}
-                                                    onInfo={() =>
-                                                        toggleModelDetail(m)
-                                                    }
-                                                />
-                                            )}
-                                        </For>
-                                    </Show>
-                                </div>
-                            </div>
                             </div>
                             {detailAside()}
                         </div>

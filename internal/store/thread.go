@@ -33,6 +33,16 @@ func (t *Thread) Validate() error {
 // ChatMessageMetadata holds optional, provider-specific fields for a single message. Extend with new sub-structs per provider.
 type ChatMessageMetadata struct {
 	OpenRouter *OpenRouterChatMessageMetadata `json:"openrouter,omitempty"`
+	Cursor     *CursorChatMessageMetadata     `json:"cursor,omitempty"`
+}
+
+// CursorChatMessageMetadata is usage / request metadata for Cursor Agent CLI (`agent --print`) turns.
+type CursorChatMessageMetadata struct {
+	InputTokens      *int   `json:"input_tokens,omitempty"`
+	OutputTokens     *int   `json:"output_tokens,omitempty"`
+	CacheReadTokens  *int   `json:"cache_read_tokens,omitempty"`
+	CacheWriteTokens *int   `json:"cache_write_tokens,omitempty"`
+	RequestID        string `json:"request_id,omitempty"`
 }
 
 // OpenRouterToolCallRecord is one tool invocation from an assistant turn (persisted for history).

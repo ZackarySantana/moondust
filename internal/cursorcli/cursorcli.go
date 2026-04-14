@@ -20,7 +20,8 @@ var (
 	ansiOSC = regexp.MustCompile(`\x1b\][^\x07]*(?:\x07|\x1b\\)`)
 )
 
-func stripANSI(s string) string {
+// StripANSI removes ANSI CSI/OSC sequences and normalizes newlines (for parsing agent TTY output).
+func StripANSI(s string) string {
 	s = ansiCSI.ReplaceAllString(s, "")
 	s = ansiOSC.ReplaceAllString(s, "")
 	s = strings.ReplaceAll(s, "\r\n", "\n")
@@ -28,8 +29,14 @@ func stripANSI(s string) string {
 	return s
 }
 
+// LookAgent returns the resolved path to the `agent` binary, or an error if not on PATH.
+func LookAgent() (string, error) {
+	return lookAgent()
+}
+
 // Probe locates `agent` on PATH and runs `agent --version`, `agent status`, and `agent about`.
 // When the binary is missing, returns Installed=false and no error.
+
 func Probe(ctx context.Context) (*store.CursorCLIInfo, error) {
 	path, err := lookAgent()
 	if err != nil {
@@ -51,7 +58,7 @@ func Probe(ctx context.Context) (*store.CursorCLIInfo, error) {
 		defer cancel()
 		cmd := exec.CommandContext(cctx, path, args...)
 		out, err := cmd.CombinedOutput()
-		s := stripANSI(strings.TrimSpace(string(out)))
+		s := StripANSI(strings.TrimSpace(string(out)))
 		if err != nil {
 			if cctx.Err() == context.DeadlineExceeded {
 				return s + "\n(error: timed out)"

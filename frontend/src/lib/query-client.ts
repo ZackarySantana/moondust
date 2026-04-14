@@ -25,6 +25,8 @@ export const queryKeys = {
     },
     /** OpenRouter GET /api/v1/models (filtered); safe to cache longer. */
     openRouterModels: ["openrouter", "chat-models"] as const,
+    /** `agent --list-models` when Cursor CLI is installed. */
+    cursorChatModels: ["cursor", "chat-models"] as const,
     /** Aggregates from local chat history (assistant messages + billed cost). */
     openRouterUsageMetrics: ["openrouter", "usage-metrics"] as const,
     /** Cursor Agent CLI (`agent`) detection and status probes. */

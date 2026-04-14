@@ -102,6 +102,10 @@ export function IsPushAvailable() {
   return window['go']['app']['App']['IsPushAvailable']();
 }
 
+export function ListCursorChatModels() {
+  return window['go']['app']['App']['ListCursorChatModels']();
+}
+
 export function ListLogs() {
   return window['go']['app']['App']['ListLogs']();
 }

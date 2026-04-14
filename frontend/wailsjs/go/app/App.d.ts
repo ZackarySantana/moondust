@@ -52,6 +52,8 @@ export function GitUnstageAll(arg1:string):Promise<void>;
 
 export function IsPushAvailable():Promise<boolean>;
 
+export function ListCursorChatModels():Promise<Array<store.OpenRouterChatModel>>;
+
 export function ListLogs():Promise<Array<store.LogLine>>;
 
 export function ListOpenRouterChatModels():Promise<Array<store.OpenRouterChatModel>>;

@@ -2,11 +2,12 @@ package service
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
 	"log/slog"
 	"moondust/internal/chat"
+	"moondust/internal/cursorcli"
 	"moondust/internal/openrouter"
+	"moondust/internal/rand"
 	"moondust/internal/store"
 	"moondust/internal/workspace"
 	"os"
@@ -333,7 +334,7 @@ func (s *Service) SetThreadChatProvider(ctx context.Context, threadID, provider 
 	if provider == "" {
 		return fmt.Errorf("provider is required")
 	}
-	if provider != "openrouter" {
+	if provider != "openrouter" && provider != "cursor" {
 		return fmt.Errorf("unsupported chat provider: %q", provider)
 	}
 	thread, err := s.threadStore.Get(ctx, threadID)
@@ -404,17 +405,23 @@ func (s *Service) SendThreadMessage(ctx context.Context, threadID, content strin
 	if st == nil {
 		st = &store.Settings{}
 	}
-	apiKey := strings.TrimSpace(st.OpenRouterAPIKey)
-	if apiKey == "" {
-		return nil, fmt.Errorf("add an OpenRouter API key in Settings → Providers")
-	}
-
 	provider := strings.TrimSpace(thread.ChatProvider)
 	if provider == "" {
 		provider = "openrouter"
 	}
-	if provider != "openrouter" {
-		return nil, fmt.Errorf("unsupported chat provider %q (only OpenRouter is available)", provider)
+	if provider != "openrouter" && provider != "cursor" {
+		return nil, fmt.Errorf("unsupported chat provider %q", provider)
+	}
+
+	if provider == "cursor" {
+		if _, err := cursorcli.LookAgent(); err != nil {
+			return nil, fmt.Errorf("Cursor Agent CLI (`agent`) not found on PATH. Install from https://cursor.com/install")
+		}
+	} else {
+		apiKey := strings.TrimSpace(st.OpenRouterAPIKey)
+		if apiKey == "" {
+			return nil, fmt.Errorf("add an OpenRouter API key in Settings → Providers")
+		}
 	}
 
 	now := time.Now().UTC()
@@ -463,17 +470,22 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 	if st == nil {
 		st = &store.Settings{}
 	}
-	apiKey := strings.TrimSpace(st.OpenRouterAPIKey)
-	if apiKey == "" {
-		return fmt.Errorf("add an OpenRouter API key in Settings → Providers")
-	}
 
 	provider := strings.TrimSpace(thread.ChatProvider)
 	if provider == "" {
 		provider = "openrouter"
 	}
-	if provider != "openrouter" {
-		return fmt.Errorf("unsupported chat provider %q (only OpenRouter is available)", provider)
+	if provider != "openrouter" && provider != "cursor" {
+		return fmt.Errorf("unsupported chat provider %q", provider)
+	}
+
+	if provider == "cursor" {
+		return s.streamAssistantCursor(ctx, threadID, thread, project, onDelta, onReasoningDelta, onToolRound)
+	}
+
+	apiKey := strings.TrimSpace(st.OpenRouterAPIKey)
+	if apiKey == "" {
+		return fmt.Errorf("add an OpenRouter API key in Settings → Providers")
 	}
 
 	model := strings.TrimSpace(thread.ChatModel)

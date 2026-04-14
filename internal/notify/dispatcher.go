@@ -3,9 +3,9 @@ package notify
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"log/slog"
+	"moondust/internal/rand"
 	"moondust/internal/store"
 	"net/http"
 	"time"
