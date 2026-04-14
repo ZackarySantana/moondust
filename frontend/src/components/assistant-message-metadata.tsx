@@ -1,6 +1,7 @@
 import Info from "lucide-solid/icons/info";
 import type { Component } from "solid-js";
-import { createMemo, createSignal, onCleanup, onMount, Show } from "solid-js";
+import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
+import { Portal } from "solid-js/web";
 import type { store } from "@wails/go/models";
 
 function hasOpenRouterMeta(
@@ -37,81 +38,66 @@ export const AssistantMessageMetadataButton: Component<{
     msg: store.ChatMessage;
 }> = (props) => {
     const [open, setOpen] = createSignal(false);
-    let root!: HTMLDivElement;
+    const [fixedPos, setFixedPos] = createSignal<{
+        top: number;
+        left: number;
+    } | null>(null);
+
+    let buttonEl!: HTMLButtonElement;
+    let panelEl!: HTMLDivElement;
+
+    function layoutPanelFromButton() {
+        if (!buttonEl) return;
+        const r = buttonEl.getBoundingClientRect();
+        const maxW = Math.min(256, window.innerWidth - 16);
+        let left = r.left;
+        if (left + maxW > window.innerWidth - 8) {
+            left = Math.max(8, window.innerWidth - maxW - 8);
+        }
+        setFixedPos({ top: r.bottom + 4, left });
+    }
 
     onMount(() => {
         const onDoc = (e: MouseEvent) => {
             if (!open()) return;
             const t = e.target as Node;
-            if (root?.contains(t)) return;
+            if (buttonEl?.contains(t) || panelEl?.contains(t)) return;
             setOpen(false);
+            setFixedPos(null);
         };
         document.addEventListener("mousedown", onDoc);
         onCleanup(() => document.removeEventListener("mousedown", onDoc));
     });
 
-    const or = () => props.msg.metadata?.openrouter;
-
-    const panel = createMemo(() => {
-        if (!open() || !or()) return null;
-        const m = or()!;
-        return (
-            <div
-                class="absolute left-0 top-full z-40 mt-1 w-[min(16rem,calc(100vw-2rem))] rounded-md border border-slate-800/60 bg-slate-950/98 px-3 py-2 text-[11px] text-slate-300 shadow-lg backdrop-blur-sm"
-                role="dialog"
-                aria-label="OpenRouter usage"
-            >
-                <p class="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                    OpenRouter
-                </p>
-                <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[10px]">
-                    <Show when={m.prompt_tokens != null}>
-                        <dt class="text-slate-500">Prompt tokens</dt>
-                        <dd class="font-mono text-slate-200">
-                            {formatInt(m.prompt_tokens!)}
-                        </dd>
-                    </Show>
-                    <Show when={m.completion_tokens != null}>
-                        <dt class="text-slate-500">Completion tokens</dt>
-                        <dd class="font-mono text-slate-200">
-                            {formatInt(m.completion_tokens!)}
-                        </dd>
-                    </Show>
-                    <Show when={m.total_tokens != null}>
-                        <dt class="text-slate-500">Total tokens</dt>
-                        <dd class="font-mono text-slate-200">
-                            {formatInt(m.total_tokens!)}
-                        </dd>
-                    </Show>
-                    <Show when={m.cost_usd != null}>
-                        <dt class="text-slate-500">Cost</dt>
-                        <dd class="font-mono text-emerald-400/90">
-                            {formatUsd(m.cost_usd!)}
-                        </dd>
-                    </Show>
-                    <Show when={(m.tool_calls?.length ?? 0) > 0}>
-                        <dt class="text-slate-500">Tool calls</dt>
-                        <dd class="font-mono text-slate-200">
-                            {formatInt(m.tool_calls!.length)}
-                        </dd>
-                    </Show>
-                </dl>
-            </div>
-        );
+    createEffect(() => {
+        if (!open()) return;
+        const onResize = () => layoutPanelFromButton();
+        window.addEventListener("resize", onResize);
+        onCleanup(() => window.removeEventListener("resize", onResize));
     });
+
+    const or = () => props.msg.metadata?.openrouter;
 
     return (
         <Show when={assistantMessageHasMetadata(props.msg)}>
-            <div
-                class="relative inline-flex shrink-0"
-                ref={root}
-            >
+            <div class="inline-flex shrink-0">
                 <button
                     type="button"
+                    ref={(el) => {
+                        buttonEl = el;
+                    }}
                     class="rounded p-0.5 text-slate-500 transition-colors hover:bg-slate-800/60 hover:text-slate-300"
                     aria-label="Message details"
                     aria-expanded={open()}
-                    onClick={() => setOpen(!open())}
+                    onClick={() => {
+                        if (open()) {
+                            setOpen(false);
+                            setFixedPos(null);
+                        } else {
+                            layoutPanelFromButton();
+                            setOpen(true);
+                        }
+                    }}
                 >
                     <Info
                         class="size-3.5"
@@ -119,7 +105,60 @@ export const AssistantMessageMetadataButton: Component<{
                         aria-hidden
                     />
                 </button>
-                {panel()}
+                <Show when={open() && fixedPos() && or()}>
+                    <Portal mount={document.body}>
+                        <div
+                            ref={(el) => {
+                                panelEl = el;
+                            }}
+                            class="fixed z-100 w-[min(16rem,calc(100vw-2rem))] rounded-md border border-slate-800/60 bg-slate-950/98 px-3 py-2 text-[11px] text-slate-300 shadow-lg backdrop-blur-sm"
+                            style={{
+                                top: `${fixedPos()!.top}px`,
+                                left: `${fixedPos()!.left}px`,
+                            }}
+                            role="dialog"
+                            aria-label="OpenRouter usage"
+                        >
+                            <p class="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
+                                OpenRouter
+                            </p>
+                            <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[10px]">
+                                <Show when={or()!.prompt_tokens != null}>
+                                    <dt class="text-slate-500">Prompt tokens</dt>
+                                    <dd class="font-mono text-slate-200">
+                                        {formatInt(or()!.prompt_tokens!)}
+                                    </dd>
+                                </Show>
+                                <Show when={or()!.completion_tokens != null}>
+                                    <dt class="text-slate-500">
+                                        Completion tokens
+                                    </dt>
+                                    <dd class="font-mono text-slate-200">
+                                        {formatInt(or()!.completion_tokens!)}
+                                    </dd>
+                                </Show>
+                                <Show when={or()!.total_tokens != null}>
+                                    <dt class="text-slate-500">Total tokens</dt>
+                                    <dd class="font-mono text-slate-200">
+                                        {formatInt(or()!.total_tokens!)}
+                                    </dd>
+                                </Show>
+                                <Show when={or()!.cost_usd != null}>
+                                    <dt class="text-slate-500">Cost</dt>
+                                    <dd class="font-mono text-emerald-400/90">
+                                        {formatUsd(or()!.cost_usd!)}
+                                    </dd>
+                                </Show>
+                                <Show when={(or()!.tool_calls?.length ?? 0) > 0}>
+                                    <dt class="text-slate-500">Tool calls</dt>
+                                    <dd class="font-mono text-slate-200">
+                                        {formatInt(or()!.tool_calls!.length)}
+                                    </dd>
+                                </Show>
+                            </dl>
+                        </div>
+                    </Portal>
+                </Show>
             </div>
         </Show>
     );
