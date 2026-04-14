@@ -14,9 +14,10 @@ import {
 
 /** Row min height so ~5 rows fill the list viewport. */
 export const MODEL_ROW_MIN_CLASS = "min-h-[3.75rem]";
-/** Scroll viewport: five model rows (5×3.75rem) plus a little room for section labels. */
-export const MODEL_LIST_VIEWPORT_CLASS = "h-[22rem]";
-/** Fixed panel: list viewport + search (no layout shift). */
+/** Scroll region below the search bar; fills remaining height inside {@link MODEL_PANEL_HEIGHT_CLASS}. */
+export const MODEL_LIST_SCROLL_CLASS =
+    "min-h-0 flex-1 overflow-y-auto overscroll-contain";
+/** Fixed panel height: search row + flex-growing list (no empty band at the bottom). */
 export const MODEL_PANEL_HEIGHT_CLASS = "h-[28rem]";
 
 export const OrgBadge: Component<{ slug: string }> = (props) => {
@@ -36,6 +37,8 @@ export const ModelRowButton: Component<{
     selected: boolean;
     onPick: () => void;
     onInfo: () => void;
+    /** When false, hides the details control (e.g. Cursor models have no detail pane). */
+    showInfoButton?: boolean;
 }> = (props) => {
     const slugStr = () => props.m.provider ?? providerSlug(props.m.id);
     return (
@@ -102,22 +105,24 @@ export const ModelRowButton: Component<{
                     </Show>
                 </div>
             </button>
-            <button
-                type="button"
-                class="shrink-0 cursor-pointer px-2 py-2 text-slate-500 transition-colors hover:bg-slate-800/40 hover:text-slate-300"
-                title="Model details"
-                aria-label="Model details"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    props.onInfo();
-                }}
-            >
-                <Info
-                    class="size-4"
-                    stroke-width={2}
-                    aria-hidden
-                />
-            </button>
+            <Show when={props.showInfoButton !== false}>
+                <button
+                    type="button"
+                    class="shrink-0 cursor-pointer px-2 py-2 text-slate-500 transition-colors hover:bg-slate-800/40 hover:text-slate-300"
+                    title="Model details"
+                    aria-label="Model details"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        props.onInfo();
+                    }}
+                >
+                    <Info
+                        class="size-4"
+                        stroke-width={2}
+                        aria-hidden
+                    />
+                </button>
+            </Show>
         </div>
     );
 };
@@ -131,6 +136,7 @@ export const CategorizedModelList: Component<{
     onPick: (id: string) => void;
     onInfo: (m: ModelChoice) => void;
     showSectionHeaders: boolean;
+    showInfoButton?: boolean;
 }> = (props) => {
     return (
         <For each={[...props.categories]}>
@@ -150,6 +156,7 @@ export const CategorizedModelList: Component<{
                                 selected={props.selectedId === m.id}
                                 onPick={() => props.onPick(m.id)}
                                 onInfo={() => props.onInfo(m)}
+                                showInfoButton={props.showInfoButton}
                             />
                         )}
                     </For>

@@ -19,7 +19,7 @@ import {
 } from "solid-js";
 import {
     CategorizedModelList,
-    MODEL_LIST_VIEWPORT_CLASS,
+    MODEL_LIST_SCROLL_CLASS,
     MODEL_PANEL_HEIGHT_CLASS,
 } from "@/components/categorized-model-picker";
 import {
@@ -518,7 +518,7 @@ export const ChatProviderBar: Component<{
                                         />
                                     </div>
                                     <div
-                                        class={`${MODEL_LIST_VIEWPORT_CLASS} min-h-0 shrink-0 overflow-y-auto overscroll-contain`}
+                                        class={MODEL_LIST_SCROLL_CLASS}
                                         role="listbox"
                                         aria-label="Model"
                                     >
@@ -531,6 +531,7 @@ export const ChatProviderBar: Component<{
                                             }}
                                             onInfo={toggleModelDetail}
                                             showSectionHeaders={showSectionHeaders()}
+                                            showInfoButton={!isCursorProvider()}
                                         />
                                     </div>
                                 </div>
