@@ -4,6 +4,7 @@ package store
 import (
 	"context"
 	"errors"
+	"strings"
 )
 
 type Project struct {
@@ -12,9 +13,13 @@ type Project struct {
 	// when handing it over to the frontend.
 	ID string `json:"id"`
 
-	Name      string `json:"name"`
-	Directory string `json:"directory"`
-	RemoteURL string `json:"remote_url"`
+	Name          string `json:"name"`
+	Directory     string `json:"directory"`
+	RemoteURL     string `json:"remote_url"`
+	DefaultBranch string `json:"default_branch,omitempty"`
+	// AutoFetch controls whether to run `git fetch origin` when creating a thread or forking.
+	// Values: off, new_thread, fork, both (empty normalized to both when reading).
+	AutoFetch string `json:"auto_fetch,omitempty"`
 }
 
 func (p *Project) Validate() error {
@@ -26,6 +31,9 @@ func (p *Project) Validate() error {
 	}
 	if p.Directory == "" {
 		return errors.New("directory is required")
+	}
+	if strings.TrimSpace(p.DefaultBranch) == "" {
+		return errors.New("default branch is required")
 	}
 	return nil
 }

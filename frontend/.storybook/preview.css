@@ -1,0 +1,25 @@
+/**
+ * Preview iframe – match AppShell (`bg-app-bg` / @theme --color-app-bg in src/style.css).
+ */
+html {
+    color-scheme: dark;
+}
+
+html,
+body,
+#storybook-root,
+#storybook-docs {
+    background-color: rgb(8 12 10);
+    background-color: var(--color-app-bg, rgb(8 12 10));
+}
+
+html,
+body {
+    min-height: 100%;
+    margin: 0;
+}
+
+#storybook-root,
+#storybook-docs {
+    min-height: 100%;
+}

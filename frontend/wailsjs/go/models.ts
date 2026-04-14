@@ -102,7 +102,6 @@ export namespace store {
 	    reasoning?: string;
 	    reasoning_duration_sec?: number;
 	    segments?: AssistantTurnSegment[];
-	    tool_calls?: OpenRouterToolCallRecord[];
 	
 	    static createFrom(source: any = {}) {
 	        return new OpenRouterChatMessageMetadata(source);
@@ -117,7 +116,6 @@ export namespace store {
 	        this.reasoning = source["reasoning"];
 	        this.reasoning_duration_sec = source["reasoning_duration_sec"];
 	        this.segments = this.convertValues(source["segments"], AssistantTurnSegment);
-	        this.tool_calls = this.convertValues(source["tool_calls"], OpenRouterToolCallRecord);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -177,7 +175,7 @@ export namespace store {
 	    content: string;
 	    // Go type: time
 	    created_at: any;
-	    chat_provider?: string;
+	    chat_provider: string;
 	    chat_model?: string;
 	    metadata?: ChatMessageMetadata;
 	
@@ -591,6 +589,8 @@ export namespace store {
 	    name: string;
 	    directory: string;
 	    remote_url: string;
+	    default_branch?: string;
+	    auto_fetch?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Project(source);
@@ -602,6 +602,8 @@ export namespace store {
 	        this.name = source["name"];
 	        this.directory = source["directory"];
 	        this.remote_url = source["remote_url"];
+	        this.default_branch = source["default_branch"];
+	        this.auto_fetch = source["auto_fetch"];
 	    }
 	}
 	export class Settings {
@@ -657,7 +659,7 @@ export namespace store {
 	    // Go type: time
 	    updated_at: any;
 	    worktree_dir: string;
-	    chat_provider?: string;
+	    chat_provider: string;
 	    chat_model?: string;
 	
 	    static createFrom(source: any = {}) {

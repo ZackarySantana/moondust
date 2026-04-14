@@ -1,0 +1,37 @@
+<!-- Appended after Storybook's base-preview-head.html — dark surfaces before bundled CSS/JS. -->
+<style>
+    html {
+        color-scheme: dark;
+    }
+
+    html,
+    body,
+    #storybook-root,
+    #storybook-docs {
+        background-color: rgb(8 12 10);
+        margin: 0;
+        min-height: 100%;
+    }
+
+    /*
+     * Storybook's base head uses white for preparing loaders and skeleton blocks.
+     * Match AppShell / preview.css so navigation and HMR don't flash white.
+     */
+    .sb-preparing-story,
+    .sb-preparing-docs {
+        background-color: rgb(8 12 10);
+    }
+
+    .sb-previewBlock {
+        background: rgb(12 17 15);
+        border-color: rgba(42 52 47 / 0.45);
+    }
+
+    .sb-previewBlock_icon {
+        background: rgb(24 32 28);
+    }
+
+    .sb-previewBlock_body {
+        background: rgb(8 12 10);
+    }
+</style>

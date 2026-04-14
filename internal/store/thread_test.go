@@ -9,25 +9,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestChatMessageUnmarshalLegacyOpenRouterCost(t *testing.T) {
-	raw := `{"id":"m1","thread_id":"t1","role":"assistant","content":"hi","created_at":"2025-01-01T00:00:00Z","openrouter_cost_usd":0.00123}`
-	var m ChatMessage
-	require.NoError(t, json.Unmarshal([]byte(raw), &m))
-	require.NotNil(t, m.Metadata)
-	require.NotNil(t, m.Metadata.OpenRouter)
-	require.NotNil(t, m.Metadata.OpenRouter.CostUSD)
-	assert.InDelta(t, 0.00123, *m.Metadata.OpenRouter.CostUSD, 1e-9)
-	assert.Nil(t, m.Metadata.OpenRouter.PromptTokens)
-}
-
 func TestChatMessageMarshalUsesMetadataNotLegacyField(t *testing.T) {
 	c := 0.05
 	m := ChatMessage{
-		ID:        "x",
-		ThreadID:  "t",
-		Role:      "assistant",
-		Content:   "hi",
-		CreatedAt: time.Unix(0, 0).UTC(),
+		ID:           "x",
+		ThreadID:     "t",
+		Role:         "assistant",
+		Content:      "hi",
+		CreatedAt:    time.Unix(0, 0).UTC(),
+		ChatProvider: "openrouter",
 		Metadata: &ChatMessageMetadata{
 			OpenRouter: &OpenRouterChatMessageMetadata{CostUSD: &c},
 		},
@@ -39,17 +29,21 @@ func TestChatMessageMarshalUsesMetadataNotLegacyField(t *testing.T) {
 	assert.NotContains(t, s, `"openrouter_cost_usd"`)
 }
 
-func TestChatMessageMarshalRoundTripToolCalls(t *testing.T) {
+func TestChatMessageMarshalRoundTripOpenRouterSegments(t *testing.T) {
+	tool := OpenRouterToolCallRecord{
+		ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`, Output: "package main\n",
+	}
 	m := ChatMessage{
-		ID:        "x",
-		ThreadID:  "t",
-		Role:      "assistant",
-		Content:   "Done.",
-		CreatedAt: time.Unix(0, 0).UTC(),
+		ID:           "x",
+		ThreadID:     "t",
+		Role:         "assistant",
+		Content:      "Done.",
+		CreatedAt:    time.Unix(0, 0).UTC(),
+		ChatProvider: "openrouter",
 		Metadata: &ChatMessageMetadata{
 			OpenRouter: &OpenRouterChatMessageMetadata{
-				ToolCalls: []OpenRouterToolCallRecord{
-					{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`, Output: "package main\n"},
+				Segments: []AssistantTurnSegment{
+					{Tool: &tool},
 				},
 			},
 		},
@@ -58,9 +52,10 @@ func TestChatMessageMarshalRoundTripToolCalls(t *testing.T) {
 	require.NoError(t, err)
 	var out ChatMessage
 	require.NoError(t, json.Unmarshal(b, &out))
-	require.Len(t, out.Metadata.OpenRouter.ToolCalls, 1)
-	assert.Equal(t, "call_1", out.Metadata.OpenRouter.ToolCalls[0].ID)
-	assert.Equal(t, "read_file", out.Metadata.OpenRouter.ToolCalls[0].Name)
-	assert.Contains(t, out.Metadata.OpenRouter.ToolCalls[0].Arguments, "a.go")
-	assert.Contains(t, out.Metadata.OpenRouter.ToolCalls[0].Output, "package main")
+	require.Len(t, out.Metadata.OpenRouter.Segments, 1)
+	require.NotNil(t, out.Metadata.OpenRouter.Segments[0].Tool)
+	assert.Equal(t, "call_1", out.Metadata.OpenRouter.Segments[0].Tool.ID)
+	assert.Equal(t, "read_file", out.Metadata.OpenRouter.Segments[0].Tool.Name)
+	assert.Contains(t, out.Metadata.OpenRouter.Segments[0].Tool.Arguments, "a.go")
+	assert.Contains(t, out.Metadata.OpenRouter.Segments[0].Tool.Output, "package main")
 }

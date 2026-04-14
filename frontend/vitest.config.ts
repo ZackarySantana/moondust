@@ -1,14 +1,13 @@
-import path from "node:path";
+import { mergeConfig } from "vite";
 import { defineConfig } from "vitest/config";
+import viteConfig from "./vite.config";
 
-export default defineConfig({
-    resolve: {
-        alias: {
-            "@": path.resolve(__dirname, "./src"),
-            "@wails": path.resolve(__dirname, "./wailsjs"),
+export default mergeConfig(
+    viteConfig,
+    defineConfig({
+        test: {
+            include: ["src/**/*.test.ts"],
+            environment: "node",
         },
-    },
-    test: {
-        include: ["src/**/*.test.ts"],
-    },
-});
+    }),
+);

@@ -1,44 +1,22 @@
-import {
-    keepPreviousData,
-    useMutation,
-    useQuery,
-    useQueryClient,
-} from "@tanstack/solid-query";
+import { useQueryClient } from "@tanstack/solid-query";
 import { useNavigate, useParams } from "@solidjs/router";
 import type { Component } from "solid-js";
 import { createMemo, createSignal, onCleanup, Show } from "solid-js";
-import {
-    DeleteThread,
-    GetFileDiff,
-    GetProject,
-    GetSettings,
-    GetThread,
-    GetThreadGitReview,
-    ListCursorChatModels,
-    ListOpenRouterChatModels,
-    ListThreadMessages,
-    RenameThread,
-    SendThreadMessage,
-    SetThreadChatModel,
-    SetThreadChatProvider,
-} from "@wails/go/app/App";
+import { DeleteThread, RenameThread } from "@wails/go/app/App";
+import type { DiffNav } from "@/components/diff-viewer";
+import { ResizeHandle } from "@/components/resize-handle";
 import { ReviewSidebar } from "@/components/thread/review-sidebar";
 import { ThreadChatPane } from "@/components/thread/thread-chat-pane";
 import { ThreadDiffPane } from "@/components/thread/thread-diff-pane";
 import { ThreadHeader } from "@/components/thread/thread-header";
 import { ThreadTerminalDock } from "@/components/thread/thread-terminal-dock";
 import type { DiffTarget } from "@/components/thread/types";
-import { ResizeHandle } from "@/components/resize-handle";
-import {
-    assistantAttributionLabel,
-    chatModelFromThread,
-    chatProviderFromThread,
-    CURSOR_CHAT_MODELS_FALLBACK,
-    OPENROUTER_CHAT_MODELS_FALLBACK,
-    type ChatProviderId,
-} from "@/lib/chat-provider";
-import { queryKeys } from "@/lib/query-client";
-import { useShortcuts } from "@/lib/shortcut-context";
+import { useThreadChatMutations } from "@/hooks/use-thread-chat-mutations";
+import { useThreadFileDiff } from "@/hooks/use-thread-file-diff";
+import { useThreadGitMutations } from "@/hooks/use-thread-git-mutations";
+import { useThreadPageQueries } from "@/hooks/use-thread-page-queries";
+import type { ChatProviderId } from "@/lib/chat-provider";
+import { useThreadChatStream } from "@/lib/thread/use-thread-chat-stream";
 import {
     setSidebarOpen,
     setSidebarWidth,
@@ -49,9 +27,13 @@ import {
     terminalHeight,
     terminalOpen,
 } from "@/lib/thread-workspace-layout";
-import { useThreadChatStream } from "@/lib/thread/use-thread-chat-stream";
+import {
+    invalidateThreadList,
+    invalidateThreadScoped,
+    queryKeys,
+} from "@/lib/query-client";
+import { useShortcuts } from "@/lib/shortcut-context";
 import type { store } from "@wails/go/models";
-import type { DiffNav } from "@/components/diff-viewer";
 
 export const ThreadPage: Component = () => {
     const params = useParams<{ projectId: string; threadId: string }>();
@@ -74,220 +56,55 @@ export const ThreadPage: Component = () => {
         (msg) => setSendError(msg),
     );
 
-    const projectQuery = useQuery(() => ({
-        queryKey: queryKeys.projects.detail(params.projectId),
-        queryFn: () => GetProject(params.projectId),
-        enabled: !!params.projectId,
-    }));
-
-    const settingsQuery = useQuery(() => ({
-        queryKey: queryKeys.settings,
-        queryFn: GetSettings,
-    }));
-
-    const threadQuery = useQuery(() => ({
-        queryKey: queryKeys.threads.detail(params.threadId),
-        queryFn: () => GetThread(params.threadId),
-        enabled: !!params.threadId,
-    }));
-
-    const messagesQuery = useQuery(() => ({
-        queryKey: queryKeys.threads.messages(params.threadId),
-        queryFn: () => ListThreadMessages(params.threadId),
-        enabled: !!params.threadId,
-        // Chat changes often; default staleTime (30s) could hide new assistant rows after navigation.
-        staleTime: 0,
-        placeholderData: keepPreviousData,
-    }));
-
-    const gitStatusQuery = useQuery(() => ({
-        queryKey: queryKeys.threads.gitStatus(params.threadId),
-        queryFn: () => GetThreadGitReview(params.threadId),
-        enabled: !!params.threadId,
-        refetchInterval: 5_000,
-    }));
-
-    const chatProvider = createMemo(() =>
-        chatProviderFromThread(threadQuery.data?.chat_provider),
-    );
-
-    const openRouterModelsQuery = useQuery(() => ({
-        queryKey: queryKeys.openRouterModels,
-        queryFn: ListOpenRouterChatModels,
-        staleTime: 60 * 60 * 1000,
-        enabled: chatProvider() === "openrouter",
-    }));
-
-    const cursorModelsQuery = useQuery(() => ({
-        queryKey: queryKeys.cursorChatModels,
-        queryFn: ListCursorChatModels,
-        staleTime: 60 * 60 * 1000,
-        enabled: chatProvider() === "cursor",
-    }));
-
-    const modelChoices = createMemo(() => {
-        if (chatProvider() === "cursor") {
-            const rows = cursorModelsQuery.data;
-            if (rows && rows.length > 0) {
-                return rows.map((m) => ({
-                    id: m.id,
-                    label: (m.name && m.name.trim()) || m.id,
-                    provider: m.provider ?? "cursor",
-                    description: m.description,
-                    description_full: m.description_full,
-                    pricing_tier: m.pricing_tier,
-                    pricing_summary: m.pricing_summary,
-                    pricing_prompt: m.pricing_prompt,
-                    pricing_completion: m.pricing_completion,
-                    vision: m.vision,
-                    reasoning: m.reasoning,
-                    long_context: m.long_context,
-                    context_length: m.context_length,
-                }));
-            }
-            return [...CURSOR_CHAT_MODELS_FALLBACK];
-        }
-        const rows = openRouterModelsQuery.data;
-        if (rows && rows.length > 0) {
-            return rows.map((m) => ({
-                id: m.id,
-                label: (m.name && m.name.trim()) || m.id,
-                provider: m.provider,
-                description: m.description,
-                description_full: m.description_full,
-                pricing_tier: m.pricing_tier,
-                pricing_summary: m.pricing_summary,
-                pricing_prompt: m.pricing_prompt,
-                pricing_completion: m.pricing_completion,
-                vision: m.vision,
-                reasoning: m.reasoning,
-                long_context: m.long_context,
-                context_length: m.context_length,
-            }));
-        }
-        return [...OPENROUTER_CHAT_MODELS_FALLBACK];
+    const {
+        projectQuery,
+        settingsQuery,
+        thread,
+        messages,
+        gitStatusQuery,
+        chatProvider,
+        modelChoices,
+        chatModel,
+        streamingAttribution,
+        workingDir,
+    } = useThreadPageQueries(params.projectId, params.threadId, {
+        gitReviewOpen: () => sidebarOpen(),
     });
 
-    const sendMutation = useMutation(() => ({
-        mutationFn: (content: string) =>
-            SendThreadMessage(params.threadId, content),
-        onMutate: () => {
-            setSendError("");
-        },
-        onSuccess: async () => {
-            setDraft("");
-            setSendError("");
-            await queryClient.invalidateQueries({
-                queryKey: queryKeys.threads.messages(params.threadId),
-            });
-            await queryClient.invalidateQueries({
-                queryKey: queryKeys.threads.all,
-            });
-            await queryClient.invalidateQueries({
-                queryKey: queryKeys.threads.detail(params.threadId),
-            });
-        },
-        onError: (err: unknown) => {
-            const msg =
-                err instanceof Error
-                    ? err.message
-                    : typeof err === "string"
-                      ? err
-                      : "Failed to send message";
-            setSendError(msg);
-        },
-    }));
+    const threadGitMut = useThreadGitMutations(params.threadId);
 
-    const threadDetailKey = () => queryKeys.threads.detail(params.threadId);
+    const {
+        sendMutation,
+        setChatProviderMutation,
+        setChatModelMutation,
+        forkThreadMutation,
+    } = useThreadChatMutations({
+        threadId: params.threadId,
+        setSendError,
+        setDraft,
+    });
 
-    const setChatProviderMutation = useMutation(() => ({
-        mutationFn: async (provider: ChatProviderId) => {
-            await SetThreadChatProvider(params.threadId, provider);
-            if (provider === "cursor") {
-                await SetThreadChatModel(params.threadId, "composer-2-fast");
-            } else {
-                await SetThreadChatModel(params.threadId, "openai/gpt-4o-mini");
-            }
-        },
-        onMutate: async (provider) => {
-            await queryClient.cancelQueries({ queryKey: threadDetailKey() });
-            const prev =
-                queryClient.getQueryData<store.Thread>(threadDetailKey());
-            if (prev) {
-                const nextModel =
-                    provider === "cursor"
-                        ? "composer-2-fast"
-                        : "openai/gpt-4o-mini";
-                queryClient.setQueryData(threadDetailKey(), {
-                    ...prev,
-                    chat_provider: provider,
-                    chat_model: nextModel,
-                } as store.Thread);
-            }
-            return { prev } as { prev: store.Thread | undefined };
-        },
-        onError: (_err, _provider, ctx) => {
-            if (ctx?.prev !== undefined) {
-                queryClient.setQueryData(threadDetailKey(), ctx.prev);
-            }
-        },
-        onSuccess: async () => {
-            await queryClient.invalidateQueries({
-                queryKey: queryKeys.threads.all,
-            });
-        },
-    }));
-
-    const setChatModelMutation = useMutation(() => ({
-        mutationFn: (model: string) =>
-            SetThreadChatModel(params.threadId, model),
-        onMutate: async (model) => {
-            await queryClient.cancelQueries({ queryKey: threadDetailKey() });
-            const prev =
-                queryClient.getQueryData<store.Thread>(threadDetailKey());
-            if (prev) {
-                queryClient.setQueryData(threadDetailKey(), {
-                    ...prev,
-                    chat_model: model,
-                } as store.Thread);
-            }
-            return { prev } as { prev: store.Thread | undefined };
-        },
-        onError: (_err, _model, ctx) => {
-            if (ctx?.prev !== undefined) {
-                queryClient.setQueryData(threadDetailKey(), ctx.prev);
-            }
-        },
-        onSuccess: async () => {
-            await queryClient.invalidateQueries({
-                queryKey: queryKeys.threads.all,
-            });
-        },
-    }));
-
-    const messages = createMemo(() => messagesQuery.data ?? []);
-    const chatModel = createMemo(() =>
-        chatModelFromThread(threadQuery.data?.chat_model),
-    );
-    const streamingAttribution = createMemo(() =>
-        assistantAttributionLabel(
-            threadQuery.data?.chat_provider,
-            threadQuery.data?.chat_model,
-            modelChoices(),
-        ),
-    );
     const canSend = createMemo(
         () =>
             !sendMutation.isPending &&
             !streaming() &&
             draft().trim().length > 0,
     );
-    const workingDir = createMemo(
-        () =>
-            threadQuery.data?.worktree_dir ||
-            projectQuery.data?.directory ||
-            "",
-    );
+
+    const forkAssistant = createMemo(() => {
+        const tid = params.threadId;
+        const pid = params.projectId;
+        if (!tid || !pid) return undefined;
+        return {
+            threadId: tid,
+            projectId: pid,
+            sourceUsesWorktree: !!(thread()?.worktree_dir ?? "").trim(),
+            forkMessage: (messageId: string) =>
+                forkThreadMutation.mutateAsync(messageId),
+            forkPending: () => forkThreadMutation.isPending,
+            forkError: () => forkThreadMutation.error,
+        };
+    });
 
     const [diffTargetByThread, setDiffTargetByThread] = createSignal<
         Record<string, DiffTarget>
@@ -309,12 +126,14 @@ export const ThreadPage: Component = () => {
     const [sideBySide, setSideBySide] = createSignal(true);
     const [diffNav, setDiffNav] = createSignal<DiffNav | null>(null);
 
+    const diffQuery = useThreadFileDiff(params.threadId, diffTarget);
+
     const [editingTitle, setEditingTitle] = createSignal(false);
     const [titleDraft, setTitleDraft] = createSignal("");
     let titleInputRef!: HTMLInputElement;
 
     function startEditingTitle() {
-        setTitleDraft(threadQuery.data?.title ?? "");
+        setTitleDraft(thread()?.title ?? "");
         setEditingTitle(true);
         requestAnimationFrame(() => {
             titleInputRef?.focus();
@@ -325,32 +144,12 @@ export const ThreadPage: Component = () => {
     async function commitTitle() {
         const trimmed = titleDraft().trim();
         setEditingTitle(false);
-        if (trimmed && trimmed !== (threadQuery.data?.title ?? "")) {
+        if (trimmed && trimmed !== (thread()?.title ?? "")) {
             await RenameThread(params.threadId, trimmed);
-            await queryClient.invalidateQueries({
-                queryKey: queryKeys.threads.all,
-            });
-            await queryClient.invalidateQueries({
-                queryKey: queryKeys.threads.detail(params.threadId),
-            });
+            await invalidateThreadScoped(queryClient, params.threadId);
+            await invalidateThreadList(queryClient);
         }
     }
-
-    const diffQuery = useQuery(() => ({
-        queryKey: [
-            "fileDiff",
-            params.threadId,
-            diffTarget()?.path ?? "",
-            diffTarget()?.status ?? "",
-        ] as const,
-        queryFn: () =>
-            GetFileDiff(
-                params.threadId,
-                diffTarget()!.path,
-                diffTarget()!.status,
-            ),
-        enabled: !!diffTarget() && !!params.threadId,
-    }));
 
     function submitMessage() {
         const text = draft().trim();
@@ -411,10 +210,12 @@ export const ThreadPage: Component = () => {
     );
     onCleanup(() => shortcutCleanups.forEach((c) => c()));
 
-    const terminalReadyKey = () =>
-        params.threadId && projectQuery.data?.directory && threadQuery.data
-            ? `${params.threadId}|${threadQuery.data.worktree_dir || projectQuery.data.directory}`
+    const terminalReadyKey = () => {
+        const t = thread();
+        return params.threadId && projectQuery.data?.directory && t
+            ? `${params.threadId}|${t.worktree_dir || projectQuery.data.directory}`
             : "";
+    };
 
     return (
         <div class="flex h-full min-h-0 w-full overflow-hidden">
@@ -423,7 +224,7 @@ export const ThreadPage: Component = () => {
                     editingTitle={editingTitle}
                     titleDraft={titleDraft}
                     setTitleDraft={setTitleDraft}
-                    threadTitle={() => threadQuery.data?.title}
+                    threadTitle={() => thread()?.title}
                     projectName={() => projectQuery.data?.name}
                     workingDir={workingDir}
                     titleInputRef={(el) => {
@@ -437,15 +238,11 @@ export const ThreadPage: Component = () => {
                     sidebarOpen={sidebarOpen}
                     onToggleSidebar={() => setSidebarOpen((v) => !v)}
                     formatKey={formatKey}
-                    hasWorktree={() =>
-                        !!(threadQuery.data?.worktree_dir ?? "").trim()
-                    }
+                    hasWorktree={() => !!(thread()?.worktree_dir ?? "").trim()}
                     threadSettingsHref={`/project/${params.projectId}/thread/${params.threadId}/settings/general`}
                     onDeleteThread={async (removeWorktree) => {
                         const tid = params.threadId;
                         await DeleteThread(tid, removeWorktree);
-                        // Drop this thread's queries without refetching (invalidateQueries on ["threads"]
-                        // would refetch messages/git for the current thread and block navigation for seconds).
                         queryClient.removeQueries({
                             queryKey: queryKeys.threads.detail(tid),
                         });
@@ -475,7 +272,6 @@ export const ThreadPage: Component = () => {
                             streamingChunks={streamingChunks}
                             streamingPhase={streamingPhase}
                             streamingAttribution={streamingAttribution}
-                            threadQueryData={() => threadQuery.data}
                             modelChoices={modelChoices}
                             canSend={canSend}
                             onSubmit={submitMessage}
@@ -492,6 +288,7 @@ export const ThreadPage: Component = () => {
                             chatTextareaRef={(el) => {
                                 chatTextareaRef = el;
                             }}
+                            forkAssistant={forkAssistant()}
                         />
                     }
                 >
@@ -538,6 +335,7 @@ export const ThreadPage: Component = () => {
                     width={sidebarWidth()}
                     threadId={params.threadId}
                     git={gitStatusQuery.data ?? null}
+                    gitMut={threadGitMut}
                     onRefresh={() => void refreshGitSidebar()}
                     onCopySummary={() => void copyReviewSummary()}
                     onCopyPatch={() => void copyPatchPreview()}

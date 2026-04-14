@@ -18,8 +18,8 @@ export function ConnectOpenRouterOAuth() {
   return window['go']['app']['App']['ConnectOpenRouterOAuth']();
 }
 
-export function CreateProjectFromFolder(arg1, arg2) {
-  return window['go']['app']['App']['CreateProjectFromFolder'](arg1, arg2);
+export function CreateProjectFromFolder(arg1, arg2, arg3) {
+  return window['go']['app']['App']['CreateProjectFromFolder'](arg1, arg2, arg3);
 }
 
 export function CreateProjectFromRemote(arg1, arg2) {
@@ -40,6 +40,10 @@ export function DeleteThread(arg1, arg2) {
 
 export function DownloadLogs() {
   return window['go']['app']['App']['DownloadLogs']();
+}
+
+export function ForkThreadAtMessage(arg1, arg2) {
+  return window['go']['app']['App']['ForkThreadAtMessage'](arg1, arg2);
 }
 
 export function GetBuildLabel() {

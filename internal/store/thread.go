@@ -2,8 +2,9 @@ package store
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -14,8 +15,8 @@ type Thread struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 	WorktreeDir string    `json:"worktree_dir"`
-	// ChatProvider is which upstream powers this thread (e.g. "openrouter"). Empty treated as "openrouter" in the UI.
-	ChatProvider string `json:"chat_provider,omitempty"`
+	// ChatProvider is which upstream powers this thread (e.g. "openrouter" or "cursor").
+	ChatProvider string `json:"chat_provider"`
 	// ChatModel is the provider-specific model id (e.g. OpenRouter's "openai/gpt-4o-mini"). Empty means not chosen yet.
 	ChatModel string `json:"chat_model,omitempty"`
 }
@@ -26,6 +27,13 @@ func (t *Thread) Validate() error {
 	}
 	if t.ProjectID == "" {
 		return errors.New("project_id is required")
+	}
+	cp := strings.TrimSpace(t.ChatProvider)
+	if cp == "" {
+		return errors.New("chat_provider is required")
+	}
+	if cp != "openrouter" && cp != "cursor" {
+		return fmt.Errorf("unsupported chat_provider %q", cp)
 	}
 	return nil
 }
@@ -80,8 +88,6 @@ type OpenRouterChatMessageMetadata struct {
 	ReasoningDurationSec *float64 `json:"reasoning_duration_sec,omitempty"`
 	// Segments interleaves streamed text and tool calls in execution order (set when any tool ran).
 	Segments []AssistantTurnSegment `json:"segments,omitempty"`
-	// ToolCalls is the flat list of tools for backward compatibility and counts (same order as in Segments).
-	ToolCalls []OpenRouterToolCallRecord `json:"tool_calls,omitempty"`
 }
 
 type ChatMessage struct {
@@ -90,44 +96,10 @@ type ChatMessage struct {
 	Role      string    `json:"role"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
-	// ChatProvider and ChatModel record which stack produced an assistant reply (e.g. openrouter + openai/gpt-4o-mini).
-	ChatProvider string               `json:"chat_provider,omitempty"`
+	// ChatProvider is which upstream produced this message (same as the thread for user turns; assistant sets explicitly).
+	ChatProvider string               `json:"chat_provider"`
 	ChatModel    string               `json:"chat_model,omitempty"`
 	Metadata     *ChatMessageMetadata `json:"metadata,omitempty"`
-}
-
-// UnmarshalJSON merges legacy openrouter_cost_usd into Metadata.openrouter.cost_usd when metadata is absent.
-func (m *ChatMessage) UnmarshalJSON(data []byte) error {
-	var raw struct {
-		ID           string               `json:"id"`
-		ThreadID     string               `json:"thread_id"`
-		Role         string               `json:"role"`
-		Content      string               `json:"content"`
-		CreatedAt    time.Time            `json:"created_at"`
-		ChatProvider string               `json:"chat_provider,omitempty"`
-		ChatModel    string               `json:"chat_model,omitempty"`
-		Metadata     *ChatMessageMetadata `json:"metadata,omitempty"`
-		LegacyCost   *float64             `json:"openrouter_cost_usd,omitempty"`
-	}
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return err
-	}
-	m.ID = raw.ID
-	m.ThreadID = raw.ThreadID
-	m.Role = raw.Role
-	m.Content = raw.Content
-	m.CreatedAt = raw.CreatedAt
-	m.ChatProvider = raw.ChatProvider
-	m.ChatModel = raw.ChatModel
-	m.Metadata = raw.Metadata
-	if m.Metadata == nil && raw.LegacyCost != nil {
-		m.Metadata = &ChatMessageMetadata{
-			OpenRouter: &OpenRouterChatMessageMetadata{
-				CostUSD: raw.LegacyCost,
-			},
-		}
-	}
-	return nil
 }
 
 // OpenRouterChatModel is a selectable model from the OpenRouter /api/v1/models list (chat + tools).
@@ -159,6 +131,13 @@ func (m *ChatMessage) Validate() error {
 	}
 	if m.Content == "" {
 		return errors.New("content is required")
+	}
+	cp := strings.TrimSpace(m.ChatProvider)
+	if cp == "" {
+		return errors.New("chat_provider is required")
+	}
+	if cp != "openrouter" && cp != "cursor" {
+		return fmt.Errorf("unsupported chat_provider %q", cp)
 	}
 	return nil
 }

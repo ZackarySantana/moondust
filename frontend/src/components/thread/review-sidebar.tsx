@@ -1,40 +1,33 @@
-import { useMutation, useQueryClient } from "@tanstack/solid-query";
 import Loader2 from "lucide-solid/icons/loader-2";
 import Minus from "lucide-solid/icons/minus";
 import Plus from "lucide-solid/icons/plus";
 import type { Component } from "solid-js";
 import { createMemo, createSignal, For, Show } from "solid-js";
-import {
-    GitCheckoutNewBranchAndCommit,
-    GitCommit,
-    GitDiscardUnstaged,
-    GitStageUnstaged,
-    GitUnstageAll,
-} from "@wails/go/app/App";
-import { CollapsibleSection } from "@/components/review/collapsible-section";
 import { CommitRow } from "@/components/review/commit-row";
-import { FileChangeRow } from "@/components/review/file-change-row";
-import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogOverlay,
-    DialogTitle,
-} from "@/components/ui/dialog";
+    BranchCommitGitDialog,
+    CommitStagedGitDialog,
+    DiscardUnstagedGitDialog,
+} from "@/components/review/git-review-dialogs";
+import { CollapsibleSection } from "@/components/review/collapsible-section";
+import { FileChangeRow } from "@/components/review/file-change-row";
+import type { ThreadGitMutations } from "@/hooks/use-thread-git-mutations";
 import { cleanBranchName, deriveGitHubURL } from "@/lib/git-display";
-import { queryKeys } from "@/lib/query-client";
 import type { store } from "@wails/go/models";
 
-export const ReviewSidebar: Component<{
+export interface ReviewSidebarProps {
     width: number;
     threadId: string;
     git: store.GitReview | null;
+    /** Git mutations from `useThreadGitMutations` in the thread page container. */
+    gitMut: ThreadGitMutations;
     onRefresh: () => void;
     onCopySummary: () => void;
     onCopyPatch: () => void;
     onFileClick?: (path: string, status: string) => void;
-}> = (props) => {
-    const queryClient = useQueryClient();
+}
+
+export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
     const [commitTab, setCommitTab] = createSignal<"local" | "main">("local");
     const [discardOpen, setDiscardOpen] = createSignal(false);
     const [commitOpen, setCommitOpen] = createSignal(false);
@@ -44,78 +37,14 @@ export const ReviewSidebar: Component<{
     const [branchCommitMsg, setBranchCommitMsg] = createSignal("");
     const [gitActionError, setGitActionError] = createSignal("");
 
-    const invalidateGit = () =>
-        queryClient.invalidateQueries({
-            queryKey: queryKeys.threads.gitStatus(props.threadId),
-        });
+    const gm = () => props.gitMut;
 
-    const stageMutation = useMutation(() => ({
-        mutationFn: () => GitStageUnstaged(props.threadId),
-        onSuccess: async () => {
-            setGitActionError("");
-            await invalidateGit();
-        },
-        onError: (e) =>
-            setGitActionError(e instanceof Error ? e.message : String(e)),
-    }));
-
-    const discardMutation = useMutation(() => ({
-        mutationFn: () => GitDiscardUnstaged(props.threadId),
-        onSuccess: async () => {
-            setDiscardOpen(false);
-            setGitActionError("");
-            await invalidateGit();
-        },
-        onError: (e) =>
-            setGitActionError(e instanceof Error ? e.message : String(e)),
-    }));
-
-    const unstageMutation = useMutation(() => ({
-        mutationFn: () => GitUnstageAll(props.threadId),
-        onSuccess: async () => {
-            setGitActionError("");
-            await invalidateGit();
-        },
-        onError: (e) =>
-            setGitActionError(e instanceof Error ? e.message : String(e)),
-    }));
-
-    const commitMutation = useMutation(() => ({
-        mutationFn: (message: string) => GitCommit(props.threadId, message),
-        onSuccess: async () => {
-            setCommitOpen(false);
-            setCommitMsg("");
-            setGitActionError("");
-            await invalidateGit();
-        },
-        onError: (e) =>
-            setGitActionError(e instanceof Error ? e.message : String(e)),
-    }));
-
-    const branchCommitMutation = useMutation(() => ({
-        mutationFn: (vars: { branch: string; message: string }) =>
-            GitCheckoutNewBranchAndCommit(
-                props.threadId,
-                vars.branch,
-                vars.message,
-            ),
-        onSuccess: async () => {
-            setBranchCommitOpen(false);
-            setBranchNameInput("");
-            setBranchCommitMsg("");
-            setGitActionError("");
-            await invalidateGit();
-        },
-        onError: (e) =>
-            setGitActionError(e instanceof Error ? e.message : String(e)),
-    }));
-
-    const gitBusy = () =>
-        stageMutation.isPending ||
-        discardMutation.isPending ||
-        unstageMutation.isPending ||
-        commitMutation.isPending ||
-        branchCommitMutation.isPending;
+    const stageMutation = () => gm().stageMutation;
+    const discardMutation = () => gm().discardMutation;
+    const unstageMutation = () => gm().unstageMutation;
+    const commitMutation = () => gm().commitMutation;
+    const branchCommitMutation = () => gm().branchCommitMutation;
+    const gitBusy = () => gm().gitBusy();
 
     const branch = () => cleanBranchName(props.git?.branch ?? "");
     const ahead = () => props.git?.ahead ?? 0;
@@ -131,6 +60,47 @@ export const ReviewSidebar: Component<{
 
     const gitIconBtn =
         "flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-800/60 hover:text-slate-100 disabled:cursor-not-allowed disabled:opacity-35";
+
+    async function runDiscard() {
+        setGitActionError("");
+        try {
+            await discardMutation().mutateAsync();
+            setDiscardOpen(false);
+        } catch (e) {
+            setGitActionError(e instanceof Error ? e.message : String(e));
+        }
+    }
+
+    async function runCommit() {
+        const m = commitMsg().trim();
+        if (!m) return;
+        setGitActionError("");
+        try {
+            await commitMutation().mutateAsync(m);
+            setCommitOpen(false);
+            setCommitMsg("");
+        } catch (e) {
+            setGitActionError(e instanceof Error ? e.message : String(e));
+        }
+    }
+
+    async function runBranchCommit() {
+        const b = branchNameInput().trim();
+        const m = branchCommitMsg().trim();
+        if (!b || !m) return;
+        setGitActionError("");
+        try {
+            await branchCommitMutation().mutateAsync({
+                branch: b,
+                message: m,
+            });
+            setBranchCommitOpen(false);
+            setBranchNameInput("");
+            setBranchCommitMsg("");
+        } catch (e) {
+            setGitActionError(e instanceof Error ? e.message : String(e));
+        }
+    }
 
     return (
         <aside
@@ -264,13 +234,13 @@ export const ReviewSidebar: Component<{
                             title="Unstage all (keep changes in files)"
                             disabled={
                                 staged().length === 0 ||
-                                unstageMutation.isPending ||
+                                unstageMutation().isPending ||
                                 gitBusy()
                             }
-                            onClick={() => unstageMutation.mutate()}
+                            onClick={() => unstageMutation().mutate()}
                         >
                             <Show
-                                when={unstageMutation.isPending}
+                                when={unstageMutation().isPending}
                                 fallback={
                                     <Minus
                                         class="h-3.5 w-3.5"
@@ -323,13 +293,13 @@ export const ReviewSidebar: Component<{
                                 title="Stage all unstaged changes"
                                 disabled={
                                     unstaged().length === 0 ||
-                                    stageMutation.isPending ||
+                                    stageMutation().isPending ||
                                     gitBusy()
                                 }
-                                onClick={() => stageMutation.mutate()}
+                                onClick={() => stageMutation().mutate()}
                             >
                                 <Show
-                                    when={stageMutation.isPending}
+                                    when={stageMutation().isPending}
                                     fallback={
                                         <Plus
                                             class="h-3.5 w-3.5"
@@ -351,7 +321,7 @@ export const ReviewSidebar: Component<{
                                 title="Discard unstaged changes in the working tree"
                                 disabled={
                                     unstaged().length === 0 ||
-                                    discardMutation.isPending ||
+                                    discardMutation().isPending ||
                                     gitBusy()
                                 }
                                 onClick={() => {
@@ -360,7 +330,7 @@ export const ReviewSidebar: Component<{
                                 }}
                             >
                                 <Show
-                                    when={discardMutation.isPending}
+                                    when={discardMutation().isPending}
                                     fallback={
                                         <Minus
                                             class="h-3.5 w-3.5"
@@ -512,207 +482,41 @@ export const ReviewSidebar: Component<{
                 </CollapsibleSection>
             </div>
 
-            <Dialog open={discardOpen()}>
-                <DialogOverlay
-                    aria-label="Close dialog"
-                    onClick={() => {
-                        if (!discardMutation.isPending) {
-                            setDiscardOpen(false);
-                        }
-                    }}
-                />
-                <DialogContent
-                    role="dialog"
-                    aria-modal="true"
-                >
-                    <DialogTitle>Discard unstaged changes?</DialogTitle>
-                    <p class="mb-4 text-sm text-slate-400">
-                        Working tree edits for unstaged files will be reverted
-                        to match the index or HEAD. Staged changes are not
-                        affected.
-                    </p>
-                    <Show when={gitActionError() && discardOpen()}>
-                        <p class="mb-4 rounded-lg border border-red-900/30 bg-red-950/15 px-3 py-2 text-xs text-red-400">
-                            {gitActionError()}
-                        </p>
-                    </Show>
-                    <div class="flex justify-end gap-2">
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            disabled={discardMutation.isPending}
-                            onClick={() => setDiscardOpen(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            class="inline-flex min-w-28 items-center justify-center gap-2"
-                            disabled={discardMutation.isPending}
-                            onClick={() => discardMutation.mutate()}
-                        >
-                            <Show
-                                when={discardMutation.isPending}
-                                fallback="Discard"
-                            >
-                                <Loader2
-                                    class="size-4 shrink-0 animate-spin"
-                                    stroke-width={2}
-                                    aria-hidden
-                                />
-                            </Show>
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            <DiscardUnstagedGitDialog
+                open={discardOpen()}
+                pending={discardMutation().isPending}
+                error={
+                    gitActionError() && discardOpen() ? gitActionError() : ""
+                }
+                onClose={() => setDiscardOpen(false)}
+                onConfirm={() => void runDiscard()}
+            />
 
-            <Dialog open={commitOpen()}>
-                <DialogOverlay
-                    aria-label="Close dialog"
-                    onClick={() => {
-                        if (!commitMutation.isPending) {
-                            setCommitOpen(false);
-                        }
-                    }}
-                />
-                <DialogContent
-                    role="dialog"
-                    aria-modal="true"
-                >
-                    <DialogTitle>Commit staged changes</DialogTitle>
-                    <textarea
-                        class="mb-4 min-h-24 w-full resize-y rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:border-slate-600 focus:outline-none"
-                        placeholder="Commit message"
-                        rows={4}
-                        value={commitMsg()}
-                        disabled={commitMutation.isPending}
-                        onInput={(e) => setCommitMsg(e.currentTarget.value)}
-                    />
-                    <Show when={gitActionError() && commitOpen()}>
-                        <p class="mb-4 rounded-lg border border-red-900/30 bg-red-950/15 px-3 py-2 text-xs text-red-400">
-                            {gitActionError()}
-                        </p>
-                    </Show>
-                    <div class="flex justify-end gap-2">
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            disabled={commitMutation.isPending}
-                            onClick={() => setCommitOpen(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="button"
-                            class="inline-flex min-w-28 items-center justify-center gap-2"
-                            disabled={commitMutation.isPending}
-                            onClick={() => {
-                                const m = commitMsg().trim();
-                                if (!m) return;
-                                commitMutation.mutate(m);
-                            }}
-                        >
-                            <Show
-                                when={commitMutation.isPending}
-                                fallback="Commit"
-                            >
-                                <Loader2
-                                    class="size-4 shrink-0 animate-spin"
-                                    stroke-width={2}
-                                    aria-hidden
-                                />
-                            </Show>
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            <CommitStagedGitDialog
+                open={commitOpen()}
+                message={commitMsg()}
+                pending={commitMutation().isPending}
+                error={gitActionError() && commitOpen() ? gitActionError() : ""}
+                onMessage={setCommitMsg}
+                onClose={() => setCommitOpen(false)}
+                onConfirm={() => void runCommit()}
+            />
 
-            <Dialog open={branchCommitOpen()}>
-                <DialogOverlay
-                    aria-label="Close dialog"
-                    onClick={() => {
-                        if (!branchCommitMutation.isPending) {
-                            setBranchCommitOpen(false);
-                        }
-                    }}
-                />
-                <DialogContent
-                    role="dialog"
-                    aria-modal="true"
-                >
-                    <DialogTitle>New branch and commit</DialogTitle>
-                    <div class="mb-3 space-y-1.5">
-                        <label
-                            for="review-branch-name"
-                            class="text-xs text-slate-500"
-                        >
-                            Branch name
-                        </label>
-                        <input
-                            id="review-branch-name"
-                            type="text"
-                            class="w-full rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 font-mono text-sm text-slate-200 placeholder:text-slate-600 focus:border-slate-600 focus:outline-none"
-                            placeholder="feature/my-change"
-                            value={branchNameInput()}
-                            disabled={branchCommitMutation.isPending}
-                            onInput={(e) =>
-                                setBranchNameInput(e.currentTarget.value)
-                            }
-                        />
-                    </div>
-                    <textarea
-                        class="mb-4 min-h-24 w-full resize-y rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:border-slate-600 focus:outline-none"
-                        placeholder="Commit message"
-                        rows={4}
-                        value={branchCommitMsg()}
-                        disabled={branchCommitMutation.isPending}
-                        onInput={(e) =>
-                            setBranchCommitMsg(e.currentTarget.value)
-                        }
-                    />
-                    <Show when={gitActionError() && branchCommitOpen()}>
-                        <p class="mb-4 rounded-lg border border-red-900/30 bg-red-950/15 px-3 py-2 text-xs text-red-400">
-                            {gitActionError()}
-                        </p>
-                    </Show>
-                    <div class="flex justify-end gap-2">
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            disabled={branchCommitMutation.isPending}
-                            onClick={() => setBranchCommitOpen(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="button"
-                            class="inline-flex min-w-36 items-center justify-center gap-2"
-                            disabled={branchCommitMutation.isPending}
-                            onClick={() => {
-                                const b = branchNameInput().trim();
-                                const m = branchCommitMsg().trim();
-                                if (!b || !m) return;
-                                branchCommitMutation.mutate({
-                                    branch: b,
-                                    message: m,
-                                });
-                            }}
-                        >
-                            <Show
-                                when={branchCommitMutation.isPending}
-                                fallback="Create branch & commit"
-                            >
-                                <Loader2
-                                    class="size-4 shrink-0 animate-spin"
-                                    stroke-width={2}
-                                    aria-hidden
-                                />
-                            </Show>
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            <BranchCommitGitDialog
+                open={branchCommitOpen()}
+                branchName={branchNameInput()}
+                commitMessage={branchCommitMsg()}
+                pending={branchCommitMutation().isPending}
+                error={
+                    gitActionError() && branchCommitOpen()
+                        ? gitActionError()
+                        : ""
+                }
+                onBranchName={setBranchNameInput}
+                onCommitMessage={setBranchCommitMsg}
+                onClose={() => setBranchCommitOpen(false)}
+                onConfirm={() => void runBranchCommit()}
+            />
         </aside>
     );
 };

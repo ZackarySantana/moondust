@@ -3,6 +3,7 @@ import { streamPartsFromSnapshot } from "@/lib/chat/streaming";
 import { plainPersistedAssistantParts } from "@/lib/chat/providers/defaults";
 import { cursorPersistedAssistantParts } from "@/lib/chat/providers/cursor";
 import { openRouterPersistedAssistantParts } from "@/lib/chat/providers/openrouter";
+import type { ChatProviderId } from "@/lib/chat-provider";
 import type { store } from "@wails/go/models";
 
 /**
@@ -18,25 +19,22 @@ const openRouterFormatter: ChatProviderFormatter = {
     persistedAssistantParts: openRouterPersistedAssistantParts,
 };
 
-const defaultFormatter: ChatProviderFormatter = {
-    persistedAssistantParts: plainPersistedAssistantParts,
-};
-
 const cursorFormatter: ChatProviderFormatter = {
     persistedAssistantParts: cursorPersistedAssistantParts,
 };
 
 export function getChatFormatter(
-    providerId: string | undefined,
+    providerId: ChatProviderId,
 ): ChatProviderFormatter {
-    const id = (providerId ?? "openrouter").toLowerCase();
-    if (id === "openrouter") return openRouterFormatter;
-    if (id === "cursor") return cursorFormatter;
-    return defaultFormatter;
+    if (providerId === "openrouter") return openRouterFormatter;
+    if (providerId === "cursor") return cursorFormatter;
+    throw new Error(
+        `invalid chat_provider for formatter: ${JSON.stringify(providerId)}`,
+    );
 }
 
 export function streamingAssistantParts(
-    providerId: string | undefined,
+    providerId: ChatProviderId,
     args: StreamingAssistantArgs,
 ): AssistantPart[] {
     const f = getChatFormatter(providerId);

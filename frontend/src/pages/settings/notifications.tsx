@@ -47,7 +47,7 @@ export const SettingsNotificationsPage: Component = () => {
     }));
 
     const pushQuery = useQuery(() => ({
-        queryKey: ["pushAvailable"] as const,
+        queryKey: queryKeys.notifications.pushAvailable,
         queryFn: IsPushAvailable,
         staleTime: Infinity,
     }));

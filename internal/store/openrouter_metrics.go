@@ -42,7 +42,7 @@ type openRouterAgg struct {
 }
 
 // AggregateOpenRouterUsageMetrics builds metrics from assistant messages (any threads).
-// Only assistant messages with provider openrouter (or legacy empty) and non-empty chat_model are counted.
+// Only assistant messages with chat_provider openrouter and non-empty chat_model are counted.
 func AggregateOpenRouterUsageMetrics(messages []*ChatMessage) *OpenRouterUsageMetrics {
 	byModel := make(map[string]*openRouterAgg)
 	var totalMsgs int
@@ -53,8 +53,7 @@ func AggregateOpenRouterUsageMetrics(messages []*ChatMessage) *OpenRouterUsageMe
 		if msg == nil || msg.Role != "assistant" {
 			continue
 		}
-		prov := strings.TrimSpace(msg.ChatProvider)
-		if prov != "" && prov != "openrouter" {
+		if strings.TrimSpace(msg.ChatProvider) != "openrouter" {
 			continue
 		}
 		model := strings.TrimSpace(msg.ChatModel)

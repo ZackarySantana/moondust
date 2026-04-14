@@ -7,16 +7,7 @@ import Search from "lucide-solid/icons/search";
 import Star from "lucide-solid/icons/star";
 import X from "lucide-solid/icons/x";
 import type { Component } from "solid-js";
-import {
-    createEffect,
-    createMemo,
-    createSignal,
-    For,
-    on,
-    onCleanup,
-    onMount,
-    Show,
-} from "solid-js";
+import { createMemo, For, Show } from "solid-js";
 import {
     CategorizedModelList,
     MODEL_LIST_SCROLL_CLASS,
@@ -27,6 +18,7 @@ import {
     type ChatProviderId,
     type ModelChoice,
 } from "@/lib/chat-provider";
+import { useChatProviderBarMenu } from "@/hooks/use-chat-provider-bar-menu";
 import {
     buildCursorModelCategories,
     buildOpenRouterSplitCategories,
@@ -77,53 +69,9 @@ export const ChatProviderBar: Component<{
     providerDisabled?: boolean;
     modelDisabled?: boolean;
 }> = (props) => {
-    const [open, setOpen] = createSignal<"provider" | "model" | null>(null);
-    const [searchQuery, setSearchQuery] = createSignal("");
-    const [filterOrg, setFilterOrg] = createSignal<string | null>(null);
-    const [detailModelId, setDetailModelId] = createSignal<string | null>(null);
-
-    let rootEl!: HTMLDivElement;
-
-    function close() {
-        setOpen(null);
-        setSearchQuery("");
-        setFilterOrg(null);
-        setDetailModelId(null);
-    }
-
-    onMount(() => {
-        const onDoc = (e: MouseEvent) => {
-            if (open() === null) return;
-            const t = e.target as Node;
-            if (rootEl?.contains(t)) return;
-            close();
-        };
-        document.addEventListener("mousedown", onDoc);
-        const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape" && open() !== null) {
-                close();
-            }
-        };
-        window.addEventListener("keydown", onKey);
-        onCleanup(() => {
-            document.removeEventListener("mousedown", onDoc);
-            window.removeEventListener("keydown", onKey);
-        });
-    });
+    const menu = useChatProviderBarMenu(() => props.provider);
 
     const isCursorProvider = () => props.provider === "cursor";
-
-    createEffect(
-        on(
-            () => props.provider,
-            (p) => {
-                if (p === "cursor") {
-                    setFilterOrg(null);
-                    setSearchQuery("");
-                }
-            },
-        ),
-    );
 
     const modelOptions = createMemo(() => {
         const cur = props.model.trim();
@@ -144,11 +92,11 @@ export const ChatProviderBar: Component<{
         return known;
     });
 
-    const hasSearch = createMemo(() => searchQuery().trim().length > 0);
+    const hasSearch = createMemo(() => menu.searchQuery().trim().length > 0);
 
     const filteredModels = createMemo(() => {
-        const q = searchQuery().trim().toLowerCase();
-        const org = filterOrg();
+        const q = menu.searchQuery().trim().toLowerCase();
+        const org = menu.filterOrg();
         let rows = modelOptions();
         if (org === FAVORITES_FILTER) {
             if (isCursorProvider()) {
@@ -183,13 +131,13 @@ export const ChatProviderBar: Component<{
     });
 
     const showSplitAllView = createMemo(
-        () => !isCursorProvider() && filterOrg() === null && !hasSearch(),
+        () => !isCursorProvider() && menu.filterOrg() === null && !hasSearch(),
     );
 
     const modelPickerCategories = createMemo(() => {
         if (isCursorProvider()) {
             if (hasSearch()) {
-                const q = searchQuery().trim().toLowerCase();
+                const q = menu.searchQuery().trim().toLowerCase();
                 const rows = modelOptions().filter((m) => {
                     const desc = (m.description ?? "").toLowerCase();
                     const descFull = (m.description_full ?? "").toLowerCase();
@@ -224,11 +172,11 @@ export const ChatProviderBar: Component<{
     });
 
     function toggleModelDetail(m: ModelChoice) {
-        setDetailModelId((cur) => (cur === m.id ? null : m.id));
+        menu.setDetailModelId((cur) => (cur === m.id ? null : m.id));
     }
 
     const detailAside = createMemo(() => {
-        const mid = detailModelId();
+        const mid = menu.detailModelId();
         if (!mid) return null;
         const row = modelOptions().find((m) => m.id === mid);
         if (!row) return null;
@@ -250,7 +198,7 @@ export const ChatProviderBar: Component<{
                         type="button"
                         class="shrink-0 cursor-pointer rounded p-0.5 text-slate-500 transition-colors hover:bg-slate-800/60 hover:text-slate-300"
                         aria-label="Close details"
-                        onClick={() => setDetailModelId(null)}
+                        onClick={() => menu.setDetailModelId(null)}
                     >
                         <X
                             class="size-4"
@@ -313,7 +261,7 @@ export const ChatProviderBar: Component<{
 
     return (
         <div
-            ref={rootEl}
+            ref={(el) => menu.setRootEl(el)}
             class="flex min-w-0 flex-1 flex-col gap-1.5"
         >
             <div class="flex flex-wrap items-center gap-1">
@@ -322,10 +270,10 @@ export const ChatProviderBar: Component<{
                         type="button"
                         class={triggerClass}
                         disabled={props.providerDisabled}
-                        aria-expanded={open() === "provider"}
+                        aria-expanded={menu.open() === "provider"}
                         aria-haspopup="listbox"
                         onClick={() =>
-                            setOpen((v) =>
+                            menu.setOpen((v) =>
                                 v === "provider" ? null : "provider",
                             )
                         }
@@ -338,7 +286,7 @@ export const ChatProviderBar: Component<{
                             aria-hidden
                         />
                     </button>
-                    <Show when={open() === "provider"}>
+                    <Show when={menu.open() === "provider"}>
                         <ul
                             class={menuClass}
                             role="listbox"
@@ -356,7 +304,7 @@ export const ChatProviderBar: Component<{
                                             class={`${menuItemClass} ${props.provider === p.id ? "bg-slate-800/40 text-slate-200" : ""}`}
                                             onClick={() => {
                                                 props.onProviderChange(p.id);
-                                                close();
+                                                menu.close();
                                             }}
                                         >
                                             {p.label}
@@ -373,18 +321,18 @@ export const ChatProviderBar: Component<{
                         type="button"
                         class={triggerClass}
                         disabled={props.modelDisabled}
-                        aria-expanded={open() === "model"}
+                        aria-expanded={menu.open() === "model"}
                         aria-haspopup="listbox"
                         onClick={() => {
-                            setOpen((v) => {
+                            menu.setOpen((v) => {
                                 if (v === "model") {
-                                    setSearchQuery("");
-                                    setFilterOrg(null);
-                                    setDetailModelId(null);
+                                    menu.setSearchQuery("");
+                                    menu.setFilterOrg(null);
+                                    menu.setDetailModelId(null);
                                     return null;
                                 }
-                                setSearchQuery("");
-                                setFilterOrg(
+                                menu.setSearchQuery("");
+                                menu.setFilterOrg(
                                     isCursorProvider()
                                         ? null
                                         : FAVORITES_FILTER,
@@ -414,7 +362,7 @@ export const ChatProviderBar: Component<{
                             aria-hidden
                         />
                     </button>
-                    <Show when={open() === "model"}>
+                    <Show when={menu.open() === "model"}>
                         <div
                             class={`${menuClass} flex ${MODEL_PANEL_HEIGHT_CLASS} max-w-[calc(100vw-0.75rem)] flex-row overflow-hidden p-0`}
                             role="presentation"
@@ -431,8 +379,10 @@ export const ChatProviderBar: Component<{
                                         <button
                                             type="button"
                                             title="All models"
-                                            class={`${railFilterBtnClass} ${filterOrg() === null ? "bg-violet-600/30 text-violet-200" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
-                                            onClick={() => setFilterOrg(null)}
+                                            class={`${railFilterBtnClass} ${menu.filterOrg() === null ? "bg-violet-600/30 text-violet-200" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
+                                            onClick={() =>
+                                                menu.setFilterOrg(null)
+                                            }
                                         >
                                             <Circle
                                                 class="size-3.5"
@@ -443,9 +393,9 @@ export const ChatProviderBar: Component<{
                                         <button
                                             type="button"
                                             title="Favorites (coming soon)"
-                                            class={`${railFilterBtnClass} ${filterOrg() === FAVORITES_FILTER ? "bg-amber-500/25 text-amber-100 ring-1 ring-amber-500/40" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
+                                            class={`${railFilterBtnClass} ${menu.filterOrg() === FAVORITES_FILTER ? "bg-amber-500/25 text-amber-100 ring-1 ring-amber-500/40" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
                                             onClick={() =>
-                                                setFilterOrg((cur) =>
+                                                menu.setFilterOrg((cur) =>
                                                     cur === FAVORITES_FILTER
                                                         ? null
                                                         : FAVORITES_FILTER,
@@ -463,12 +413,13 @@ export const ChatProviderBar: Component<{
                                                 <button
                                                     type="button"
                                                     title={orgTitle(slug)}
-                                                    class={`${railFilterBtnClass} text-[10px] font-semibold ${filterOrg() === slug ? "ring-1 ring-violet-500/50" : ""} ${orgBadgeClass(slug)}`}
+                                                    class={`${railFilterBtnClass} text-[10px] font-semibold ${menu.filterOrg() === slug ? "ring-1 ring-violet-500/50" : ""} ${orgBadgeClass(slug)}`}
                                                     onClick={() =>
-                                                        setFilterOrg((cur) =>
-                                                            cur === slug
-                                                                ? null
-                                                                : slug,
+                                                        menu.setFilterOrg(
+                                                            (cur) =>
+                                                                cur === slug
+                                                                    ? null
+                                                                    : slug,
                                                         )
                                                     }
                                                 >
@@ -481,9 +432,9 @@ export const ChatProviderBar: Component<{
                                         <button
                                             type="button"
                                             title="Misc — all other providers"
-                                            class={`${railFilterBtnClass} ${filterOrg() === MISC_FILTER ? "bg-violet-600/30 text-violet-200 ring-1 ring-violet-500/50" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
+                                            class={`${railFilterBtnClass} ${menu.filterOrg() === MISC_FILTER ? "bg-violet-600/30 text-violet-200 ring-1 ring-violet-500/50" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
                                             onClick={() =>
-                                                setFilterOrg((cur) =>
+                                                menu.setFilterOrg((cur) =>
                                                     cur === MISC_FILTER
                                                         ? null
                                                         : MISC_FILTER,
@@ -509,9 +460,9 @@ export const ChatProviderBar: Component<{
                                             type="search"
                                             placeholder="Search models…"
                                             class="min-w-0 flex-1 bg-transparent text-[11px] text-slate-200 outline-none placeholder:text-slate-600"
-                                            value={searchQuery()}
+                                            value={menu.searchQuery()}
                                             onInput={(e) =>
-                                                setSearchQuery(
+                                                menu.setSearchQuery(
                                                     e.currentTarget.value,
                                                 )
                                             }
@@ -527,7 +478,7 @@ export const ChatProviderBar: Component<{
                                             selectedId={props.model}
                                             onPick={(id) => {
                                                 props.onModelChange(id);
-                                                close();
+                                                menu.close();
                                             }}
                                             onInfo={toggleModelDetail}
                                             showSectionHeaders={showSectionHeaders()}

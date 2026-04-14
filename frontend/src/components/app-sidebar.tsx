@@ -6,10 +6,8 @@ import {
     createSignal,
     For,
     onCleanup,
-    onMount,
     type Component,
 } from "solid-js";
-import { GetBuildLabel } from "@wails/go/app/App";
 import { ProjectGroup } from "@/components/sidebar/project-group";
 import { ProjectThread } from "@/components/sidebar/project-thread";
 import { Kbd } from "@/components/kbd";
@@ -26,6 +24,9 @@ import { cn } from "@/lib/utils";
 import { store } from "@wails/go/models";
 
 export interface AppSidebarProps {
+    /** Shown in the sidebar footer (e.g. dev build label from the host app). */
+    buildLabel: string;
+    onRenameThread: (threadId: string, title: string) => void | Promise<void>;
     onNewProject: () => void;
     onNewThread: (projectID: string) => void;
     projects: store.Project[];
@@ -40,11 +41,6 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
     const [tick, setTick] = createSignal(0);
     const timer = setInterval(() => setTick((t) => t + 1), 60_000);
     onCleanup(() => clearInterval(timer));
-
-    const [buildLabel, setBuildLabel] = createSignal("");
-    onMount(() => {
-        void GetBuildLabel().then(setBuildLabel);
-    });
 
     const sortedProjects = createMemo(() =>
         sortProjectsByLatestThread(props.projects, props.threads),
@@ -125,6 +121,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                                             <ProjectThread
                                                 projectID={p.id}
                                                 threadID={thread.id}
+                                                onRenameThread={
+                                                    props.onRenameThread
+                                                }
                                                 name={
                                                     thread.title || "New thread"
                                                 }
@@ -183,7 +182,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                     class="min-h-[14px] px-1 pt-1 text-left text-[10px] leading-snug text-slate-600 select-none"
                     aria-live="polite"
                 >
-                    {buildLabel()}
+                    {props.buildLabel}
                 </p>
             </footer>
         </aside>

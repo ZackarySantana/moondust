@@ -10,7 +10,7 @@ export function ClearOpenRouterAPIKey():Promise<void>;
 
 export function ConnectOpenRouterOAuth():Promise<void>;
 
-export function CreateProjectFromFolder(arg1:string,arg2:string):Promise<store.Project>;
+export function CreateProjectFromFolder(arg1:string,arg2:string,arg3:string):Promise<store.Project>;
 
 export function CreateProjectFromRemote(arg1:string,arg2:string):Promise<store.Project>;
 
@@ -21,6 +21,8 @@ export function DeleteProject(arg1:string,arg2:boolean):Promise<void>;
 export function DeleteThread(arg1:string,arg2:boolean):Promise<void>;
 
 export function DownloadLogs():Promise<void>;
+
+export function ForkThreadAtMessage(arg1:string,arg2:string):Promise<store.Thread>;
 
 export function GetBuildLabel():Promise<string>;
 

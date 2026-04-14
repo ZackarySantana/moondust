@@ -20,7 +20,7 @@ func TestAggregateOpenRouterUsageMetrics(t *testing.T) {
 	ct := 20
 
 	messages := []*ChatMessage{
-		{Role: "user", Content: "hi", CreatedAt: t1},
+		{Role: "user", Content: "hi", CreatedAt: t1, ChatProvider: "openrouter"},
 		{
 			Role: "assistant", Content: "a", CreatedAt: t1,
 			ChatProvider: "openrouter", ChatModel: "openai/gpt-4o-mini",
@@ -45,25 +45,25 @@ func TestAggregateOpenRouterUsageMetrics(t *testing.T) {
 
 	out := AggregateOpenRouterUsageMetrics(messages)
 	require.NotNil(t, out)
-	assert.Equal(t, 3, out.TotalAssistantMessages)
-	assert.Equal(t, 2, out.DistinctModels)
-	assert.InDelta(t, c1+c2+c3, out.TotalCostUSD, 1e-9)
+	// Non-openrouter providers are excluded.
+	assert.Equal(t, 2, out.TotalAssistantMessages)
+	assert.Equal(t, 1, out.DistinctModels)
+	assert.InDelta(t, c1+c3, out.TotalCostUSD, 1e-9)
 
-	require.Len(t, out.RecentlyUsed, 2)
+	require.Len(t, out.RecentlyUsed, 1)
 	assert.Equal(t, "openai/gpt-4o-mini", out.RecentlyUsed[0].ModelID)
 	assert.Equal(t, t3, out.RecentlyUsed[0].LastUsedAt)
 
-	require.Len(t, out.MostUsed, 2)
+	require.Len(t, out.MostUsed, 1)
 	assert.Equal(t, "openai/gpt-4o-mini", out.MostUsed[0].ModelID)
 	assert.Equal(t, 2, out.MostUsed[0].UseCount)
 
-	require.Len(t, out.MostExpensive, 2)
+	require.Len(t, out.MostExpensive, 1)
 	assert.Equal(t, "openai/gpt-4o-mini", out.MostExpensive[0].ModelID)
 	assert.InDelta(t, (c1+c3)/2.0, out.MostExpensive[0].AverageCostUSD, 1e-9)
 	assert.InDelta(t, c1+c3, out.MostExpensive[0].TotalCostUSD, 1e-9)
-	assert.InDelta(t, c2, out.MostExpensive[1].AverageCostUSD, 1e-9)
 
-	assert.InDelta(t, (c1+c2+c3)/3.0, out.AverageCostPerAssistantTurnUSD, 1e-9)
+	assert.InDelta(t, (c1+c3)/2.0, out.AverageCostPerAssistantTurnUSD, 1e-9)
 }
 
 func TestAggregateOpenRouterUsageMetrics_Empty(t *testing.T) {

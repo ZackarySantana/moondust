@@ -2,6 +2,7 @@ import Bot from "lucide-solid/icons/bot";
 import Wrench from "lucide-solid/icons/wrench";
 import type { Component } from "solid-js";
 import { For, Show } from "solid-js";
+import { AssistantMessageForkButton } from "@/components/assistant-message-fork-button";
 import { AssistantMessageMetadataButton } from "@/components/assistant-message-metadata";
 import { AssistantPartMessageRow } from "@/components/thread/assistant-message-parts";
 import type { AssistantPart } from "@/lib/chat/types";
@@ -42,6 +43,17 @@ export const AssistantTurnView: Component<{
     headerLine: () => string | null;
     /** When set, shows per-message actions (e.g. metadata) on the header row. */
     metadataMsg?: () => store.ChatMessage | undefined;
+    /** Fork thread from this assistant message (copies history through this turn). */
+    forkFromMessage?: () =>
+        | {
+              threadId: string;
+              projectId: string;
+              sourceUsesWorktree: boolean;
+              forkMessage: (messageId: string) => Promise<store.Thread>;
+              forkPending: () => boolean;
+              forkError: () => unknown;
+          }
+        | undefined;
 }> = (props) => {
     const hasTools = () => props.parts().some((p) => p.kind === "tool");
     const hasThought = () => props.parts().some((p) => p.kind === "thought");
@@ -49,13 +61,18 @@ export const AssistantTurnView: Component<{
         Boolean(props.headerLine()?.trim()) || hasTools() || hasThought();
 
     const metadata = () => props.metadataMsg?.();
+    const forkOpts = () => props.forkFromMessage?.();
+
+    const showFirstRowChrome = () =>
+        props.parts().length > 0 &&
+        (showHeader() || metadata() != null || forkOpts() != null);
 
     return (
         <div class="flex w-full min-w-0 flex-col items-stretch">
             <For each={props.parts()}>
                 {(part, index) => (
                     <div class="flex w-full min-w-0 flex-col gap-1 overflow-x-hidden py-1">
-                        <Show when={index() === 0 && showHeader()}>
+                        <Show when={index() === 0 && showFirstRowChrome()}>
                             <div class="flex min-w-0 gap-2">
                                 <div
                                     class="w-5 shrink-0"
@@ -67,13 +84,36 @@ export const AssistantTurnView: Component<{
                                             {props.headerLine()}
                                         </p>
                                     </Show>
-                                    <Show when={metadata()}>
-                                        {(msg) => (
-                                            <AssistantMessageMetadataButton
-                                                msg={msg()}
-                                            />
-                                        )}
-                                    </Show>
+                                    <div class="ml-auto flex shrink-0 items-center gap-0.5">
+                                        <Show when={metadata()}>
+                                            {(msg) => {
+                                                const o = forkOpts();
+                                                return (
+                                                    <>
+                                                        <Show when={!!o}>
+                                                            <AssistantMessageForkButton
+                                                                sourceUsesWorktree={
+                                                                    o!
+                                                                        .sourceUsesWorktree
+                                                                }
+                                                                fork={() =>
+                                                                    o!.forkMessage(
+                                                                        msg()
+                                                                            .id,
+                                                                    )
+                                                                }
+                                                                forkPending={o!.forkPending()}
+                                                                forkError={o!.forkError()}
+                                                            />
+                                                        </Show>
+                                                        <AssistantMessageMetadataButton
+                                                            msg={msg()}
+                                                        />
+                                                    </>
+                                                );
+                                            }}
+                                        </Show>
+                                    </div>
                                 </div>
                             </div>
                         </Show>

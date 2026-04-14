@@ -109,13 +109,17 @@ export const CURSOR_CHAT_MODELS_FALLBACK: readonly ModelChoice[] = [
     },
 ];
 
-/** Normalize persisted thread.chat_provider (empty legacy threads default to OpenRouter). */
-export function chatProviderFromThread(
-    raw: string | undefined,
-): ChatProviderId {
-    const t = (raw ?? "").trim();
+/**
+ * Parses a persisted `chat_provider` string. Empty or unknown values throw — there is no default.
+ */
+export function parseChatProviderId(raw: string): ChatProviderId {
+    const t = raw.trim();
+    if (t === "") {
+        throw new Error("chat_provider is required");
+    }
     if (t === "cursor") return "cursor";
-    return "openrouter";
+    if (t === "openrouter") return "openrouter";
+    throw new Error(`invalid chat_provider: ${JSON.stringify(raw)}`);
 }
 
 /** Raw model id from thread (may be empty). */
@@ -151,10 +155,14 @@ export function assistantAttributionLabel(
     modelRaw: string | undefined,
     modelChoices: readonly ModelChoice[] = [...OPENROUTER_CHAT_MODELS_FALLBACK],
 ): string | null {
-    const prov = chatProviderFromThread(providerRaw);
+    const pr = (providerRaw ?? "").trim();
+    const modelLabel = modelDisplayName(modelRaw, modelChoices);
+    if (pr === "") {
+        return modelLabel || null;
+    }
+    const prov = parseChatProviderId(pr);
     const providerLabel =
         CHAT_PROVIDERS.find((p) => p.id === prov)?.label ?? prov;
-    const modelLabel = modelDisplayName(modelRaw, modelChoices);
     if (!providerLabel && !modelLabel) return null;
     if (providerLabel && modelLabel) return `${providerLabel} · ${modelLabel}`;
     return providerLabel || modelLabel;

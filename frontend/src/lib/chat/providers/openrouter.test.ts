@@ -37,23 +37,14 @@ describe("openRouterPersistedAssistantParts", () => {
         expect(parts[1]).toMatchObject({ kind: "text", text: "hello" });
     });
 
-    test("legacy tool_calls plus trailing content when no segments", () => {
+    test("content only when no segments", () => {
         const parts = openRouterPersistedAssistantParts({
             role: "assistant",
             content: "answer",
             metadata: {
-                openrouter: {
-                    tool_calls: [
-                        {
-                            name: "run",
-                            arguments: "{}",
-                            output: "ok",
-                        },
-                    ],
-                },
+                openrouter: {},
             },
         } as store.ChatMessage);
-        expect(parts.map((p) => p.kind)).toEqual(["tool", "text"]);
-        expect(parts[1]).toMatchObject({ kind: "text", text: "answer" });
+        expect(parts).toEqual([{ kind: "text", text: "answer" }]);
     });
 });

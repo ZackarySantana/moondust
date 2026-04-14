@@ -11,6 +11,14 @@ import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import type { store } from "@wails/go/models";
 
+function openRouterSegmentToolCount(
+    m: store.OpenRouterChatMessageMetadata | undefined,
+): number {
+    const segs = m?.segments;
+    if (!segs?.length) return 0;
+    return segs.filter((s) => (s.tool?.name ?? "").trim().length > 0).length;
+}
+
 function hasOpenRouterMeta(
     m: store.OpenRouterChatMessageMetadata | undefined,
 ): boolean {
@@ -20,7 +28,7 @@ function hasOpenRouterMeta(
         m.completion_tokens != null ||
         m.total_tokens != null ||
         m.cost_usd != null ||
-        (m.tool_calls != null && m.tool_calls.length > 0)
+        openRouterSegmentToolCount(m) > 0
     );
 }
 
@@ -237,7 +245,8 @@ export const AssistantMessageMetadataButton: Component<{
                                     </Show>
                                     <Show
                                         when={
-                                            (or()!.tool_calls?.length ?? 0) > 0
+                                            openRouterSegmentToolCount(or()!) >
+                                            0
                                         }
                                     >
                                         <dt class="text-slate-500">
@@ -245,7 +254,9 @@ export const AssistantMessageMetadataButton: Component<{
                                         </dt>
                                         <dd class="font-mono text-slate-200">
                                             {formatInt(
-                                                or()!.tool_calls!.length,
+                                                openRouterSegmentToolCount(
+                                                    or()!,
+                                                ),
                                             )}
                                         </dd>
                                     </Show>

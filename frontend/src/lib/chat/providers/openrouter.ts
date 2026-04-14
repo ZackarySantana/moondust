@@ -37,12 +37,6 @@ export function openRouterPersistedAssistantParts(
         return parts;
     }
 
-    const legacyTools =
-        or?.tool_calls?.filter((t) => (t.name ?? "").trim()) ?? [];
-    for (const tc of legacyTools) {
-        parts.push({ kind: "tool", tool: tc });
-    }
-
     const content = (msg.content ?? "").trim();
     if (content.length > 0) {
         parts.push({ kind: "text", text: msg.content });

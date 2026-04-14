@@ -16,6 +16,7 @@ import { ChatMarkdown } from "@/components/chat-markdown";
 import { ChatProviderBar } from "@/components/chat-provider-bar";
 import {
     assistantAttributionLabel,
+    parseChatProviderId,
     type ChatProviderId,
     type ModelChoice,
 } from "@/lib/chat-provider";
@@ -45,12 +46,11 @@ export const ThreadChatPane: Component<{
     /** Sidebar stream phase; drives thought-row busy state with the live snapshot. */
     streamingPhase: () => SidebarStreamPhase;
     streamingAttribution: () => string | null;
-    threadQueryData: () => store.Thread | undefined;
     modelChoices: () => ModelChoice[];
     canSend: () => boolean;
     onSubmit: () => void;
     sendMutationPending: boolean;
-    chatProvider: () => ChatProviderId;
+    chatProvider: () => ChatProviderId | undefined;
     chatModel: () => string;
     setProvider: (id: ChatProviderId) => void;
     setModel: (modelId: string) => void;
@@ -58,6 +58,15 @@ export const ThreadChatPane: Component<{
     providerDisabled: () => boolean;
     modelDisabled: () => boolean;
     chatTextareaRef: (el: HTMLTextAreaElement) => void;
+    /** When set, each assistant message shows a fork action (copy history through that turn). */
+    forkAssistant?: {
+        threadId: string;
+        projectId: string;
+        sourceUsesWorktree: boolean;
+        forkMessage: (messageId: string) => Promise<store.Thread>;
+        forkPending: () => boolean;
+        forkError: () => unknown;
+    };
 }> = (props) => {
     let messagesContainerRef!: HTMLDivElement;
     const [userAtBottom, setUserAtBottom] = createSignal(true);
@@ -75,15 +84,17 @@ export const ThreadChatPane: Component<{
         });
     }
 
-    const streamParts = createMemo(() =>
-        streamingAssistantParts(props.chatProvider(), {
+    const streamParts = createMemo(() => {
+        const cp = props.chatProvider();
+        if (cp === undefined) return [];
+        return streamingAssistantParts(cp, {
             reasoningFull: props.streamingReasoningText(),
             reasoningDurationSec: props.streamingThinkingDurationSec(),
             thinkingPhase: props.streamingPhase() === "thinking",
             streamPhase: props.streamingPhase(),
             chunks: props.streamingChunks(),
-        }),
-    );
+        });
+    });
 
     const hasStreamingAssistantContent = () =>
         streamPartsHaveVisibleContent(streamParts());
@@ -205,19 +216,10 @@ export const ThreadChatPane: Component<{
                                     const assistantLine = () => {
                                         if (msg.role !== "assistant")
                                             return null;
-                                        return (
-                                            assistantAttributionLabel(
-                                                msg.chat_provider,
-                                                msg.chat_model,
-                                                props.modelChoices(),
-                                            ) ??
-                                            assistantAttributionLabel(
-                                                props.threadQueryData()
-                                                    ?.chat_provider,
-                                                props.threadQueryData()
-                                                    ?.chat_model,
-                                                props.modelChoices(),
-                                            )
+                                        return assistantAttributionLabel(
+                                            msg.chat_provider,
+                                            msg.chat_model,
+                                            props.modelChoices(),
                                         );
                                     };
                                     return (
@@ -234,7 +236,9 @@ export const ThreadChatPane: Component<{
                                                     <AssistantTurnView
                                                         parts={() =>
                                                             getChatFormatter(
-                                                                msg.chat_provider,
+                                                                parseChatProviderId(
+                                                                    msg.chat_provider,
+                                                                ),
                                                             ).persistedAssistantParts(
                                                                 msg,
                                                             )
@@ -244,6 +248,36 @@ export const ThreadChatPane: Component<{
                                                             assistantLine
                                                         }
                                                         metadataMsg={() => msg}
+                                                        forkFromMessage={() =>
+                                                            props.forkAssistant
+                                                                ? {
+                                                                      threadId:
+                                                                          props
+                                                                              .forkAssistant
+                                                                              .threadId,
+                                                                      projectId:
+                                                                          props
+                                                                              .forkAssistant
+                                                                              .projectId,
+                                                                      sourceUsesWorktree:
+                                                                          props
+                                                                              .forkAssistant
+                                                                              .sourceUsesWorktree,
+                                                                      forkMessage:
+                                                                          props
+                                                                              .forkAssistant
+                                                                              .forkMessage,
+                                                                      forkPending:
+                                                                          props
+                                                                              .forkAssistant
+                                                                              .forkPending,
+                                                                      forkError:
+                                                                          props
+                                                                              .forkAssistant
+                                                                              .forkError,
+                                                                  }
+                                                                : undefined
+                                                        }
                                                     />
                                                 }
                                             >
@@ -338,16 +372,25 @@ export const ThreadChatPane: Component<{
                             }}
                         />
                         <div class="flex flex-wrap items-center justify-between gap-2 px-2.5 pb-2">
-                            <ChatProviderBar
-                                provider={props.chatProvider()}
-                                onProviderChange={props.setProvider}
-                                model={props.chatModel()}
-                                onModelChange={props.setModel}
-                                modelChoices={props.modelChoices()}
-                                showOpenRouterKeyHint={props.showOpenRouterKeyHint()}
-                                providerDisabled={props.providerDisabled()}
-                                modelDisabled={props.modelDisabled()}
-                            />
+                            <Show
+                                when={props.chatProvider()}
+                                fallback={
+                                    <span class="text-[11px] text-slate-500">
+                                        Loading…
+                                    </span>
+                                }
+                            >
+                                <ChatProviderBar
+                                    provider={props.chatProvider()!}
+                                    onProviderChange={props.setProvider}
+                                    model={props.chatModel()}
+                                    onModelChange={props.setModel}
+                                    modelChoices={props.modelChoices()}
+                                    showOpenRouterKeyHint={props.showOpenRouterKeyHint()}
+                                    providerDisabled={props.providerDisabled()}
+                                    modelDisabled={props.modelDisabled()}
+                                />
+                            </Show>
                             <div class="flex shrink-0 items-center gap-2">
                                 <kbd class="hidden items-center rounded border border-slate-700/50 bg-slate-800/40 px-1.5 py-0.5 font-mono text-[9px] leading-none text-slate-600 sm:inline-flex">
                                     Enter

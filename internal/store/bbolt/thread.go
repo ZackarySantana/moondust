@@ -87,6 +87,12 @@ func (s *threadStore) ListByProject(ctx context.Context, projectID string) ([]*s
 }
 
 func (s *threadStore) Update(ctx context.Context, thread *store.Thread) error {
+	if thread == nil {
+		return fmt.Errorf("thread is nil")
+	}
+	if err := thread.Validate(); err != nil {
+		return err
+	}
 	data, err := json.Marshal(thread)
 	if err != nil {
 		return fmt.Errorf("marshal thread: %w", err)
@@ -163,6 +169,14 @@ func (s *messageStore) Append(ctx context.Context, threadID string, messages ...
 			}
 		}
 
+		for _, m := range messages {
+			if m == nil {
+				return fmt.Errorf("nil message")
+			}
+			if err := m.Validate(); err != nil {
+				return err
+			}
+		}
 		current = append(current, messages...)
 		data, err := json.Marshal(current)
 		if err != nil {

@@ -6,6 +6,9 @@ export const queryClient = new QueryClient({
         queries: {
             // Desktop IPC: avoid refetching on every focus; tune as needed.
             staleTime: 30_000,
+            // Wails: window focus changes often; avoid surprise IPC refetches when stale.
+            refetchOnWindowFocus: false,
+            refetchOnReconnect: false,
         },
     },
 });
@@ -17,11 +20,16 @@ export const queryKeys = {
         detail: (id: string) => ["projects", id] as const,
     },
     settings: ["settings"] as const,
+    notifications: {
+        pushAvailable: ["notifications", "push-available"] as const,
+    },
     threads: {
         all: ["threads"] as const,
         detail: (id: string) => ["threads", id] as const,
         messages: (id: string) => ["threads", id, "messages"] as const,
         gitStatus: (id: string) => ["threads", id, "git-status"] as const,
+        fileDiff: (threadId: string, path: string, status: string) =>
+            ["threads", threadId, "file-diff", path, status] as const,
     },
     /** OpenRouter GET /api/v1/models (filtered); safe to cache longer. */
     openRouterModels: ["openrouter", "chat-models"] as const,
@@ -32,3 +40,39 @@ export const queryKeys = {
     /** Cursor Agent CLI (`agent`) detection and status probes. */
     cursorCLI: ["cursor", "cli-info"] as const,
 };
+
+/** Refetch only `ListThreads` (exact `["threads"]`), not every cached thread query. */
+export async function invalidateThreadList(qc: QueryClient): Promise<void> {
+    await qc.invalidateQueries({
+        queryKey: queryKeys.threads.all,
+        exact: true,
+    });
+}
+
+/** Invalidate detail, messages, git-status, file-diff, etc. for one thread (prefix match). */
+export async function invalidateThreadScoped(
+    qc: QueryClient,
+    threadId: string,
+): Promise<void> {
+    await qc.invalidateQueries({
+        queryKey: queryKeys.threads.detail(threadId),
+    });
+}
+
+/** Refetch only the project list query. */
+export async function invalidateProjectList(qc: QueryClient): Promise<void> {
+    await qc.invalidateQueries({
+        queryKey: queryKeys.projects.all,
+        exact: true,
+    });
+}
+
+/** Invalidate one project detail query. */
+export async function invalidateProjectScoped(
+    qc: QueryClient,
+    projectId: string,
+): Promise<void> {
+    await qc.invalidateQueries({
+        queryKey: queryKeys.projects.detail(projectId),
+    });
+}

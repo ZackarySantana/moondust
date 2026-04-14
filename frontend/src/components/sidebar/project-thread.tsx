@@ -1,13 +1,10 @@
 import { A } from "@solidjs/router";
-import { useQueryClient } from "@tanstack/solid-query";
 import { createMemo, createSignal, Show, type Component } from "solid-js";
-import { RenameThread } from "@wails/go/app/App";
 import type { SidebarStreamSnapshot } from "@/lib/chat-stream-sidebar-store";
 import {
     sidebarStreams,
     truncateSidebarPreview,
 } from "@/lib/chat-stream-sidebar-store";
-import { queryKeys } from "@/lib/query-client";
 import { cn } from "@/lib/utils";
 
 function streamDotClass(s: SidebarStreamSnapshot | undefined): string {
@@ -41,12 +38,12 @@ function streamDotTitle(s: SidebarStreamSnapshot | undefined): string {
 export const ProjectThread: Component<{
     projectID: string;
     threadID: string;
+    onRenameThread: (threadId: string, title: string) => void | Promise<void>;
     name: string;
     time?: string;
     active?: boolean;
     shortcutHint?: string;
 }> = (props) => {
-    const queryClient = useQueryClient();
     const [editing, setEditing] = createSignal(false);
     const [draft, setDraft] = createSignal("");
     let inputRef!: HTMLInputElement;
@@ -72,13 +69,7 @@ export const ProjectThread: Component<{
         const trimmed = draft().trim();
         setEditing(false);
         if (trimmed && trimmed !== props.name) {
-            await RenameThread(props.threadID, trimmed);
-            await queryClient.invalidateQueries({
-                queryKey: queryKeys.threads.all,
-            });
-            await queryClient.invalidateQueries({
-                queryKey: queryKeys.threads.detail(props.threadID),
-            });
+            await props.onRenameThread(props.threadID, trimmed);
         }
     }
 

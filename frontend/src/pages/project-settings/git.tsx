@@ -1,13 +1,11 @@
 import type { Component } from "solid-js";
-import { createSignal } from "solid-js";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { FieldRow, Section } from "@/components/settings-form";
 import { useProjectSettings } from "./layout";
 
 export const ProjectGitPage: Component = () => {
-    const { markDirty } = useProjectSettings();
-    const [defaultBranch, setDefaultBranch] = createSignal("");
-    const [autoPull, setAutoPull] = createSignal("");
-    const [commitSigning, setCommitSigning] = createSignal("");
+    const { markDirty, fields } = useProjectSettings();
 
     function handleInput(setter: (v: string) => void) {
         return (e: InputEvent & { currentTarget: HTMLInputElement }) => {
@@ -19,32 +17,52 @@ export const ProjectGitPage: Component = () => {
     return (
         <Section
             title="Git"
-            description="Version control behavior for this project."
+            description="Default branch and fetch behavior for this project repository."
         >
             <FieldRow
-                id="proj-default-branch"
+                id="proj-git-default-branch"
                 label="Default branch"
-                value={defaultBranch()}
+                value={fields.defaultBranch()}
                 placeholder="main"
-                description="Branch checked out when opening the project."
-                onInput={handleInput(setDefaultBranch)}
+                description="Required. The branch you treat as the main line of development (e.g. main or master). Save is disabled until this is set."
+                onInput={handleInput(fields.setDefaultBranch)}
             />
-            <FieldRow
-                id="proj-auto-pull"
-                label="Auto-pull"
-                value={autoPull()}
-                placeholder="on change"
-                description="When to pull upstream changes automatically."
-                onInput={handleInput(setAutoPull)}
-            />
-            <FieldRow
-                id="proj-commit-signing"
-                label="Commit signing"
-                value={commitSigning()}
-                placeholder="Disabled"
-                description="GPG or SSH key used to sign commits."
-                onInput={handleInput(setCommitSigning)}
-            />
+            <div class="grid grid-cols-[11rem_1fr] items-start gap-4">
+                <Label
+                    for="proj-auto-fetch"
+                    class="mb-0 pt-2 text-right text-[13px] text-slate-400"
+                >
+                    Auto-fetch
+                </Label>
+                <div class="space-y-1">
+                    <Select
+                        id="proj-auto-fetch"
+                        value={fields.autoFetch()}
+                        onChange={(e) => {
+                            fields.setAutoFetch(e.currentTarget.value);
+                            markDirty();
+                        }}
+                    >
+                        <option value="off">Never</option>
+                        <option value="new_thread">
+                            When creating a thread
+                        </option>
+                        <option value="fork">When forking a thread</option>
+                        <option value="both">
+                            When creating or forking a thread
+                        </option>
+                    </Select>
+                    <p class="text-xs text-slate-600">
+                        Runs{" "}
+                        <span class="font-mono text-slate-500">
+                            git fetch origin
+                        </span>{" "}
+                        in the project folder before the operation (updates
+                        remote refs; does not merge or pull into your working
+                        tree).
+                    </p>
+                </div>
+            </div>
         </Section>
     );
 };
