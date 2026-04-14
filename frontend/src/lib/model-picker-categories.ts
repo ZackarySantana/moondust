@@ -132,26 +132,34 @@ export function buildOpenRouterSplitCategories(
 }
 
 /**
- * Cursor `agent --list-models`: group Auto, Composer-*, and everything else.
+ * Cursor `agent --list-models`: Auto + Composer (plan “Auto” bucket + composer ids)
+ * vs named/API models.
  */
 export function buildCursorModelCategories(
     models: readonly ModelChoice[],
 ): ModelPickerCategory[] {
     const auto: ModelChoice[] = [];
     const composer: ModelChoice[] = [];
-    const rest: ModelChoice[] = [];
+    const api: ModelChoice[] = [];
     for (const m of models) {
         const id = m.id.toLowerCase();
         if (id === "auto") auto.push(m);
         else if (id.startsWith("composer-")) composer.push(m);
-        else rest.push(m);
+        else api.push(m);
     }
-    rest.sort((a, b) => a.label.localeCompare(b.label));
+    composer.sort((a, b) => a.label.localeCompare(b.label));
+    api.sort((a, b) => a.label.localeCompare(b.label));
+    const autoComposer: ModelChoice[] = [...auto, ...composer];
     const out: ModelPickerCategory[] = [];
-    if (auto.length) out.push({ id: "auto", label: "Auto", models: auto });
-    if (composer.length)
-        out.push({ id: "composer", label: "Composer", models: composer });
-    if (rest.length)
-        out.push({ id: "other", label: "More models", models: rest });
+    if (autoComposer.length) {
+        out.push({
+            id: "auto_composer",
+            label: "Auto + Composer",
+            models: autoComposer,
+        });
+    }
+    if (api.length) {
+        out.push({ id: "api", label: "API", models: api });
+    }
     return out;
 }
