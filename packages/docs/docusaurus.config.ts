@@ -72,6 +72,11 @@ const config: Config = {
                     label: "Docs",
                 },
                 {
+                    href: "https://docs.moondust.pro/storybook",
+                    label: "Storybook",
+                    position: "right",
+                },
+                {
                     href: "https://github.com/zackarysantana/moondust",
                     label: "GitHub",
                     position: "right",
@@ -99,6 +104,10 @@ const config: Config = {
                         {
                             label: "Future plans",
                             to: "/docs/plans/multi-device-shared-server",
+                        },
+                        {
+                            label: "Storybook",
+                            href: "https://docs.moondust.pro/storybook",
                         },
                     ],
                 },

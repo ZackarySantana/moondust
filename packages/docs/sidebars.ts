@@ -1,7 +1,7 @@
 import type { SidebarsConfig } from "@docusaurus/plugin-content-docs";
 
 /**
- * Explicit order: intro → getting started → features → providers → plans → contributing → architecture.
+ * Explicit order: intro → getting started → features → providers → plans → contributing → architecture → storybook.
  */
 const sidebars: SidebarsConfig = {
     tutorialSidebar: [
@@ -35,6 +35,7 @@ const sidebars: SidebarsConfig = {
         },
         "contributing",
         "architecture",
+        "storybook",
     ],
 };
 
