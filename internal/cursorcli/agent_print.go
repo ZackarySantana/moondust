@@ -20,11 +20,14 @@ type AgentStreamUsage struct {
 	OutputTokens     int `json:"outputTokens"`
 	CacheReadTokens  int `json:"cacheReadTokens"`
 	CacheWriteTokens int `json:"cacheWriteTokens"`
+	// RequestID is copied from the terminal result event (not nested under usage).
+	RequestID string
 }
 
 type streamJSONLine struct {
 	Type        string `json:"type"`
 	Subtype     string `json:"subtype"`
+	RequestID   string `json:"request_id"`
 	TimestampMs int64  `json:"timestamp_ms"`
 	Message     *struct {
 		Role    string `json:"role"`
@@ -148,6 +151,12 @@ func consumeAgentStreamJSON(r io.Reader, onDelta func(string) error) (string, *A
 						CacheReadTokens:  ev.Usage.CacheReadTokens,
 						CacheWriteTokens: ev.Usage.CacheWriteTokens,
 					}
+				}
+				if usage != nil && strings.TrimSpace(ev.RequestID) != "" {
+					usage.RequestID = strings.TrimSpace(ev.RequestID)
+				}
+				if usage == nil && strings.TrimSpace(ev.RequestID) != "" {
+					usage = &AgentStreamUsage{RequestID: strings.TrimSpace(ev.RequestID)}
 				}
 			} else if ev.IsError || ev.Subtype == "error" {
 				msg := strings.TrimSpace(ev.Error)

@@ -84,6 +84,11 @@ func (s *Service) streamAssistantCursor(
 	system := chat.WithWorkspaceDir(chat.DefaultSystemPrompt, workDir)
 	prompt := buildCursorAgentPrompt(system, history)
 
+	var usageBefore *store.CursorUsageSnapshot
+	if u, err := cursorcli.FetchCurrentPeriodUsage(ctx); err == nil {
+		usageBefore = u
+	}
+
 	final, usage, err := cursorcli.StreamPrintHeadless(ctx, agentPath, workDir, model, prompt, onDelta)
 	if err != nil {
 		return err
@@ -103,25 +108,43 @@ func (s *Service) streamAssistantCursor(
 		ChatProvider: "cursor",
 		ChatModel:    model,
 	}
-	if usage != nil {
+	var usageAfter *store.CursorUsageSnapshot
+	if u, err := cursorcli.FetchCurrentPeriodUsage(ctx); err == nil {
+		usageAfter = u
+	}
+
+	if usage != nil || (usageBefore != nil && usageAfter != nil) {
 		cur := &store.CursorChatMessageMetadata{}
-		if usage.InputTokens > 0 {
-			v := usage.InputTokens
-			cur.InputTokens = &v
+		if usage != nil {
+			if usage.InputTokens > 0 {
+				v := usage.InputTokens
+				cur.InputTokens = &v
+			}
+			if usage.OutputTokens > 0 {
+				v := usage.OutputTokens
+				cur.OutputTokens = &v
+			}
+			if usage.CacheReadTokens > 0 {
+				v := usage.CacheReadTokens
+				cur.CacheReadTokens = &v
+			}
+			if usage.CacheWriteTokens > 0 {
+				v := usage.CacheWriteTokens
+				cur.CacheWriteTokens = &v
+			}
+			if usage.RequestID != "" {
+				cur.RequestID = usage.RequestID
+			}
 		}
-		if usage.OutputTokens > 0 {
-			v := usage.OutputTokens
-			cur.OutputTokens = &v
+		if usageBefore != nil && usageAfter != nil {
+			if d := percentPointDelta(usageBefore.AutoPercentUsed, usageAfter.AutoPercentUsed); d != nil {
+				cur.PlanAutoPercentDelta = d
+			}
+			if d := percentPointDelta(usageBefore.APIPercentUsed, usageAfter.APIPercentUsed); d != nil {
+				cur.PlanAPIPercentDelta = d
+			}
 		}
-		if usage.CacheReadTokens > 0 {
-			v := usage.CacheReadTokens
-			cur.CacheReadTokens = &v
-		}
-		if usage.CacheWriteTokens > 0 {
-			v := usage.CacheWriteTokens
-			cur.CacheWriteTokens = &v
-		}
-		if cur.InputTokens != nil || cur.OutputTokens != nil || cur.CacheReadTokens != nil || cur.CacheWriteTokens != nil {
+		if cursorChatMetadataNonEmpty(cur) {
 			replyMessage.Metadata = &store.ChatMessageMetadata{Cursor: cur}
 		}
 	}
@@ -132,4 +155,20 @@ func (s *Service) streamAssistantCursor(
 		return fmt.Errorf("append assistant message: %w", err)
 	}
 	return nil
+}
+
+func percentPointDelta(before, after *float64) *float64 {
+	if before == nil || after == nil {
+		return nil
+	}
+	d := *after - *before
+	return &d
+}
+
+func cursorChatMetadataNonEmpty(cur *store.CursorChatMessageMetadata) bool {
+	if cur == nil {
+		return false
+	}
+	return cur.InputTokens != nil || cur.OutputTokens != nil || cur.CacheReadTokens != nil || cur.CacheWriteTokens != nil ||
+		cur.RequestID != "" || cur.PlanAutoPercentDelta != nil || cur.PlanAPIPercentDelta != nil
 }

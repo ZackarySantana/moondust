@@ -28,6 +28,15 @@ type dashboardUsageJSON struct {
 	NamedModelSelectedDisplayMessage string `json:"namedModelSelectedDisplayMessage"`
 }
 
+// FetchCurrentPeriodUsage returns the same dashboard snapshot as the sidebar (requires Cursor login).
+func FetchCurrentPeriodUsage(ctx context.Context) (*store.CursorUsageSnapshot, error) {
+	tok, err := readCursorAccessToken()
+	if err != nil {
+		return nil, err
+	}
+	return fetchCurrentPeriodUsage(ctx, tok)
+}
+
 func fetchCurrentPeriodUsage(ctx context.Context, accessToken string) (*store.CursorUsageSnapshot, error) {
 	cctx, cancel := context.WithTimeout(ctx, usageFetchTimeout)
 	defer cancel()

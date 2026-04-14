@@ -43,6 +43,11 @@ type CursorChatMessageMetadata struct {
 	CacheReadTokens  *int   `json:"cache_read_tokens,omitempty"`
 	CacheWriteTokens *int   `json:"cache_write_tokens,omitempty"`
 	RequestID        string `json:"request_id,omitempty"`
+	// PlanAutoPercentDelta and PlanAPIPercentDelta are the change in Cursor dashboard
+	// plan-usage percentages (Auto vs API buckets) measured immediately before and after
+	// this turn. Best-effort: other concurrent Cursor usage can skew the delta.
+	PlanAutoPercentDelta *float64 `json:"plan_auto_percent_delta,omitempty"`
+	PlanAPIPercentDelta  *float64 `json:"plan_api_percent_delta,omitempty"`
 }
 
 // OpenRouterToolCallRecord is one tool invocation from an assistant turn (persisted for history).

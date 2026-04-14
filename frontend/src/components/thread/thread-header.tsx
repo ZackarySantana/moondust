@@ -3,15 +3,11 @@ import PanelBottom from "lucide-solid/icons/panel-bottom";
 import PanelBottomDashed from "lucide-solid/icons/panel-bottom-dashed";
 import PanelRight from "lucide-solid/icons/panel-right";
 import PanelRightDashed from "lucide-solid/icons/panel-right-dashed";
+import Settings from "lucide-solid/icons/settings";
 import Trash2 from "lucide-solid/icons/trash-2";
+import { A } from "@solidjs/router";
 import type { Component } from "solid-js";
-import {
-    createEffect,
-    createSignal,
-    on,
-    onCleanup,
-    Show,
-} from "solid-js";
+import { createEffect, createSignal, on, onCleanup, Show } from "solid-js";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -38,6 +34,8 @@ export const ThreadHeader: Component<{
     onToggleSidebar: () => void;
     formatKey: (id: string) => string;
     hasWorktree: () => boolean;
+    /** Route to thread settings (read-only details). */
+    threadSettingsHref: string;
     onDeleteThread: (removeWorktree: boolean) => Promise<void>;
 }> = (props) => {
     const [deleteOpen, setDeleteOpen] = createSignal(false);
@@ -206,6 +204,18 @@ export const ThreadHeader: Component<{
                         Git
                         <Kbd combo={props.formatKey("toggle_sidebar")} />
                     </button>
+                    <A
+                        href={props.threadSettingsHref}
+                        class="inline-flex cursor-pointer items-center rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-800/40 hover:text-slate-300"
+                        title="Thread settings"
+                        aria-label="Thread settings"
+                    >
+                        <Settings
+                            class="size-3.5"
+                            stroke-width={2}
+                            aria-hidden
+                        />
+                    </A>
                     <button
                         type="button"
                         class="inline-flex cursor-pointer items-center rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-red-950/35 hover:text-red-300"

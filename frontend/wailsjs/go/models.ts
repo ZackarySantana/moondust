@@ -56,6 +56,8 @@ export namespace store {
 	    cache_read_tokens?: number;
 	    cache_write_tokens?: number;
 	    request_id?: string;
+	    plan_auto_percent_delta?: number;
+	    plan_api_percent_delta?: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new CursorChatMessageMetadata(source);
@@ -68,6 +70,8 @@ export namespace store {
 	        this.cache_read_tokens = source["cache_read_tokens"];
 	        this.cache_write_tokens = source["cache_write_tokens"];
 	        this.request_id = source["request_id"];
+	        this.plan_auto_percent_delta = source["plan_auto_percent_delta"];
+	        this.plan_api_percent_delta = source["plan_api_percent_delta"];
 	    }
 	}
 	export class OpenRouterChatMessageMetadata {

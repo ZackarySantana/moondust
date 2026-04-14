@@ -20,6 +20,8 @@ import { SettingsProjectsPage } from "@/pages/settings/projects";
 import { SettingsProvidersPage } from "@/pages/settings/providers";
 import { SettingsShortcutsPage } from "@/pages/settings/shortcuts";
 import { ThreadPage } from "@/pages/thread";
+import { ThreadSettingsLayout } from "@/pages/thread-settings/layout";
+import { ThreadSettingsGeneralPage } from "@/pages/thread-settings/general";
 
 export default function App() {
     return (
@@ -32,6 +34,19 @@ export default function App() {
                 path="/project/:projectId/thread/:threadId"
                 component={ThreadPage}
             />
+            <Route
+                path="/project/:projectId/thread/:threadId/settings"
+                component={ThreadSettingsLayout}
+            >
+                <Route
+                    path="/"
+                    component={() => <Navigate href="general" />}
+                />
+                <Route
+                    path="/general"
+                    component={ThreadSettingsGeneralPage}
+                />
+            </Route>
             <Route
                 path="/project/:id/settings"
                 component={ProjectSettingsLayout}

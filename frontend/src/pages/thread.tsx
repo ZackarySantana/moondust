@@ -440,6 +440,7 @@ export const ThreadPage: Component = () => {
                     hasWorktree={() =>
                         !!(threadQuery.data?.worktree_dir ?? "").trim()
                     }
+                    threadSettingsHref={`/project/${params.projectId}/thread/${params.threadId}/settings/general`}
                     onDeleteThread={async (removeWorktree) => {
                         const tid = params.threadId;
                         await DeleteThread(tid, removeWorktree);
