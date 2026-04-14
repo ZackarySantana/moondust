@@ -4,6 +4,10 @@ import { plainPersistedAssistantParts } from "@/lib/chat/providers/defaults";
 import { openRouterPersistedAssistantParts } from "@/lib/chat/providers/openrouter";
 import type { store } from "@wails/go/models";
 
+/**
+ * Maps stored messages and optional live stream snapshots to {@link AssistantPart[]}.
+ * OpenRouter uses {@link streamPartsFromSnapshot} for streaming unless `streamingParts` is set.
+ */
 export type ChatProviderFormatter = {
     persistedAssistantParts: (msg: store.ChatMessage) => AssistantPart[];
     streamingParts?: (args: StreamingAssistantArgs) => AssistantPart[];

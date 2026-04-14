@@ -11,8 +11,7 @@ import {
     on,
     Show,
 } from "solid-js";
-import { AssistantMessageMetadataButton } from "@/components/assistant-message-metadata";
-import { AssistantPartMessageRow } from "@/components/thread/assistant-message-parts";
+import { AssistantTurnView } from "@/components/thread/assistant-turn-view";
 import { ChatMarkdown } from "@/components/chat-markdown";
 import { ChatProviderBar } from "@/components/chat-provider-bar";
 import {
@@ -25,55 +24,12 @@ import {
     streamingAssistantParts,
 } from "@/lib/chat/providers";
 import { streamPartsHaveVisibleContent } from "@/lib/chat/streaming";
-import type { StreamChunk } from "@/lib/chat-stream-sidebar-store";
+import type {
+    SidebarStreamPhase,
+    StreamChunk,
+} from "@/lib/chat-stream-sidebar-store";
 import type { store } from "@wails/go/models";
 import type { DiffTarget } from "./types";
-
-/** Stored assistant turn: each part is its own row (thought / text / tool). */
-const PersistedAssistantTurn: Component<{
-    msg: store.ChatMessage;
-    assistantLine: () => string | null;
-}> = (props) => {
-    const parts = () =>
-        getChatFormatter(props.msg.chat_provider).persistedAssistantParts(
-            props.msg,
-        );
-    const hasTools = () => parts().some((p) => p.kind === "tool");
-    const hasThought = () => parts().some((p) => p.kind === "thought");
-    const showHeader = () =>
-        Boolean(props.assistantLine()?.trim()) || hasTools() || hasThought();
-
-    return (
-        <div class="flex w-full min-w-0 flex-col items-stretch">
-            <For each={parts()}>
-                {(part, index) => (
-                    <div class="flex w-full min-w-0 justify-start overflow-x-hidden py-1">
-                        <div class="flex min-w-0 max-w-full flex-1 flex-col gap-1">
-                            <Show when={index() === 0 && showHeader()}>
-                                <div class="flex min-w-0 items-center gap-2">
-                                    <Show when={props.assistantLine()}>
-                                        {(line) => (
-                                            <p class="min-w-0 flex-1 text-[10px] leading-tight text-slate-500">
-                                                {line()}
-                                            </p>
-                                        )}
-                                    </Show>
-                                    <AssistantMessageMetadataButton
-                                        msg={props.msg}
-                                    />
-                                </div>
-                            </Show>
-                            <AssistantPartMessageRow
-                                part={part}
-                                streaming={false}
-                            />
-                        </div>
-                    </div>
-                )}
-            </For>
-        </div>
-    );
-};
 
 export const ThreadChatPane: Component<{
     messages: () => store.ChatMessage[];
@@ -86,6 +42,8 @@ export const ThreadChatPane: Component<{
     streamingReasoningText: () => string;
     streamingThinkingDurationSec: () => number | null;
     streamingChunks: () => StreamChunk[];
+    /** Sidebar stream phase; drives thought-row busy state with the live snapshot. */
+    streamingPhase: () => SidebarStreamPhase;
     streamingAttribution: () => string | null;
     threadQueryData: () => store.Thread | undefined;
     modelChoices: () => ModelChoice[];
@@ -117,19 +75,12 @@ export const ThreadChatPane: Component<{
         });
     }
 
-    const hasStreamingTool = () =>
-        props.streamingChunks().some((c) => c.kind === "tool");
-
-    const streamingThinkingPhase = () =>
-        props.streamingReasoningText().length > 0 &&
-        props.streamingText().length === 0 &&
-        !hasStreamingTool();
-
     const streamParts = createMemo(() =>
         streamingAssistantParts(props.chatProvider(), {
             reasoningFull: props.streamingReasoningText(),
             reasoningDurationSec: props.streamingThinkingDurationSec(),
-            thinkingPhase: streamingThinkingPhase(),
+            thinkingPhase: props.streamingPhase() === "thinking",
+            streamPhase: props.streamingPhase(),
             chunks: props.streamingChunks(),
         }),
     );
@@ -280,11 +231,19 @@ export const ThreadChatPane: Component<{
                                             <Show
                                                 when={msg.role === "user"}
                                                 fallback={
-                                                    <PersistedAssistantTurn
-                                                        msg={msg}
-                                                        assistantLine={
+                                                    <AssistantTurnView
+                                                        parts={() =>
+                                                            getChatFormatter(
+                                                                msg.chat_provider,
+                                                            ).persistedAssistantParts(
+                                                                msg,
+                                                            )
+                                                        }
+                                                        streaming={false}
+                                                        headerLine={
                                                             assistantLine
                                                         }
+                                                        metadataMsg={() => msg}
                                                     />
                                                 }
                                             >
@@ -317,29 +276,11 @@ export const ThreadChatPane: Component<{
                                         </div>
                                     }
                                 >
-                                    <div class="flex w-full min-w-0 flex-col items-stretch">
-                                        <Show
-                                            when={props.streamingAttribution()}
-                                        >
-                                            {(line) => (
-                                                <div class="flex w-full min-w-0 justify-start overflow-x-hidden py-1">
-                                                    <p class="min-w-0 max-w-[85%] text-[10px] leading-tight text-slate-500">
-                                                        {line()}
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </Show>
-                                        <For each={streamParts()}>
-                                            {(part) => (
-                                                <div class="flex w-full min-w-0 justify-start overflow-x-hidden py-1">
-                                                    <AssistantPartMessageRow
-                                                        part={part}
-                                                        streaming={true}
-                                                    />
-                                                </div>
-                                            )}
-                                        </For>
-                                    </div>
+                                    <AssistantTurnView
+                                        parts={streamParts}
+                                        streaming={true}
+                                        headerLine={props.streamingAttribution}
+                                    />
                                 </Show>
                             </Show>
                         </Show>

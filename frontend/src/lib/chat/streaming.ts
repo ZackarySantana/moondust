@@ -1,6 +1,11 @@
 import type { AssistantPart, StreamingAssistantArgs } from "@/lib/chat/types";
 
-/** Default live stream → parts (reasoning buffer + interleaved text/tools). */
+/**
+ * Default live stream → parts: one optional **thought** block (reasoning buffer) followed
+ * by **chunks** in order (text runs and tool rows). Persisted OpenRouter turns instead use
+ * `openRouterPersistedAssistantParts` (reasoning + segment loop); live and persisted
+ * shapes align after the assistant message is saved.
+ */
 export function streamPartsFromSnapshot(
     args: StreamingAssistantArgs,
 ): AssistantPart[] {
@@ -20,6 +25,10 @@ export function streamPartsFromSnapshot(
                 out.push({ kind: "text", text: c.text });
             }
         } else {
+            const name = (c.tool.name ?? "").trim();
+            if (!name) {
+                continue;
+            }
             out.push({ kind: "tool", tool: c.tool });
         }
     }

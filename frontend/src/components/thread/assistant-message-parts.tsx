@@ -1,9 +1,7 @@
-import ChevronDown from "lucide-solid/icons/chevron-down";
-import ChevronRight from "lucide-solid/icons/chevron-right";
-import Loader2 from "lucide-solid/icons/loader-2";
 import type { Component } from "solid-js";
 import { createEffect, createSignal, Show } from "solid-js";
 import { AssistantToolCallMessageRow } from "@/components/thread/assistant-tool-calls";
+import { CollapsibleGhostRow } from "@/components/thread/collapsible-ghost-row";
 import { ChatMarkdown } from "@/components/chat-markdown";
 import type { AssistantPart } from "@/lib/chat/types";
 
@@ -12,11 +10,7 @@ const ThoughtPartBlock: Component<{
     collapseOnThinkingEnd: boolean;
 }> = (props) => {
     const thinking = () => !!props.part.thinkingPhase;
-    const [expanded, setExpanded] = createSignal(true);
-
-    createEffect(() => {
-        if (thinking()) setExpanded(true);
-    });
+    const [expanded, setExpanded] = createSignal(false);
 
     createEffect(() => {
         if (props.collapseOnThinkingEnd && !props.part.thinkingPhase) {
@@ -25,64 +19,36 @@ const ThoughtPartBlock: Component<{
     });
 
     return (
-        <div class="flex flex-col gap-0.5">
-            <button
-                type="button"
-                onClick={() => setExpanded(!expanded())}
-                class="flex w-fit items-center gap-1.5 rounded px-1 py-0.5 text-[11px] text-slate-500 transition-colors hover:bg-slate-800/40 hover:text-slate-400"
-                aria-expanded={expanded()}
-                aria-label={
-                    expanded() ? "Collapse thinking" : "Expand thinking"
-                }
-            >
-                <Show
-                    when={thinking()}
-                    fallback={
-                        <Show
-                            when={expanded()}
-                            fallback={
-                                <ChevronRight
-                                    class="size-3 shrink-0"
-                                    stroke-width={2}
-                                    aria-hidden
-                                />
-                            }
-                        >
-                            <ChevronDown
-                                class="size-3 shrink-0"
-                                stroke-width={2}
-                                aria-hidden
-                            />
-                        </Show>
-                    }
-                >
-                    <Loader2
-                        class="size-3 shrink-0 animate-spin"
-                        stroke-width={2}
-                        aria-hidden
-                    />
-                </Show>
-                <span>Thinking</span>
-                <Show when={!thinking() && props.part.durationSec != null}>
-                    <span class="rounded-full bg-slate-800/70 px-1.5 py-px text-[10px] tabular-nums text-slate-500">
-                        {props.part.durationSec}s
-                    </span>
-                </Show>
-            </button>
-            <Show when={expanded()}>
+        <CollapsibleGhostRow
+            expanded={expanded()}
+            onToggle={() => setExpanded(!expanded())}
+            showBusy={thinking()}
+            ariaLabelExpanded="Collapse thinking"
+            ariaLabelCollapsed="Expand thinking"
+            body={
                 <div class="ml-1 border-l-2 border-slate-700/40 py-0.5 pl-3">
                     <pre class="max-h-52 overflow-y-auto whitespace-pre-wrap text-[11px] leading-relaxed text-slate-500 wrap-anywhere">
                         {props.part.text}
                     </pre>
                 </div>
+            }
+        >
+            <span>Thinking</span>
+            <Show when={!thinking() && props.part.durationSec != null}>
+                <span class="rounded-full bg-slate-800/70 px-1.5 py-px text-[10px] tabular-nums text-slate-500">
+                    {props.part.durationSec}s
+                </span>
             </Show>
-        </div>
+        </CollapsibleGhostRow>
     );
 };
 
 const TextPartBlock: Component<{ text: string }> = (props) => (
     <Show when={props.text.trim()}>
-        <ChatMarkdown source={props.text} variant="assistant" />
+        <ChatMarkdown
+            source={props.text}
+            variant="assistant"
+        />
     </Show>
 );
 

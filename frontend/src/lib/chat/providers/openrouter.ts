@@ -1,6 +1,11 @@
 import type { AssistantPart } from "@/lib/chat/types";
 import type { store } from "@wails/go/models";
 
+/**
+ * Maps a persisted assistant message (OpenRouter metadata) to parts. Live streaming uses
+ * `streamPartsFromSnapshot` from `@/lib/chat/streaming` unless a provider-specific
+ * `streamingParts` override is registered.
+ */
 export function openRouterPersistedAssistantParts(
     msg: store.ChatMessage,
 ): AssistantPart[] {

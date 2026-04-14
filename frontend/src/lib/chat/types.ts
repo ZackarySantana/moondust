@@ -3,7 +3,10 @@
  * storage into these parts; the thread UI renders only this shape.
  */
 
-import type { StreamChunk } from "@/lib/chat-stream-sidebar-store";
+import type {
+    SidebarStreamPhase,
+    StreamChunk,
+} from "@/lib/chat-stream-sidebar-store";
 
 export type ChatToolPayload = {
     id?: string;
@@ -26,6 +29,13 @@ export type AssistantPart =
 export type StreamingAssistantArgs = {
     reasoningFull: string;
     reasoningDurationSec: number | null;
+    /**
+     * True while the live sidebar stream is in the `thinking` phase (reasoning-only;
+     * no assistant response text yet). Drives the thought row busy state; keep in sync
+     * with {@link SidebarStreamPhase}.
+     */
     thinkingPhase: boolean;
     chunks: StreamChunk[];
+    /** Same snapshot as the sidebar stream; optional for logging and custom `streamingParts` mappers. */
+    streamPhase?: SidebarStreamPhase;
 };

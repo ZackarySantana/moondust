@@ -1,6 +1,7 @@
 import { createMemo, onCleanup, onMount } from "solid-js";
 import {
     sidebarStreams,
+    type SidebarStreamPhase,
     type StreamChunk,
 } from "@/lib/chat-stream-sidebar-store";
 import { EventsOn } from "@wails/runtime/runtime";
@@ -46,11 +47,16 @@ export function useThreadChatStream(
         return c?.length ? c : [];
     });
 
+    const streamingPhase = createMemo((): SidebarStreamPhase => {
+        return sidebarStreams[threadId()]?.phase ?? "done";
+    });
+
     return {
         streaming,
         streamingText,
         streamingReasoningText,
         streamingThinkingDurationSec,
         streamingChunks,
+        streamingPhase,
     };
 }
