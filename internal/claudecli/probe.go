@@ -14,7 +14,7 @@ const probeTimeout = 8 * time.Second
 func Probe(ctx context.Context) (binaryPath string, version string, probeErr string) {
 	path, err := LookClaude()
 	if err != nil {
-		return "", "", "Claude Code CLI (`claude`) not found on PATH. Install from https://docs.anthropic.com/en/docs/claude-code"
+		return "", "", "Install from https://docs.anthropic.com/en/docs/claude-code"
 	}
 	cctx, cancel := context.WithTimeout(ctx, probeTimeout)
 	defer cancel()

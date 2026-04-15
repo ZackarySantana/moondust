@@ -6,11 +6,12 @@ import { GetCursorCLIInfo } from "@wails/go/app/App";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query-client";
 import { ClaudeLocalUsageBars } from "@/components/claude-local-usage-bars";
-import {
-    UsageBarRow,
-    UsageBarRowLoading,
-} from "@/components/usage-bar-row";
+import { UsageBarRow, UsageBarRowLoading } from "@/components/usage-bar-row";
 import { useClaudeCliInfo } from "@/hooks/use-claude-cli-info";
+import {
+    CLAUDE_CODE_INSTALL_URL,
+    CLAUDE_NOT_INSTALLED_HINT,
+} from "@/lib/claude-auth-display";
 import type { store } from "@wails/go/models";
 
 const CursorSection: Component<{
@@ -68,9 +69,16 @@ const ClaudeSection: Component<{
                 {(info) => (
                     <>
                         <Show when={!info().installed}>
-                            <p class="text-[10px] leading-snug text-amber-500/85">
-                                {info().probe_error ||
-                                    "Claude Code CLI (`claude`) not found on PATH."}
+                            <p class="text-[10px] leading-snug text-slate-500">
+                                <a
+                                    href={CLAUDE_CODE_INSTALL_URL}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    class="text-slate-500 underline-offset-2 hover:text-slate-400 hover:underline"
+                                >
+                                    {info().probe_error ||
+                                        CLAUDE_NOT_INSTALLED_HINT}
+                                </a>
                             </p>
                         </Show>
                         <Show when={info().installed && info().auth_error}>
@@ -78,11 +86,13 @@ const ClaudeSection: Component<{
                                 {info().auth_error}
                             </p>
                         </Show>
-                        <ClaudeLocalUsageBars
-                            loading={false}
-                            usage={info().local_usage}
-                            usageError={info().local_usage_error}
-                        />
+                        <Show when={info().installed}>
+                            <ClaudeLocalUsageBars
+                                loading={false}
+                                usage={info().local_usage}
+                                usageError={info().local_usage_error}
+                            />
+                        </Show>
                     </>
                 )}
             </Show>

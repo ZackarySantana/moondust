@@ -48,7 +48,7 @@ const notInstalled = store.ClaudeCLIInfo.createFrom({
     installed: false,
     binary_path: "",
     version: "",
-    probe_error: "Claude Code CLI (`claude`) not found on PATH.",
+    probe_error: "Install from https://docs.anthropic.com/en/docs/claude-code",
 });
 
 const installedAuthError = store.ClaudeCLIInfo.createFrom({

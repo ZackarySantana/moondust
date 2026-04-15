@@ -32,7 +32,7 @@ func (s *Service) streamAssistantClaude(
 
 	claudePath, err := claudecli.LookClaude()
 	if err != nil {
-		return fmt.Errorf("Claude Code CLI (`claude`) not found on PATH. Install from https://docs.anthropic.com/en/docs/claude-code")
+		return fmt.Errorf("Install from https://docs.anthropic.com/en/docs/claude-code")
 	}
 
 	workDir := strings.TrimSpace(project.Directory)

@@ -58,7 +58,7 @@ func (s *Service) SendThreadMessage(ctx context.Context, threadID, content strin
 		}
 	} else if provider == "claude" {
 		if _, err := claudecli.LookClaude(); err != nil {
-			return nil, fmt.Errorf("Claude Code CLI (`claude`) not found on PATH. Install from https://docs.anthropic.com/en/docs/claude-code")
+			return nil, fmt.Errorf("Install from https://docs.anthropic.com/en/docs/claude-code")
 		}
 	} else {
 		apiKey := strings.TrimSpace(st.OpenRouterAPIKey)

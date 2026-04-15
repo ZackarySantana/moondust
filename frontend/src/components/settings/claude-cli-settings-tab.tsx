@@ -7,6 +7,8 @@ import { Section } from "@/components/settings-form";
 import { useClaudeCliInfo } from "@/hooks/use-claude-cli-info";
 import {
     ANTHROPIC_CONSOLE_URL,
+    CLAUDE_CODE_INSTALL_URL,
+    CLAUDE_NOT_INSTALLED_HINT,
     formatClaudeAccountLine,
     formatClaudeSubscriptionLabel,
 } from "@/lib/claude-auth-display";
@@ -88,8 +90,15 @@ export const ClaudeCliSettingsTab: Component = () => {
                                     when={info().installed}
                                     fallback={
                                         <p class="rounded-md border border-amber-800/40 bg-amber-950/25 px-2.5 py-2 text-xs text-amber-100/90">
-                                            {info().probe_error ||
-                                                "Claude Code CLI (`claude`) not found on PATH."}
+                                            <a
+                                                href={CLAUDE_CODE_INSTALL_URL}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                class="text-amber-200/95 underline-offset-2 hover:underline"
+                                            >
+                                                {info().probe_error ||
+                                                    CLAUDE_NOT_INSTALLED_HINT}
+                                            </a>
                                         </p>
                                     }
                                 >
@@ -223,63 +232,67 @@ export const ClaudeCliSettingsTab: Component = () => {
                                     </div>
                                 </Show>
 
-                                <div class="space-y-3 border-t border-slate-800/40 pt-3">
-                                    <div>
-                                        <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">
-                                            Local transcript usage
-                                        </p>
-                                        <p class="mt-1.5 text-xs leading-relaxed text-slate-600">
-                                            Moondust scans Claude Code JSONL
-                                            transcripts under{" "}
-                                            <code class="rounded bg-slate-900/80 px-1 py-0.5 text-[10px]">
-                                                ~/.claude/projects
-                                            </code>{" "}
-                                            (and{" "}
-                                            <code class="rounded bg-slate-900/80 px-1 py-0.5 text-[10px]">
-                                                ~/.config/claude/projects
-                                            </code>
-                                            ), counting assistant lines with
-                                            token usage from files touched in
-                                            the last 7 days. Bars show the
-                                            input vs output share of those
-                                            totals. This reflects activity on
-                                            this machine, not subscription
-                                            billing.
-                                        </p>
+                                <Show when={info().installed}>
+                                    <div class="space-y-3 border-t border-slate-800/40 pt-3">
+                                        <div>
+                                            <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                                                Local transcript usage
+                                            </p>
+                                            <p class="mt-1.5 text-xs leading-relaxed text-slate-600">
+                                                Moondust scans Claude Code JSONL
+                                                transcripts under{" "}
+                                                <code class="rounded bg-slate-900/80 px-1 py-0.5 text-[10px]">
+                                                    ~/.claude/projects
+                                                </code>{" "}
+                                                (and{" "}
+                                                <code class="rounded bg-slate-900/80 px-1 py-0.5 text-[10px]">
+                                                    ~/.config/claude/projects
+                                                </code>
+                                                ), counting assistant lines with
+                                                token usage from files touched
+                                                in the last 7 days. Bars show
+                                                the input vs output share of
+                                                those totals. This reflects
+                                                activity on this machine, not
+                                                subscription billing.
+                                            </p>
+                                        </div>
+                                        <div class="max-w-xl rounded-lg border border-slate-800/55 bg-slate-950/35 p-3.5 sm:p-4">
+                                            <ClaudeLocalUsageBars
+                                                loading={false}
+                                                usage={info().local_usage}
+                                                usageError={
+                                                    info().local_usage_error
+                                                }
+                                                comfortableCaption
+                                            />
+                                            <Show when={info().local_usage}>
+                                                {(lu) => (
+                                                    <dl class="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 border-t border-slate-800/45 pt-4 text-xs">
+                                                        <dt class="text-slate-500">
+                                                            Total tokens
+                                                        </dt>
+                                                        <dd class="text-right font-mono text-slate-200 tabular-nums">
+                                                            {lu().total_tokens.toLocaleString()}
+                                                        </dd>
+                                                        <dt class="text-slate-500">
+                                                            Files scanned
+                                                        </dt>
+                                                        <dd class="text-right font-mono text-slate-200 tabular-nums">
+                                                            {lu().files_scanned}
+                                                        </dd>
+                                                        <dt class="text-slate-500">
+                                                            Lines matched
+                                                        </dt>
+                                                        <dd class="text-right font-mono text-slate-200 tabular-nums">
+                                                            {lu().lines_matched.toLocaleString()}
+                                                        </dd>
+                                                    </dl>
+                                                )}
+                                            </Show>
+                                        </div>
                                     </div>
-                                    <div class="max-w-xl rounded-lg border border-slate-800/55 bg-slate-950/35 p-3.5 sm:p-4">
-                                        <ClaudeLocalUsageBars
-                                            loading={false}
-                                            usage={info().local_usage}
-                                            usageError={info().local_usage_error}
-                                            comfortableCaption
-                                        />
-                                        <Show when={info().local_usage}>
-                                            {(lu) => (
-                                                <dl class="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 border-t border-slate-800/45 pt-4 text-xs">
-                                                    <dt class="text-slate-500">
-                                                        Total tokens
-                                                    </dt>
-                                                    <dd class="text-right font-mono text-slate-200 tabular-nums">
-                                                        {lu().total_tokens.toLocaleString()}
-                                                    </dd>
-                                                    <dt class="text-slate-500">
-                                                        Files scanned
-                                                    </dt>
-                                                    <dd class="text-right font-mono text-slate-200 tabular-nums">
-                                                        {lu().files_scanned}
-                                                    </dd>
-                                                    <dt class="text-slate-500">
-                                                        Lines matched
-                                                    </dt>
-                                                    <dd class="text-right font-mono text-slate-200 tabular-nums">
-                                                        {lu().lines_matched.toLocaleString()}
-                                                    </dd>
-                                                </dl>
-                                            )}
-                                        </Show>
-                                    </div>
-                                </div>
+                                </Show>
                             </div>
                         );
                     }}
