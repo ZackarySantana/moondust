@@ -9,6 +9,29 @@ export const CLAUDE_CODE_INSTALL_URL =
 
 export const CLAUDE_NOT_INSTALLED_HINT = `Install from ${CLAUDE_CODE_INSTALL_URL}`;
 
+/** Sign in to Claude Code in a terminal (Anthropic CLI). */
+export const CLAUDE_LOGIN_COMMAND = "claude auth login";
+
+/**
+ * When `claude auth status` failed but stderr was JSON (e.g. older behavior),
+ * avoid showing raw JSON in the UI.
+ */
+export function friendlyClaudeAuthErrorMessage(
+    raw: string | undefined,
+): string {
+    const s = raw?.trim() ?? "";
+    if (!s.startsWith("{")) return s;
+    try {
+        const o = JSON.parse(s) as { loggedIn?: unknown };
+        if (o && o.loggedIn === false) {
+            return `Not signed in. Run ${CLAUDE_LOGIN_COMMAND} in a terminal.`;
+        }
+    } catch {
+        /* ignore */
+    }
+    return s;
+}
+
 export function formatClaudeSubscriptionLabel(s: string | undefined): string {
     const t = s?.trim();
     if (!t) return "—";

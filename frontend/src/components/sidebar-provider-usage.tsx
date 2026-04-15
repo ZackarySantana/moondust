@@ -10,7 +10,9 @@ import { UsageBarRow, UsageBarRowLoading } from "@/components/usage-bar-row";
 import { useClaudeCliInfo } from "@/hooks/use-claude-cli-info";
 import {
     CLAUDE_CODE_INSTALL_URL,
+    CLAUDE_LOGIN_COMMAND,
     CLAUDE_NOT_INSTALLED_HINT,
+    friendlyClaudeAuthErrorMessage,
 } from "@/lib/claude-auth-display";
 import type { store } from "@wails/go/models";
 
@@ -83,7 +85,25 @@ const ClaudeSection: Component<{
                         </Show>
                         <Show when={info().installed && info().auth_error}>
                             <p class="mb-1 text-[10px] leading-snug text-amber-500/85">
-                                {info().auth_error}
+                                {friendlyClaudeAuthErrorMessage(
+                                    info().auth_error,
+                                )}
+                            </p>
+                        </Show>
+                        <Show
+                            when={
+                                info().installed &&
+                                info().auth != null &&
+                                info().auth_error == null &&
+                                info().auth?.logged_in === false
+                            }
+                        >
+                            <p class="mb-1 text-[10px] leading-snug text-slate-500">
+                                Not signed in. Run{" "}
+                                <code class="rounded bg-slate-900/80 px-1 py-0.5 font-mono text-[9px] text-slate-400">
+                                    {CLAUDE_LOGIN_COMMAND}
+                                </code>{" "}
+                                in a terminal.
                             </p>
                         </Show>
                         <Show when={info().installed}>
@@ -91,6 +111,12 @@ const ClaudeSection: Component<{
                                 loading={false}
                                 usage={info().local_usage}
                                 usageError={info().local_usage_error}
+                                suppressEmptyUsageMessage={
+                                    !!(
+                                        info().auth_error ||
+                                        info().auth?.logged_in === false
+                                    )
+                                }
                             />
                         </Show>
                     </>

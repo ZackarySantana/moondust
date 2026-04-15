@@ -29,3 +29,14 @@ func TestParseClaudeAuthStatusJSON(t *testing.T) {
 	assert.Equal(t, "My Org", got.OrgName)
 	assert.Equal(t, "pro", got.SubscriptionType)
 }
+
+func TestParseClaudeAuthStatusJSON_loggedOut(t *testing.T) {
+	t.Parallel()
+	raw := `{"loggedIn":false,"authMethod":"none","apiProvider":"firstParty"}`
+	got, err := parseClaudeAuthStatusJSON([]byte(raw))
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.False(t, got.LoggedIn)
+	assert.Equal(t, "none", got.AuthMethod)
+	assert.Equal(t, "firstParty", got.APIProvider)
+}

@@ -33,22 +33,25 @@ func AuthStatus(ctx context.Context, claudePath string) (auth *store.ClaudeAuthS
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
-	if err := cmd.Run(); err != nil {
-		s := strings.TrimSpace(out.String())
-		if s == "" {
-			return nil, err.Error()
-		}
-		return nil, s
-	}
+	runErr := cmd.Run()
 	raw := strings.TrimSpace(out.String())
+	// Some Claude Code builds exit non-zero when logged out but still print valid JSON.
+	if raw != "" {
+		if st, err := parseClaudeAuthStatusJSON([]byte(raw)); err == nil {
+			return st, ""
+		}
+	}
+	if runErr != nil {
+		if raw != "" {
+			return nil, raw
+		}
+		return nil, runErr.Error()
+	}
 	if raw == "" {
 		return nil, "empty output from claude auth status"
 	}
-	st, err := parseClaudeAuthStatusJSON([]byte(raw))
-	if err != nil {
-		return nil, err.Error()
-	}
-	return st, ""
+	_, err := parseClaudeAuthStatusJSON([]byte(raw))
+	return nil, err.Error()
 }
 
 func parseClaudeAuthStatusJSON(raw []byte) (*store.ClaudeAuthStatus, error) {

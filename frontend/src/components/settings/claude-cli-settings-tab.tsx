@@ -11,6 +11,7 @@ import {
     CLAUDE_NOT_INSTALLED_HINT,
     formatClaudeAccountLine,
     formatClaudeSubscriptionLabel,
+    friendlyClaudeAuthErrorMessage,
 } from "@/lib/claude-auth-display";
 
 const CLAUDE_CODE_DOCS = "https://docs.anthropic.com/en/docs/claude-code/setup";
@@ -162,7 +163,9 @@ export const ClaudeCliSettingsTab: Component = () => {
                                         </p>
                                         <Show when={info().auth_error}>
                                             <p class="rounded-md border border-amber-800/40 bg-amber-950/25 px-2.5 py-2 text-xs text-amber-100/90">
-                                                {info().auth_error}
+                                                {friendlyClaudeAuthErrorMessage(
+                                                    info().auth_error,
+                                                )}
                                             </p>
                                         </Show>
                                         <Show when={info().auth}>
@@ -265,6 +268,14 @@ export const ClaudeCliSettingsTab: Component = () => {
                                                     info().local_usage_error
                                                 }
                                                 comfortableCaption
+                                                suppressEmptyUsageMessage={
+                                                    !!(
+                                                        info().auth_error ||
+                                                        info().auth
+                                                            ?.logged_in ===
+                                                            false
+                                                    )
+                                                }
                                             />
                                             <Show when={info().local_usage}>
                                                 {(lu) => (

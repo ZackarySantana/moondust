@@ -14,6 +14,8 @@ function formatCompactTokens(n: number): string {
 const ClaudeLocalUsageDetails: Component<{
     usage: store.ClaudeLocalUsage;
     captionClass?: string;
+    /** Hide the “no usage in transcripts” line (e.g. when auth is the active issue). */
+    suppressEmptyUsageMessage?: boolean;
 }> = (props) => {
     const u = () => props.usage;
     const summaryLine = () =>
@@ -49,7 +51,12 @@ const ClaudeLocalUsageDetails: Component<{
                     </Show>
                 </div>
             </Show>
-            <Show when={(u().total_tokens ?? 0) <= 0}>
+            <Show
+                when={
+                    (u().total_tokens ?? 0) <= 0 &&
+                    !props.suppressEmptyUsageMessage
+                }
+            >
                 <p class={emptyLine()}>
                     No assistant usage in recently touched transcript files
                     (last {u().window_days} days).
@@ -66,6 +73,8 @@ export const ClaudeLocalUsageBars: Component<{
     usageError: string | undefined;
     /** Slightly larger caption in settings vs sidebar. */
     comfortableCaption?: boolean;
+    /** When true, omit empty-state copy if totals are zero (auth/sign-in shown above). */
+    suppressEmptyUsageMessage?: boolean;
     class?: string;
 }> = (props) => {
     const captionClass = () =>
@@ -104,6 +113,9 @@ export const ClaudeLocalUsageBars: Component<{
                     <ClaudeLocalUsageDetails
                         usage={props.usage!}
                         captionClass={captionClass()}
+                        suppressEmptyUsageMessage={
+                            props.suppressEmptyUsageMessage
+                        }
                     />
                 </Show>
             </Show>
