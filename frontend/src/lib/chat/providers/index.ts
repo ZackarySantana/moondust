@@ -1,6 +1,7 @@
 import type { AssistantPart, StreamingAssistantArgs } from "@/lib/chat/types";
 import { streamPartsFromSnapshot } from "@/lib/chat/streaming";
 import { plainPersistedAssistantParts } from "@/lib/chat/providers/defaults";
+import { claudePersistedAssistantParts } from "@/lib/chat/providers/claude";
 import { cursorPersistedAssistantParts } from "@/lib/chat/providers/cursor";
 import { openRouterPersistedAssistantParts } from "@/lib/chat/providers/openrouter";
 import type { ChatProviderId } from "@/lib/chat-provider";
@@ -23,11 +24,16 @@ const cursorFormatter: ChatProviderFormatter = {
     persistedAssistantParts: cursorPersistedAssistantParts,
 };
 
+const claudeFormatter: ChatProviderFormatter = {
+    persistedAssistantParts: claudePersistedAssistantParts,
+};
+
 export function getChatFormatter(
     providerId: ChatProviderId,
 ): ChatProviderFormatter {
     if (providerId === "openrouter") return openRouterFormatter;
     if (providerId === "cursor") return cursorFormatter;
+    if (providerId === "claude") return claudeFormatter;
     throw new Error(
         `invalid chat_provider for formatter: ${JSON.stringify(providerId)}`,
     );
@@ -42,6 +48,7 @@ export function streamingAssistantParts(
 }
 
 export {
+    claudePersistedAssistantParts,
     cursorPersistedAssistantParts,
     openRouterPersistedAssistantParts,
     plainPersistedAssistantParts,

@@ -20,6 +20,7 @@ import {
 } from "@/lib/chat-provider";
 import { useChatProviderBarMenu } from "@/hooks/use-chat-provider-bar-menu";
 import {
+    buildClaudeModelCategories,
     buildCursorModelCategories,
     buildOpenRouterSplitCategories,
     FAVORITES_FILTER,
@@ -72,6 +73,9 @@ export const ChatProviderBar: Component<{
     const menu = useChatProviderBarMenu(() => props.provider);
 
     const isCursorProvider = () => props.provider === "cursor";
+    const isClaudeProvider = () => props.provider === "claude";
+    const isCliProvider = () =>
+        props.provider === "cursor" || props.provider === "claude";
 
     const modelOptions = createMemo(() => {
         const cur = props.model.trim();
@@ -99,7 +103,7 @@ export const ChatProviderBar: Component<{
         const org = menu.filterOrg();
         let rows = modelOptions();
         if (org === FAVORITES_FILTER) {
-            if (isCursorProvider()) {
+            if (isCliProvider()) {
                 return [...rows].sort((a, b) => a.label.localeCompare(b.label));
             }
             return resolveOpenRouterFlagships(rows);
@@ -131,7 +135,7 @@ export const ChatProviderBar: Component<{
     });
 
     const showSplitAllView = createMemo(
-        () => !isCursorProvider() && menu.filterOrg() === null && !hasSearch(),
+        () => !isCliProvider() && menu.filterOrg() === null && !hasSearch(),
     );
 
     const modelPickerCategories = createMemo(() => {
@@ -153,6 +157,24 @@ export const ChatProviderBar: Component<{
             }
             return buildCursorModelCategories(modelOptions());
         }
+        if (isClaudeProvider()) {
+            if (hasSearch()) {
+                const q = menu.searchQuery().trim().toLowerCase();
+                const rows = modelOptions().filter((m) => {
+                    const desc = (m.description ?? "").toLowerCase();
+                    const descFull = (m.description_full ?? "").toLowerCase();
+                    return (
+                        m.id.toLowerCase().includes(q) ||
+                        m.label.toLowerCase().includes(q) ||
+                        desc.includes(q) ||
+                        descFull.includes(q) ||
+                        (m.provider ?? "").toLowerCase().includes(q)
+                    );
+                });
+                return [{ id: "match", label: "", models: rows }];
+            }
+            return buildClaudeModelCategories(modelOptions());
+        }
         if (showSplitAllView()) {
             return buildOpenRouterSplitCategories(modelOptions());
         }
@@ -160,7 +182,7 @@ export const ChatProviderBar: Component<{
     });
 
     const showSectionHeaders = createMemo(() => {
-        if (isCursorProvider()) return !hasSearch();
+        if (isCliProvider()) return !hasSearch();
         return showSplitAllView();
     });
 
@@ -333,9 +355,7 @@ export const ChatProviderBar: Component<{
                                 }
                                 menu.setSearchQuery("");
                                 menu.setFilterOrg(
-                                    isCursorProvider()
-                                        ? null
-                                        : FAVORITES_FILTER,
+                                    isCliProvider() ? null : FAVORITES_FILTER,
                                 );
                                 return "model";
                             });
@@ -369,9 +389,9 @@ export const ChatProviderBar: Component<{
                             onMouseDown={(e) => e.stopPropagation()}
                         >
                             <div
-                                class={`flex h-full min-w-0 shrink-0 flex-row overflow-hidden ${isCursorProvider() ? "w-full max-w-[min(36rem,calc(100vw-2rem))]" : "w-[min(28rem,calc(100vw-2rem))]"}`}
+                                class={`flex h-full min-w-0 shrink-0 flex-row overflow-hidden ${isCliProvider() ? "w-full max-w-[min(36rem,calc(100vw-2rem))]" : "w-[min(28rem,calc(100vw-2rem))]"}`}
                             >
-                                <Show when={!isCursorProvider()}>
+                                <Show when={!isCliProvider()}>
                                     <aside
                                         class="flex h-full w-11 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-slate-800/60 bg-slate-950/60 py-1.5 pl-1 pr-0.5"
                                         aria-label="Filter by organization"
@@ -482,7 +502,7 @@ export const ChatProviderBar: Component<{
                                             }}
                                             onInfo={toggleModelDetail}
                                             showSectionHeaders={showSectionHeaders()}
-                                            showInfoButton={!isCursorProvider()}
+                                            showInfoButton={!isCliProvider()}
                                         />
                                     </div>
                                 </div>

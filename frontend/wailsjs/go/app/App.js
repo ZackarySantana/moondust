@@ -50,6 +50,10 @@ export function GetBuildLabel() {
   return window['go']['app']['App']['GetBuildLabel']();
 }
 
+export function GetClaudeCLIInfo() {
+  return window['go']['app']['App']['GetClaudeCLIInfo']();
+}
+
 export function GetCursorCLIInfo() {
   return window['go']['app']['App']['GetCursorCLIInfo']();
 }
@@ -104,6 +108,10 @@ export function GitUnstageAll(arg1) {
 
 export function IsPushAvailable() {
   return window['go']['app']['App']['IsPushAvailable']();
+}
+
+export function ListClaudeChatModels() {
+  return window['go']['app']['App']['ListClaudeChatModels']();
 }
 
 export function ListCursorChatModels() {

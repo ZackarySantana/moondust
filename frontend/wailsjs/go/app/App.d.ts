@@ -26,6 +26,8 @@ export function ForkThreadAtMessage(arg1:string,arg2:string):Promise<store.Threa
 
 export function GetBuildLabel():Promise<string>;
 
+export function GetClaudeCLIInfo():Promise<store.ClaudeCLIInfo>;
+
 export function GetCursorCLIInfo():Promise<store.CursorCLIInfo>;
 
 export function GetFileDiff(arg1:string,arg2:string,arg3:string):Promise<store.FileDiff>;
@@ -53,6 +55,8 @@ export function GitStageUnstaged(arg1:string):Promise<void>;
 export function GitUnstageAll(arg1:string):Promise<void>;
 
 export function IsPushAvailable():Promise<boolean>;
+
+export function ListClaudeChatModels():Promise<Array<store.OpenRouterChatModel>>;
 
 export function ListCursorChatModels():Promise<Array<store.OpenRouterChatModel>>;
 

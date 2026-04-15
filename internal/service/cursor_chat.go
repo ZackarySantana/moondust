@@ -13,31 +13,6 @@ import (
 	"github.com/google/uuid"
 )
 
-func buildCursorAgentPrompt(system string, history []*store.ChatMessage) string {
-	const maxRunes = 200_000
-	var b strings.Builder
-	b.WriteString(system)
-	b.WriteString("\n\n")
-	for _, m := range history {
-		switch m.Role {
-		case "user":
-			b.WriteString("User: ")
-			b.WriteString(m.Content)
-			b.WriteString("\n\n")
-		case "assistant":
-			b.WriteString("Assistant: ")
-			b.WriteString(m.Content)
-			b.WriteString("\n\n")
-		}
-	}
-	out := strings.TrimSpace(b.String())
-	if len([]rune(out)) > maxRunes {
-		r := []rune(out)
-		out = string(r[len(r)-maxRunes:])
-	}
-	return out
-}
-
 // ListCursorChatModels returns selectable models from `agent --list-models`.
 func (s *Service) ListCursorChatModels(ctx context.Context) ([]store.OpenRouterChatModel, error) {
 	return cursorcli.ListChatModels(ctx)
@@ -81,7 +56,7 @@ func (s *Service) streamAssistantCursor(
 	}
 
 	system := chat.WithWorkspaceDir(chat.DefaultSystemPrompt, workDir)
-	prompt := buildCursorAgentPrompt(system, history)
+	prompt := chat.BuildCLIStylePrompt(system, history)
 
 	var usageBefore *store.CursorUsageSnapshot
 	if u, err := cursorcli.FetchCurrentPeriodUsage(ctx); err == nil {

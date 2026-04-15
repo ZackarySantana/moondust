@@ -35,10 +35,12 @@ export const queryKeys = {
     openRouterModels: ["openrouter", "chat-models"] as const,
     /** `agent --list-models` when Cursor CLI is installed. */
     cursorChatModels: ["cursor", "chat-models"] as const,
+    claudeChatModels: ["claude", "chat-models"] as const,
     /** Aggregates from local chat history (assistant messages + billed cost). */
     openRouterUsageMetrics: ["openrouter", "usage-metrics"] as const,
     /** Cursor Agent CLI (`agent`) detection and status probes. */
     cursorCLI: ["cursor", "cli-info"] as const,
+    claudeCLI: ["claude", "cli-info"] as const,
 };
 
 /** Refetch only `ListThreads` (exact `["threads"]`), not every cached thread query. */

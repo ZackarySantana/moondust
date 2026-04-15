@@ -1,9 +1,9 @@
 import type { Component } from "solid-js";
 import { createSignal, For } from "solid-js";
+import { ClaudeCliSettingsTab } from "@/components/settings/claude-cli-settings-tab";
 import { CursorCliSettingsTab } from "@/components/settings/cursor-cli-settings-tab";
 import { OpenRouterSettingsTab } from "@/components/settings/openrouter-settings-tab";
 import { Separator } from "@/components/ui/separator";
-import { Section } from "@/components/settings-form";
 
 type ProviderTabId = "openrouter" | "cursor" | "claude";
 
@@ -80,23 +80,8 @@ export const SettingsProvidersPage: Component = () => {
                 aria-labelledby="provider-tab-claude"
                 class={providerTab() === "claude" ? "" : "hidden"}
             >
-                <PlaceholderProviderTab
-                    title="Claude"
-                    description="Anthropic / Claude provider settings will be available here in a future release."
-                />
+                <ClaudeCliSettingsTab />
             </div>
         </div>
     );
 };
-
-const PlaceholderProviderTab: Component<{
-    title: string;
-    description: string;
-}> = (props) => (
-    <Section
-        title={props.title}
-        description={props.description}
-    >
-        <p class="text-sm text-slate-500">Coming soon.</p>
-    </Section>
-);

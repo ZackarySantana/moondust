@@ -36,6 +36,16 @@ func (a *App) GetCursorCLIInfo() (*store.CursorCLIInfo, error) {
 	return a.service.GetCursorCLIInfo(a.Ctx)
 }
 
+// ListClaudeChatModels returns Claude Code model aliases for the thread picker.
+func (a *App) ListClaudeChatModels() ([]store.OpenRouterChatModel, error) {
+	return a.service.ListClaudeChatModels(a.Ctx)
+}
+
+// GetClaudeCLIInfo detects the Claude Code CLI (`claude`) on PATH.
+func (a *App) GetClaudeCLIInfo() (*store.ClaudeCLIInfo, error) {
+	return a.service.GetClaudeCLIInfo(a.Ctx)
+}
+
 // ConnectOpenRouterOAuth starts the OpenRouter OAuth (PKCE) flow in the system browser.
 // Listen for the "openrouter:oauth" event: { status: "ok" } or { error: "..." }.
 func (a *App) ConnectOpenRouterOAuth() {

@@ -1,4 +1,4 @@
-package cursorcli
+package agentstream
 
 import (
 	"encoding/json"
@@ -10,9 +10,9 @@ import (
 
 const maxToolOutputRunes = 16000
 
-// ParseCompletedCursorToolCall maps a stream-json `tool_call` / `completed` payload into
-// our shared OpenRouterToolCallRecord shape (best-effort; Cursor schema varies by tool).
-func ParseCompletedCursorToolCall(callID string, toolCall json.RawMessage) (store.OpenRouterToolCallRecord, bool) {
+// ParseCompletedToolCall maps a stream-json `tool_call` / `completed` payload into
+// our shared OpenRouterToolCallRecord shape (best-effort; Cursor/Claude Code schemas vary).
+func ParseCompletedToolCall(callID string, toolCall json.RawMessage) (store.OpenRouterToolCallRecord, bool) {
 	callID = strings.TrimSpace(callID)
 	if callID == "" || len(toolCall) == 0 {
 		return store.OpenRouterToolCallRecord{}, false

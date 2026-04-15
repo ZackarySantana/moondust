@@ -43,7 +43,7 @@ export function useChatProviderBarMenu(currentProvider: () => string) {
 
     createEffect(
         on(currentProvider, (p) => {
-            if (p === "cursor") {
+            if (p === "cursor" || p === "claude") {
                 setFilterOrg(null);
                 setSearchQuery("");
             }

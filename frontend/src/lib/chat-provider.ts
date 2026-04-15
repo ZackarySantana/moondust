@@ -1,5 +1,5 @@
 /** Which upstream powers chat completions. Extend as more providers are added. */
-export type ChatProviderId = "openrouter" | "cursor";
+export type ChatProviderId = "openrouter" | "cursor" | "claude";
 
 export const CHAT_PROVIDERS: readonly {
     id: ChatProviderId;
@@ -7,6 +7,7 @@ export const CHAT_PROVIDERS: readonly {
 }[] = [
     { id: "openrouter", label: "OpenRouter" },
     { id: "cursor", label: "Cursor" },
+    { id: "claude", label: "Claude Code" },
 ];
 
 export type ModelChoice = {
@@ -109,6 +110,28 @@ export const CURSOR_CHAT_MODELS_FALLBACK: readonly ModelChoice[] = [
     },
 ];
 
+/** Claude Code CLI model aliases when `ListClaudeChatModels` has not loaded yet. */
+export const CLAUDE_CHAT_MODELS_FALLBACK: readonly ModelChoice[] = [
+    {
+        id: "sonnet",
+        label: "Claude Sonnet (latest)",
+        provider: "anthropic",
+        description: "Default balanced model",
+    },
+    {
+        id: "opus",
+        label: "Claude Opus (latest)",
+        provider: "anthropic",
+        description: "Most capable",
+    },
+    {
+        id: "haiku",
+        label: "Claude Haiku (latest)",
+        provider: "anthropic",
+        description: "Fast and economical",
+    },
+];
+
 /**
  * Parses a persisted `chat_provider` string. Empty or unknown values throw — there is no default.
  */
@@ -118,6 +141,7 @@ export function parseChatProviderId(raw: string): ChatProviderId {
         throw new Error("chat_provider is required");
     }
     if (t === "cursor") return "cursor";
+    if (t === "claude") return "claude";
     if (t === "openrouter") return "openrouter";
     throw new Error(`invalid chat_provider: ${JSON.stringify(raw)}`);
 }
@@ -143,6 +167,7 @@ export function modelDisplayName(
     if (!mid) return "";
     return (
         CURSOR_CHAT_MODELS_FALLBACK.find((m) => m.id === mid)?.label ??
+        CLAUDE_CHAT_MODELS_FALLBACK.find((m) => m.id === mid)?.label ??
         OPENROUTER_CHAT_MODELS_FALLBACK.find((m) => m.id === mid)?.label ??
         choices.find((m) => m.id === mid)?.label ??
         mid

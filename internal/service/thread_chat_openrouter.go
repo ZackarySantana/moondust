@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"moondust/internal/chat"
+	"moondust/internal/claudecli"
 	"moondust/internal/cursorcli"
 	"moondust/internal/openrouter"
 	"moondust/internal/rand"
@@ -47,13 +48,17 @@ func (s *Service) SendThreadMessage(ctx context.Context, threadID, content strin
 	if provider == "" {
 		return nil, fmt.Errorf("thread has no chat_provider set")
 	}
-	if provider != "openrouter" && provider != "cursor" {
+	if provider != "openrouter" && provider != "cursor" && provider != "claude" {
 		return nil, fmt.Errorf("unsupported chat provider %q", provider)
 	}
 
 	if provider == "cursor" {
 		if _, err := cursorcli.LookAgent(); err != nil {
 			return nil, fmt.Errorf("Cursor Agent CLI (`agent`) not found on PATH. Install from https://cursor.com/install")
+		}
+	} else if provider == "claude" {
+		if _, err := claudecli.LookClaude(); err != nil {
+			return nil, fmt.Errorf("Claude Code CLI (`claude`) not found on PATH. Install from https://docs.anthropic.com/en/docs/claude-code")
 		}
 	} else {
 		apiKey := strings.TrimSpace(st.OpenRouterAPIKey)
@@ -115,12 +120,15 @@ func (s *Service) StreamAssistantReply(ctx context.Context, threadID string, onD
 	if provider == "" {
 		return fmt.Errorf("thread has no chat_provider set")
 	}
-	if provider != "openrouter" && provider != "cursor" {
+	if provider != "openrouter" && provider != "cursor" && provider != "claude" {
 		return fmt.Errorf("unsupported chat provider %q", provider)
 	}
 
 	if provider == "cursor" {
 		return s.streamAssistantCursor(ctx, threadID, thread, project, onDelta, onReasoningDelta, onToolRound)
+	}
+	if provider == "claude" {
+		return s.streamAssistantClaude(ctx, threadID, thread, project, onDelta, onReasoningDelta, onToolRound)
 	}
 
 	apiKey := strings.TrimSpace(st.OpenRouterAPIKey)
