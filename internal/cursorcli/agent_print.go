@@ -9,6 +9,7 @@ import (
 	"io"
 	"moondust/internal/store"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -69,15 +70,23 @@ func StreamPrintHeadless(
 	cctx, cancel := context.WithTimeout(ctx, agentPrintTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(cctx, agentPath,
+	args := []string{
 		"--print",
 		"--trust",
 		"--workspace", workspace,
 		"--model", model,
 		"--output-format", "stream-json",
 		"--stream-partial-output",
-		prompt,
-	)
+	}
+	cmd := exec.CommandContext(cctx, agentPath, args...)
+	// Windows: default child stdin is NUL (EOF). The agent CLI treats non-TTY stdin as the
+	// prompt source, so it can ignore the positional prompt and see an empty task—then it
+	// answers with a generic greeting. Other platforms keep argv so we match typical CLI use.
+	if runtime.GOOS == "windows" {
+		cmd.Stdin = strings.NewReader(prompt)
+	} else {
+		cmd.Args = append(cmd.Args, prompt)
+	}
 	setHideConsole(cmd)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
