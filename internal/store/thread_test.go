@@ -1,9 +1,11 @@
-package store
+package store_test
 
 import (
 	"encoding/json"
 	"testing"
 	"time"
+
+	"moondust/internal/store"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -11,15 +13,15 @@ import (
 
 func TestChatMessageMarshalUsesMetadataNotLegacyField(t *testing.T) {
 	c := 0.05
-	m := ChatMessage{
+	m := store.ChatMessage{
 		ID:           "x",
 		ThreadID:     "t",
 		Role:         "assistant",
 		Content:      "hi",
 		CreatedAt:    time.Unix(0, 0).UTC(),
 		ChatProvider: "openrouter",
-		Metadata: &ChatMessageMetadata{
-			OpenRouter: &OpenRouterChatMessageMetadata{CostUSD: &c},
+		Metadata: &store.ChatMessageMetadata{
+			OpenRouter: &store.OpenRouterChatMessageMetadata{CostUSD: &c},
 		},
 	}
 	b, err := json.Marshal(m)
@@ -30,19 +32,19 @@ func TestChatMessageMarshalUsesMetadataNotLegacyField(t *testing.T) {
 }
 
 func TestChatMessageMarshalRoundTripOpenRouterSegments(t *testing.T) {
-	tool := OpenRouterToolCallRecord{
+	tool := store.OpenRouterToolCallRecord{
 		ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`, Output: "package main\n",
 	}
-	m := ChatMessage{
+	m := store.ChatMessage{
 		ID:           "x",
 		ThreadID:     "t",
 		Role:         "assistant",
 		Content:      "Done.",
 		CreatedAt:    time.Unix(0, 0).UTC(),
 		ChatProvider: "openrouter",
-		Metadata: &ChatMessageMetadata{
-			OpenRouter: &OpenRouterChatMessageMetadata{
-				Segments: []AssistantTurnSegment{
+		Metadata: &store.ChatMessageMetadata{
+			OpenRouter: &store.OpenRouterChatMessageMetadata{
+				Segments: []store.AssistantTurnSegment{
 					{Tool: &tool},
 				},
 			},
@@ -50,7 +52,7 @@ func TestChatMessageMarshalRoundTripOpenRouterSegments(t *testing.T) {
 	}
 	b, err := json.Marshal(m)
 	require.NoError(t, err)
-	var out ChatMessage
+	var out store.ChatMessage
 	require.NoError(t, json.Unmarshal(b, &out))
 	require.Len(t, out.Metadata.OpenRouter.Segments, 1)
 	require.NotNil(t, out.Metadata.OpenRouter.Segments[0].Tool)

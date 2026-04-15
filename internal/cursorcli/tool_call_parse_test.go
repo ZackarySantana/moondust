@@ -1,8 +1,10 @@
-package cursorcli
+package cursorcli_test
 
 import (
 	"encoding/json"
 	"testing"
+
+	"moondust/internal/cursorcli"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,7 +15,7 @@ func TestParseCompletedCursorToolCall_readToolCall(t *testing.T) {
 	line := `{"readToolCall":{"args":{"path":"README.md"},"result":{"success":{"content":"# Hi","totalLines":1}}}}`
 	var raw json.RawMessage
 	require.NoError(t, json.Unmarshal([]byte(line), &raw))
-	rec, ok := ParseCompletedCursorToolCall("call-1", raw)
+	rec, ok := cursorcli.ParseCompletedCursorToolCall("call-1", raw)
 	require.True(t, ok)
 	assert.Equal(t, "call-1", rec.ID)
 	assert.Equal(t, "read", rec.Name)
@@ -26,7 +28,7 @@ func TestParseCompletedCursorToolCall_function(t *testing.T) {
 	line := `{"function":{"name":"my_tool","arguments":"{}","result":{"ok":true}}}`
 	var raw json.RawMessage
 	require.NoError(t, json.Unmarshal([]byte(line), &raw))
-	rec, ok := ParseCompletedCursorToolCall("fn-1", raw)
+	rec, ok := cursorcli.ParseCompletedCursorToolCall("fn-1", raw)
 	require.True(t, ok)
 	assert.Equal(t, "my_tool", rec.Name)
 }
