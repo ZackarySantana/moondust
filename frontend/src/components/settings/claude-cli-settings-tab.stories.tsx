@@ -29,6 +29,19 @@ const installedWithAuth = store.ClaudeCLIInfo.createFrom({
         org_name: "Example Org",
         subscription_type: "pro",
     }),
+    local_usage: store.ClaudeLocalUsage.createFrom({
+        window_days: 7,
+        files_scanned: 4,
+        lines_matched: 120,
+        total_tokens: 1_800_000,
+        input_tokens: 12_000,
+        output_tokens: 400_000,
+        cache_read_tokens: 1_200_000,
+        cache_write_tokens: 188_000,
+        input_percent_used: 0.7,
+        output_percent_used: 22.2,
+        cache_percent_used: 77.1,
+    }),
 });
 
 const notInstalled = store.ClaudeCLIInfo.createFrom({

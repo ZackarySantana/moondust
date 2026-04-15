@@ -1,6 +1,7 @@
 import ExternalLink from "lucide-solid/icons/external-link";
 import type { Component } from "solid-js";
 import { Show } from "solid-js";
+import { ClaudeLocalUsageBars } from "@/components/claude-local-usage-bars";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/settings-form";
 import { useClaudeCliInfo } from "@/hooks/use-claude-cli-info";
@@ -221,6 +222,64 @@ export const ClaudeCliSettingsTab: Component = () => {
                                         </Show>
                                     </div>
                                 </Show>
+
+                                <div class="space-y-3 border-t border-slate-800/40 pt-3">
+                                    <div>
+                                        <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                                            Local transcript usage
+                                        </p>
+                                        <p class="mt-1.5 text-xs leading-relaxed text-slate-600">
+                                            Moondust scans Claude Code JSONL
+                                            transcripts under{" "}
+                                            <code class="rounded bg-slate-900/80 px-1 py-0.5 text-[10px]">
+                                                ~/.claude/projects
+                                            </code>{" "}
+                                            (and{" "}
+                                            <code class="rounded bg-slate-900/80 px-1 py-0.5 text-[10px]">
+                                                ~/.config/claude/projects
+                                            </code>
+                                            ), counting assistant lines with
+                                            token usage from files touched in
+                                            the last 7 days. Bars show the
+                                            input vs output share of those
+                                            totals. This reflects activity on
+                                            this machine, not subscription
+                                            billing.
+                                        </p>
+                                    </div>
+                                    <div class="max-w-xl rounded-lg border border-slate-800/55 bg-slate-950/35 p-3.5 sm:p-4">
+                                        <ClaudeLocalUsageBars
+                                            loading={false}
+                                            usage={info().local_usage}
+                                            usageError={info().local_usage_error}
+                                            comfortableCaption
+                                        />
+                                        <Show when={info().local_usage}>
+                                            {(lu) => (
+                                                <dl class="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 border-t border-slate-800/45 pt-4 text-xs">
+                                                    <dt class="text-slate-500">
+                                                        Total tokens
+                                                    </dt>
+                                                    <dd class="text-right font-mono text-slate-200 tabular-nums">
+                                                        {lu().total_tokens.toLocaleString()}
+                                                    </dd>
+                                                    <dt class="text-slate-500">
+                                                        Files scanned
+                                                    </dt>
+                                                    <dd class="text-right font-mono text-slate-200 tabular-nums">
+                                                        {lu().files_scanned}
+                                                    </dd>
+                                                    <dt class="text-slate-500">
+                                                        Lines matched
+                                                    </dt>
+                                                    <dd class="text-right font-mono text-slate-200 tabular-nums">
+                                                        {lu().lines_matched.toLocaleString()}
+                                                    </dd>
+                                                </dl>
+                                            )}
+                                        </Show>
+                                    </div>
+                                </div>
                             </div>
                         );
                     }}

@@ -280,6 +280,40 @@ export namespace store {
 	        this.subscription_type = source["subscription_type"];
 	    }
 	}
+	export class ClaudeLocalUsage {
+	    window_days: number;
+	    files_scanned: number;
+	    lines_matched: number;
+	    total_tokens: number;
+	    input_tokens: number;
+	    output_tokens: number;
+	    cache_read_tokens: number;
+	    cache_write_tokens: number;
+	    input_percent_used?: number;
+	    output_percent_used?: number;
+	    cache_percent_used?: number;
+	    scan_error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ClaudeLocalUsage(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.window_days = source["window_days"];
+	        this.files_scanned = source["files_scanned"];
+	        this.lines_matched = source["lines_matched"];
+	        this.total_tokens = source["total_tokens"];
+	        this.input_tokens = source["input_tokens"];
+	        this.output_tokens = source["output_tokens"];
+	        this.cache_read_tokens = source["cache_read_tokens"];
+	        this.cache_write_tokens = source["cache_write_tokens"];
+	        this.input_percent_used = source["input_percent_used"];
+	        this.output_percent_used = source["output_percent_used"];
+	        this.cache_percent_used = source["cache_percent_used"];
+	        this.scan_error = source["scan_error"];
+	    }
+	}
 	export class ClaudeCLIInfo {
 	    installed: boolean;
 	    binary_path: string;
@@ -287,6 +321,8 @@ export namespace store {
 	    auth?: ClaudeAuthStatus;
 	    auth_error?: string;
 	    probe_error?: string;
+	    local_usage?: ClaudeLocalUsage;
+	    local_usage_error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ClaudeCLIInfo(source);
@@ -300,6 +336,8 @@ export namespace store {
 	        this.auth = this.convertValues(source["auth"], ClaudeAuthStatus);
 	        this.auth_error = source["auth_error"];
 	        this.probe_error = source["probe_error"];
+	        this.local_usage = this.convertValues(source["local_usage"], ClaudeLocalUsage);
+	        this.local_usage_error = source["local_usage_error"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -320,6 +358,7 @@ export namespace store {
 		    return a;
 		}
 	}
+	
 	
 	export class CursorUsageSnapshot {
 	    auto_percent_used?: number;
