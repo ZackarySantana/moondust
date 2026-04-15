@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"moondust/internal/oschild"
 	"moondust/internal/store"
 )
 
@@ -30,6 +31,7 @@ func AuthStatus(ctx context.Context, claudePath string) (auth *store.ClaudeAuthS
 	cctx, cancel := context.WithTimeout(ctx, authStatusTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(cctx, claudePath, "auth", "status", "--json")
+	oschild.HideConsole(cmd)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out

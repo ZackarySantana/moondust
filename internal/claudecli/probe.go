@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"moondust/internal/oschild"
 )
 
 const probeTimeout = 8 * time.Second
@@ -19,6 +21,7 @@ func Probe(ctx context.Context) (binaryPath string, version string, probeErr str
 	cctx, cancel := context.WithTimeout(ctx, probeTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(cctx, path, "--version")
+	oschild.HideConsole(cmd)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
