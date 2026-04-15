@@ -31,6 +31,8 @@ import type { store } from "@wails/go/models";
 export interface ReviewSidebarProps {
     width: number;
     threadId: string;
+    /** Thread uses an isolated git worktree — branch & commit is redundant; Commit only. */
+    usesDedicatedWorktree?: boolean;
     git: store.GitReview | null;
     gitMut: ThreadGitMutations;
     onRefresh: () => void;
@@ -90,6 +92,12 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
     const hasRemote = () => props.git?.has_remote ?? false;
     const githubURL = createMemo(() => deriveGitHubURL(props.git?.remote_url));
     const DEFAULT_BRANCHES = new Set(["main", "master", "develop"]);
+    /** Show "Branch & commit" only when still on a default branch in the project checkout (not worktree, not already branched). */
+    const showBranchAndCommit = () => {
+        if (props.usesDedicatedWorktree) return false;
+        if (!DEFAULT_BRANCHES.has(branch())) return false;
+        return true;
+    };
     const prURL = createMemo(() => {
         const base = githubURL();
         const b = branch();
@@ -101,6 +109,18 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
 
     const iconBtn =
         "flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-800/60 hover:text-slate-100 disabled:cursor-not-allowed disabled:opacity-35";
+
+    const btnCommitPrimary =
+        "inline-flex min-h-8 min-w-0 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-emerald-600/45 bg-emerald-800/40 px-3 py-2 text-[11px] font-medium text-emerald-100 shadow-sm shadow-black/25 transition-all hover:bg-emerald-700/45 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40";
+    const btnBranchSplit =
+        "inline-flex min-h-8 shrink-0 cursor-pointer items-center justify-center gap-1 rounded-lg border border-slate-600/50 bg-slate-800/50 px-2 py-2 text-[10px] font-medium text-slate-300 transition-colors hover:bg-slate-800/80 disabled:cursor-not-allowed disabled:opacity-40";
+    const btnRemote =
+        "inline-flex flex-1 min-w-[4.25rem] cursor-pointer items-center justify-center gap-1 rounded-md border border-slate-700/50 bg-slate-900/50 px-2 py-1.5 text-[10px] text-slate-300 transition-colors hover:bg-slate-800/70 disabled:cursor-not-allowed disabled:opacity-40";
+    const btnStashMuted =
+        "inline-flex cursor-pointer items-center gap-1 rounded-md border border-slate-800/50 bg-slate-950/40 px-2 py-1 text-[10px] text-slate-500 transition-colors hover:border-slate-700/60 hover:bg-slate-900/50 hover:text-slate-300 disabled:cursor-not-allowed disabled:opacity-40";
+
+    const sectionLabel =
+        "text-[10px] font-semibold uppercase tracking-wider text-slate-500";
 
     // ── Branch rename ──
     function startEditingBranch() {
@@ -246,7 +266,7 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
 
             <div class="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-2.5 text-xs">
                 {/* ── Branch card ── */}
-                <div class="rounded-md bg-slate-900/50 px-3 py-2">
+                <div class="rounded-lg border border-slate-800/35 bg-slate-900/40 px-3 py-2.5 shadow-sm shadow-black/15">
                     <div class="flex items-center gap-1.5">
                         <GitBranch
                             class="h-3 w-3 shrink-0 text-slate-500"
@@ -346,163 +366,172 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                     </div>
                 </div>
 
-                {/* ── Action bar ── */}
-                <div class="flex flex-wrap gap-1">
-                    <button
-                        type="button"
-                        class="inline-flex cursor-pointer items-center gap-1 rounded border border-slate-700/60 bg-slate-800/40 px-2 py-1 text-[10px] text-slate-300 transition-colors hover:bg-slate-800/70 disabled:cursor-not-allowed disabled:opacity-40"
-                        disabled={
-                            staged().length === 0 ||
-                            gitBusy() ||
-                            !props.threadId
-                        }
-                        onClick={() => {
-                            setGitActionError("");
-                            setCommitMsg("");
-                            setCommitOpen(true);
-                        }}
-                    >
-                        <Check
-                            class="h-3 w-3"
-                            stroke-width={2}
-                            aria-hidden
-                        />
-                        Commit
-                    </button>
-                    <button
-                        type="button"
-                        class="inline-flex cursor-pointer items-center gap-1 rounded border border-slate-700/60 bg-slate-800/40 px-2 py-1 text-[10px] text-slate-300 transition-colors hover:bg-slate-800/70 disabled:cursor-not-allowed disabled:opacity-40"
-                        disabled={
-                            staged().length === 0 ||
-                            gitBusy() ||
-                            !props.threadId
-                        }
-                        onClick={() => {
-                            setGitActionError("");
-                            setBranchNameInput("");
-                            setBranchCommitMsg("");
-                            setBranchCommitOpen(true);
-                        }}
-                    >
-                        <GitBranch
-                            class="h-3 w-3"
-                            stroke-width={2}
-                            aria-hidden
-                        />
-                        Branch & commit
-                    </button>
-                    <Show when={hasRemote()}>
-                        <button
-                            type="button"
-                            class="inline-flex cursor-pointer items-center gap-1 rounded border border-slate-700/60 bg-slate-800/40 px-2 py-1 text-[10px] text-slate-300 transition-colors hover:bg-slate-800/70 disabled:cursor-not-allowed disabled:opacity-40"
-                            disabled={gitBusy() || !props.threadId}
-                            onClick={() => void runPush()}
-                        >
-                            <Show
-                                when={pushMutation().isPending}
-                                fallback={
-                                    <ArrowUp
-                                        class="h-3 w-3"
-                                        stroke-width={2}
-                                        aria-hidden
-                                    />
-                                }
-                            >
-                                <Loader2
-                                    class="h-3 w-3 animate-spin"
-                                    stroke-width={2}
-                                    aria-hidden
-                                />
-                            </Show>
-                            Push
-                        </button>
-                        <button
-                            type="button"
-                            class="inline-flex cursor-pointer items-center gap-1 rounded border border-slate-700/60 bg-slate-800/40 px-2 py-1 text-[10px] text-slate-300 transition-colors hover:bg-slate-800/70 disabled:cursor-not-allowed disabled:opacity-40"
-                            disabled={gitBusy() || !props.threadId}
-                            onClick={() => void runPull()}
-                        >
-                            <Show
-                                when={pullMutation().isPending}
-                                fallback={
-                                    <ArrowDown
-                                        class="h-3 w-3"
-                                        stroke-width={2}
-                                        aria-hidden
-                                    />
-                                }
-                            >
-                                <Loader2
-                                    class="h-3 w-3 animate-spin"
-                                    stroke-width={2}
-                                    aria-hidden
-                                />
-                            </Show>
-                            Pull
-                        </button>
-                    </Show>
-                    <Show when={prURL()}>
-                        {(url) => (
+                {/* ── Ship: commit → push (visual hierarchy) ── */}
+                <div class="space-y-2.5">
+                    <div class="rounded-lg border border-slate-800/55 bg-app-surface/90 p-2.5 shadow-sm shadow-black/20 ring-1 ring-white/[0.03]">
+                        <p class={`mb-2 ${sectionLabel}`}>Commit</p>
+                        <div class="flex gap-1.5">
                             <button
                                 type="button"
-                                class="inline-flex cursor-pointer items-center gap-1 rounded border border-emerald-700/40 bg-emerald-900/20 px-2 py-1 text-[10px] text-emerald-300 transition-colors hover:bg-emerald-900/35"
-                                onClick={() => openExternalURL(url())}
-                                title="Open or create pull request on GitHub"
+                                class={btnCommitPrimary}
+                                disabled={
+                                    staged().length === 0 ||
+                                    gitBusy() ||
+                                    !props.threadId
+                                }
+                                onClick={() => {
+                                    setGitActionError("");
+                                    setCommitMsg("");
+                                    setCommitOpen(true);
+                                }}
                             >
-                                <GitPullRequest
-                                    class="h-3 w-3"
+                                <Check
+                                    class="h-3.5 w-3.5 shrink-0"
                                     stroke-width={2}
                                     aria-hidden
                                 />
-                                PR
-                                <ExternalLink
-                                    class="h-2.5 w-2.5 text-emerald-400/60"
-                                    stroke-width={2}
-                                    aria-hidden
-                                />
+                                Commit
                             </button>
-                        )}
-                    </Show>
-                    <button
-                        type="button"
-                        class="inline-flex cursor-pointer items-center gap-1 rounded border border-slate-700/60 bg-slate-800/40 px-2 py-1 text-[10px] text-slate-300 transition-colors hover:bg-slate-800/70 disabled:cursor-not-allowed disabled:opacity-40"
-                        disabled={
-                            (staged().length === 0 &&
-                                unstaged().length === 0) ||
-                            gitBusy() ||
-                            !props.threadId
-                        }
-                        onClick={() => void runStash()}
-                    >
+                            <Show when={showBranchAndCommit()}>
+                                <button
+                                    type="button"
+                                    class={btnBranchSplit}
+                                    title="Create a new branch and commit (e.g. from main)"
+                                    disabled={
+                                        staged().length === 0 ||
+                                        gitBusy() ||
+                                        !props.threadId
+                                    }
+                                    onClick={() => {
+                                        setGitActionError("");
+                                        setBranchNameInput("");
+                                        setBranchCommitMsg("");
+                                        setBranchCommitOpen(true);
+                                    }}
+                                >
+                                    <GitBranch
+                                        class="h-3 w-3"
+                                        stroke-width={2}
+                                        aria-hidden
+                                    />
+                                    <span class="max-w-[7rem] truncate">
+                                        Branch…
+                                    </span>
+                                </button>
+                            </Show>
+                        </div>
+
                         <Show
-                            when={stashMutation().isPending}
-                            fallback={
-                                <Archive
-                                    class="h-3 w-3"
-                                    stroke-width={2}
-                                    aria-hidden
-                                />
-                            }
+                            when={hasRemote() || prURL()}
                         >
-                            <Loader2
-                                class="h-3 w-3 animate-spin"
-                                stroke-width={2}
-                                aria-hidden
-                            />
+                            <div class="mt-3 border-t border-slate-800/45 pt-2.5">
+                                <p class={`mb-2 ${sectionLabel}`}>
+                                    Remote
+                                </p>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <Show when={hasRemote()}>
+                                        <button
+                                            type="button"
+                                            class={btnRemote}
+                                            disabled={
+                                                gitBusy() || !props.threadId
+                                            }
+                                            onClick={() => void runPush()}
+                                        >
+                                            <Show
+                                                when={
+                                                    pushMutation().isPending
+                                                }
+                                                fallback={
+                                                    <ArrowUp
+                                                        class="h-3 w-3"
+                                                        stroke-width={2}
+                                                        aria-hidden
+                                                    />
+                                                }
+                                            >
+                                                <Loader2
+                                                    class="h-3 w-3 animate-spin"
+                                                    stroke-width={2}
+                                                    aria-hidden
+                                                />
+                                            </Show>
+                                            Push
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class={btnRemote}
+                                            disabled={
+                                                gitBusy() || !props.threadId
+                                            }
+                                            onClick={() => void runPull()}
+                                        >
+                                            <Show
+                                                when={
+                                                    pullMutation().isPending
+                                                }
+                                                fallback={
+                                                    <ArrowDown
+                                                        class="h-3 w-3"
+                                                        stroke-width={2}
+                                                        aria-hidden
+                                                    />
+                                                }
+                                            >
+                                                <Loader2
+                                                    class="h-3 w-3 animate-spin"
+                                                    stroke-width={2}
+                                                    aria-hidden
+                                                />
+                                            </Show>
+                                            Pull
+                                        </button>
+                                    </Show>
+                                    <Show when={prURL()}>
+                                        {(url) => (
+                                            <button
+                                                type="button"
+                                                class="inline-flex flex-1 min-w-[4.25rem] cursor-pointer items-center justify-center gap-1 rounded-md border border-emerald-700/40 bg-emerald-950/40 px-2 py-1.5 text-[10px] font-medium text-emerald-200 transition-colors hover:bg-emerald-900/35"
+                                                onClick={() =>
+                                                    openExternalURL(url())
+                                                }
+                                                title="Open or create pull request on GitHub"
+                                            >
+                                                <GitPullRequest
+                                                    class="h-3 w-3"
+                                                    stroke-width={2}
+                                                    aria-hidden
+                                                />
+                                                PR
+                                                <ExternalLink
+                                                    class="h-2.5 w-2.5 text-emerald-400/70"
+                                                    stroke-width={2}
+                                                    aria-hidden
+                                                />
+                                            </button>
+                                        )}
+                                    </Show>
+                                </div>
+                            </div>
                         </Show>
-                        Stash
-                    </button>
-                    <Show when={stashCount() > 0}>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-end gap-1.5 rounded-md border border-slate-800/40 bg-slate-950/25 px-2 py-1.5">
                         <button
                             type="button"
-                            class="inline-flex cursor-pointer items-center gap-1 rounded border border-slate-700/60 bg-slate-800/40 px-2 py-1 text-[10px] text-slate-300 transition-colors hover:bg-slate-800/70 disabled:cursor-not-allowed disabled:opacity-40"
-                            disabled={gitBusy() || !props.threadId}
-                            onClick={() => void runStashPop()}
+                            class={btnStashMuted}
+                            disabled={
+                                (staged().length === 0 &&
+                                    unstaged().length === 0) ||
+                                gitBusy() ||
+                                !props.threadId
+                            }
+                            onClick={() => void runStash()}
                         >
                             <Show
-                                when={stashPopMutation().isPending}
+                                when={stashMutation().isPending}
                                 fallback={
-                                    <ArchiveRestore
+                                    <Archive
                                         class="h-3 w-3"
                                         stroke-width={2}
                                         aria-hidden
@@ -515,9 +544,35 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                                     aria-hidden
                                 />
                             </Show>
-                            Pop
+                            Stash
                         </button>
-                    </Show>
+                        <Show when={stashCount() > 0}>
+                            <button
+                                type="button"
+                                class={btnStashMuted}
+                                disabled={gitBusy() || !props.threadId}
+                                onClick={() => void runStashPop()}
+                            >
+                                <Show
+                                    when={stashPopMutation().isPending}
+                                    fallback={
+                                        <ArchiveRestore
+                                            class="h-3 w-3"
+                                            stroke-width={2}
+                                            aria-hidden
+                                        />
+                                    }
+                                >
+                                    <Loader2
+                                        class="h-3 w-3 animate-spin"
+                                        stroke-width={2}
+                                        aria-hidden
+                                    />
+                                </Show>
+                                Pop
+                            </button>
+                        </Show>
+                    </div>
                 </div>
 
                 {/* ── Error display ── */}
@@ -535,6 +590,9 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                     </p>
                 </Show>
 
+                <p class={`mb-1 px-0.5 ${sectionLabel}`}>
+                    Files
+                </p>
                 {/* ── Staged ── */}
                 <CollapsibleSection
                     title="Staged"

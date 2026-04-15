@@ -334,6 +334,7 @@ export const ThreadPage: Component = () => {
                 <ReviewSidebar
                     width={sidebarWidth()}
                     threadId={params.threadId}
+                    usesDedicatedWorktree={!!(thread()?.worktree_dir ?? "").trim()}
                     git={gitStatusQuery.data ?? null}
                     gitMut={threadGitMut}
                     onRefresh={() => void refreshGitSidebar()}
