@@ -2,6 +2,10 @@ import X from "lucide-solid/icons/x";
 import { useNavigate } from "@solidjs/router";
 import type { Component } from "solid-js";
 import { createSignal, For, onCleanup, onMount } from "solid-js";
+import {
+    parseThreadIdFromThreadRoutePath,
+    useCurrentThreadId,
+} from "@/lib/current-thread-context";
 import { EventsOn } from "@wails/runtime/runtime";
 
 export type NotificationToastItem = {
@@ -74,6 +78,7 @@ export const NotificationToastViewport: Component<{
 };
 
 export const NotificationToast: Component = () => {
+    const currentThreadId = useCurrentThreadId();
     const navigate = useNavigate();
     const [toasts, setToasts] = createSignal<NotificationToastItem[]>([]);
 
@@ -85,6 +90,12 @@ export const NotificationToast: Component = () => {
                 deepLink?: string;
             };
             if (!payload?.title) return;
+            const deepLink = payload.deepLink?.trim() ?? "";
+            const notifThreadId = parseThreadIdFromThreadRoutePath(deepLink);
+            const here = currentThreadId();
+            if (notifThreadId && here && notifThreadId === here) {
+                return;
+            }
             const id = nextId++;
             setToasts((prev) => [
                 ...prev,
@@ -92,7 +103,7 @@ export const NotificationToast: Component = () => {
                     id,
                     title: payload.title!,
                     body: payload.body ?? "",
-                    deepLink: payload.deepLink?.trim() ?? "",
+                    deepLink,
                 },
             ]);
             setTimeout(() => dismiss(id), 8000);
