@@ -5,10 +5,13 @@ import { createSignal, Show } from "solid-js";
 import { GetCursorCLIInfo } from "@wails/go/app/App";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query-client";
+import ExternalLink from "lucide-solid/icons/external-link";
+import { useClaudeCliInfo } from "@/hooks/use-claude-cli-info";
+import {
+    ANTHROPIC_CONSOLE_URL,
+    formatClaudeSubscriptionLabel,
+} from "@/lib/claude-auth-display";
 import type { store } from "@wails/go/models";
-
-/** Placeholder until Anthropic usage is wired (single bar). */
-const FAKE_CLAUDE_INCLUDED_PCT = 36.5;
 
 function clampPct(n: number | undefined): number {
     if (n == null || !Number.isFinite(n)) return 0;
@@ -115,14 +118,75 @@ const CursorSection: Component<{
     );
 };
 
-const ClaudePlaceholderSection: Component = () => {
+const ClaudePlanOneLiner: Component<{
+    planLabel: string;
+    loading?: boolean;
+}> = (props) => {
+    return (
+        <div class="flex min-w-0 items-center justify-between gap-2 text-[10px] leading-none">
+            <p class="min-w-0 truncate text-orange-400/90">
+                <Show
+                    when={!props.loading}
+                    fallback={<span class="tabular-nums animate-pulse">—</span>}
+                >
+                    <span class="tabular-nums">{props.planLabel}</span>
+                </Show>{" "}
+                <span>Plan</span>
+            </p>
+            <a
+                href={ANTHROPIC_CONSOLE_URL}
+                target="_blank"
+                rel="noreferrer"
+                class="inline-flex shrink-0 items-center gap-0.5 text-slate-500 transition-colors hover:text-slate-300"
+                aria-label="Anthropic console — usage and billing"
+            >
+                Usage
+                <ExternalLink
+                    class="size-2.5 shrink-0 opacity-70"
+                    stroke-width={2}
+                    aria-hidden
+                />
+            </a>
+        </div>
+    );
+};
+
+const ClaudeSection: Component<{
+    loading: boolean;
+    info: store.ClaudeCLIInfo | undefined;
+}> = (props) => {
     return (
         <div class="space-y-2">
-            <Bar
-                label="Included"
-                value={FAKE_CLAUDE_INCLUDED_PCT}
-                fillClass="bg-amber-600/70"
-            />
+            <Show when={props.loading}>
+                <ClaudePlanOneLiner
+                    loading
+                    planLabel=""
+                />
+            </Show>
+            <Show when={!props.loading && !props.info?.installed}>
+                <p class="text-[10px] leading-snug text-amber-500/85">
+                    {props.info?.probe_error ||
+                        "Claude Code CLI (`claude`) not found on PATH."}
+                </p>
+            </Show>
+            <Show when={!props.loading && props.info?.installed}>
+                <Show when={props.info}>
+                    {(info) => (
+                        <>
+                            <Show when={info().auth_error}>
+                                <p class="mb-1 text-[10px] leading-snug text-amber-500/85">
+                                    {info().auth_error}
+                                </p>
+                            </Show>
+                            <ClaudePlanOneLiner
+                                planLabel={formatClaudeSubscriptionLabel(
+                                    info().auth?.subscription_type,
+                                )}
+                            />
+                        </>
+                    )}
+                </Show>
+            </Show>
         </div>
     );
 };
@@ -171,7 +235,7 @@ const CollapsibleUsageSection: Component<{
     );
 };
 
-/** In-flow footer block: Cursor (live) + Claude (placeholder). Replaces the old Usage row. */
+/** In-flow footer block: Cursor (live usage) + Claude (plan + auth from `claude auth status`). */
 export const SidebarProviderUsage: Component = () => {
     const [cursorOpen, setCursorOpen] = createSignal(true);
     const [claudeOpen, setClaudeOpen] = createSignal(true);
@@ -182,7 +246,11 @@ export const SidebarProviderUsage: Component = () => {
         staleTime: 60_000,
     }));
 
+    const { claudeQuery } = useClaudeCliInfo();
+
     const usageLoading = () => cursorCliQuery.isLoading && !cursorCliQuery.data;
+
+    const claudeLoading = () => claudeQuery.isLoading && !claudeQuery.data;
 
     /** Probe finished: hide the whole block when `agent` is not on PATH. */
     const hideBecauseCliMissing = () =>
@@ -193,9 +261,9 @@ export const SidebarProviderUsage: Component = () => {
     return (
         <Show when={!hideBecauseCliMissing()}>
             <div
-                class="space-y-1.5 px-1"
+                class="space-y-1.5 pl-2.5 pr-2"
                 aria-label="Provider usage"
-                aria-busy={usageLoading()}
+                aria-busy={usageLoading() || claudeLoading()}
             >
                 <CollapsibleUsageSection
                     title="Cursor"
@@ -219,7 +287,10 @@ export const SidebarProviderUsage: Component = () => {
                     onToggle={() => setClaudeOpen((v) => !v)}
                     sectionClass="mt-3 border-t border-slate-800/50 pt-3"
                 >
-                    <ClaudePlaceholderSection />
+                    <ClaudeSection
+                        loading={claudeLoading()}
+                        info={claudeQuery.data ?? undefined}
+                    />
                 </CollapsibleUsageSection>
             </div>
         </Show>

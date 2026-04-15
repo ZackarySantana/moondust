@@ -4,8 +4,18 @@ import { Show } from "solid-js";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/settings-form";
 import { useClaudeCliInfo } from "@/hooks/use-claude-cli-info";
+import {
+    ANTHROPIC_CONSOLE_URL,
+    formatClaudeAccountLine,
+    formatClaudeSubscriptionLabel,
+} from "@/lib/claude-auth-display";
 
 const CLAUDE_CODE_DOCS = "https://docs.anthropic.com/en/docs/claude-code/setup";
+
+function formatLabelOrDash(s: string | undefined): string {
+    const t = s?.trim();
+    return t ? t : "—";
+}
 
 export const ClaudeCliSettingsTab: Component = () => {
     const { claudeQuery, refresh } = useClaudeCliInfo();
@@ -32,6 +42,19 @@ export const ClaudeCliSettingsTab: Component = () => {
                     class="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
                 >
                     Claude Code setup
+                    <ExternalLink
+                        class="size-3"
+                        stroke-width={2}
+                        aria-hidden
+                    />
+                </a>
+                <a
+                    href={ANTHROPIC_CONSOLE_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    class="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
+                >
+                    Anthropic console
                     <ExternalLink
                         class="size-3"
                         stroke-width={2}
@@ -98,6 +121,105 @@ export const ClaudeCliSettingsTab: Component = () => {
                                     <p class="text-xs text-amber-200/80">
                                         {info().probe_error}
                                     </p>
+                                </Show>
+
+                                <Show when={info().installed}>
+                                    <div class="space-y-2">
+                                        <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                                            Authentication
+                                        </p>
+                                        <p class="text-xs text-slate-600">
+                                            Data comes from{" "}
+                                            <code class="rounded bg-slate-900/80 px-1 py-0.5 text-[10px]">
+                                                claude auth status --json
+                                            </code>
+                                            . The Claude CLI does not report
+                                            subscription usage or limits (no
+                                            equivalent to Cursor’s{" "}
+                                            <code class="rounded bg-slate-900/80 px-1 py-0.5 text-[10px]">
+                                                /usage
+                                            </code>
+                                            ); open the{" "}
+                                            <a
+                                                href={ANTHROPIC_CONSOLE_URL}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                class="text-emerald-400/95 underline-offset-2 hover:underline"
+                                            >
+                                                Anthropic console
+                                            </a>{" "}
+                                            for usage, quotas, and billing.
+                                        </p>
+                                        <Show when={info().auth_error}>
+                                            <p class="rounded-md border border-amber-800/40 bg-amber-950/25 px-2.5 py-2 text-xs text-amber-100/90">
+                                                {info().auth_error}
+                                            </p>
+                                        </Show>
+                                        <Show when={info().auth}>
+                                            {(auth) => (
+                                                <div class="grid gap-2 sm:grid-cols-2">
+                                                    <div class="rounded-md border border-slate-800/60 bg-slate-950/40 p-2.5">
+                                                        <p class="text-[11px] font-medium text-slate-500">
+                                                            Subscription
+                                                        </p>
+                                                        <p class="mt-1 font-mono text-lg text-slate-200 tabular-nums">
+                                                            {formatClaudeSubscriptionLabel(
+                                                                auth()
+                                                                    .subscription_type,
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                    <div class="rounded-md border border-slate-800/60 bg-slate-950/40 p-2.5">
+                                                        <p class="text-[11px] font-medium text-slate-500">
+                                                            Account
+                                                        </p>
+                                                        <p class="mt-1 wrap-break-word font-mono text-sm leading-snug text-slate-200">
+                                                            {formatClaudeAccountLine(
+                                                                auth(),
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                    <div class="rounded-md border border-slate-800/60 bg-slate-950/40 p-2.5">
+                                                        <p class="text-[11px] font-medium text-slate-500">
+                                                            Auth method
+                                                        </p>
+                                                        <p class="mt-1 font-mono text-sm text-slate-200">
+                                                            {formatLabelOrDash(
+                                                                auth()
+                                                                    .auth_method,
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                    <div class="rounded-md border border-slate-800/60 bg-slate-950/40 p-2.5">
+                                                        <p class="text-[11px] font-medium text-slate-500">
+                                                            API provider
+                                                        </p>
+                                                        <p class="mt-1 font-mono text-sm text-slate-200">
+                                                            {formatLabelOrDash(
+                                                                auth()
+                                                                    .api_provider,
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                    <Show
+                                                        when={auth().org_name?.trim()}
+                                                    >
+                                                        <div class="rounded-md border border-slate-800/60 bg-slate-950/40 p-2.5 sm:col-span-2">
+                                                            <p class="text-[11px] font-medium text-slate-500">
+                                                                Organization
+                                                            </p>
+                                                            <p class="mt-1 wrap-break-word font-mono text-sm leading-snug text-slate-200">
+                                                                {
+                                                                    auth()
+                                                                        .org_name
+                                                                }
+                                                            </p>
+                                                        </div>
+                                                    </Show>
+                                                </div>
+                                            )}
+                                        </Show>
+                                    </div>
                                 </Show>
                             </div>
                         );

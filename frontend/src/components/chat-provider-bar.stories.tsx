@@ -88,3 +88,20 @@ export const Cursor: Story = {
         </MemoryRouter>
     ),
 };
+
+/** Claude Code uses the same bar; model list comes from the app at runtime. */
+export const ClaudeCode: Story = {
+    render: () => (
+        <MemoryRouter history={memoryAt("/project/demo/thread/t1")}>
+            <Route
+                path="/project/:projectId/thread/:threadId"
+                component={() => (
+                    <BarShell
+                        provider="claude"
+                        model="sonnet"
+                    />
+                )}
+            />
+        </MemoryRouter>
+    ),
+};

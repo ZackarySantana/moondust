@@ -15,6 +15,7 @@ import {
 } from "@/components/categorized-model-picker";
 import {
     CHAT_PROVIDERS,
+    CHAT_PROVIDER_LABEL_WIDTH_PLACEHOLDER,
     type ChatProviderId,
     type ModelChoice,
 } from "@/lib/chat-provider";
@@ -300,8 +301,19 @@ export const ChatProviderBar: Component<{
                             )
                         }
                     >
-                        {CHAT_PROVIDERS.find((p) => p.id === props.provider)
-                            ?.label ?? props.provider}
+                        <span class="inline-grid shrink-0 justify-items-start">
+                            <span
+                                class="invisible col-start-1 row-start-1"
+                                aria-hidden
+                            >
+                                {CHAT_PROVIDER_LABEL_WIDTH_PLACEHOLDER}
+                            </span>
+                            <span class="col-start-1 row-start-1">
+                                {CHAT_PROVIDERS.find(
+                                    (p) => p.id === props.provider,
+                                )?.label ?? props.provider}
+                            </span>
+                        </span>
                         <ChevronUp
                             class="size-3 shrink-0 text-slate-600"
                             stroke-width={2}

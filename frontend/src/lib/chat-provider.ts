@@ -10,6 +10,12 @@ export const CHAT_PROVIDERS: readonly {
     { id: "claude", label: "Claude Code" },
 ];
 
+/** Longest label in {@link CHAT_PROVIDERS}; use to reserve dropdown width (no layout shift). */
+export const CHAT_PROVIDER_LABEL_WIDTH_PLACEHOLDER = CHAT_PROVIDERS.reduce(
+    (longest, p) => (p.label.length > longest.length ? p.label : longest),
+    "",
+);
+
 export type ModelChoice = {
     id: string;
     label: string;

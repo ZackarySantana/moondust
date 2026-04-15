@@ -22,5 +22,11 @@ func (s *Service) GetClaudeCLIInfo(ctx context.Context) (*store.ClaudeCLIInfo, e
 		return info, nil
 	}
 	info.Installed = true
+	auth, authErr := claudecli.AuthStatus(ctx, path)
+	if authErr != "" {
+		info.AuthError = authErr
+	} else {
+		info.Auth = auth
+	}
 	return info, nil
 }

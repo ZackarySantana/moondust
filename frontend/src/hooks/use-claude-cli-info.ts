@@ -9,6 +9,7 @@ export function useClaudeCliInfo() {
     const claudeQuery = useQuery(() => ({
         queryKey: queryKeys.claudeCLI,
         queryFn: GetClaudeCLIInfo,
+        staleTime: 60_000,
     }));
 
     function refresh() {
