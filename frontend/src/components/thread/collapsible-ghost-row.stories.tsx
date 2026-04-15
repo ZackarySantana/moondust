@@ -20,7 +20,7 @@ export const Collapsed: Story = {
             ariaLabelExpanded="Collapse tool calls"
             ariaLabelCollapsed="Expand tool calls"
         >
-            Tool calls (3)
+            <span class="text-slate-400">Tool calls (3)</span>
         </CollapsibleGhostRow>
     ),
 };
@@ -33,12 +33,12 @@ export const Expanded: Story = {
             ariaLabelExpanded="Collapse tool calls"
             ariaLabelCollapsed="Expand tool calls"
             body={
-                <div class="rounded border border-slate-800/50 bg-slate-950/40 px-2 py-1.5 font-mono text-[10px] text-slate-400">
+                <div class="ml-4 mt-1 rounded-lg border border-slate-800/40 bg-slate-900/30 px-3 py-2 font-mono text-[10px] text-slate-400">
                     read_file src/main.go
                 </div>
             }
         >
-            Tool calls (3)
+            <span class="text-slate-400">Tool calls (3)</span>
         </CollapsibleGhostRow>
     ),
 };
@@ -52,7 +52,7 @@ export const Busy: Story = {
             ariaLabelExpanded="Collapse thought"
             ariaLabelCollapsed="Expand thought"
         >
-            Thinking…
+            <span class="text-slate-400">Thinking</span>
         </CollapsibleGhostRow>
     ),
 };
@@ -67,13 +67,15 @@ export const Interactive: Story = {
                 ariaLabelExpanded="Collapse details"
                 ariaLabelCollapsed="Expand details"
                 body={
-                    <p class="max-w-md text-xs leading-relaxed text-slate-400">
-                        Extra content appears when expanded. Toggle the row
-                        label to open or close.
-                    </p>
+                    <div class="ml-4 mt-1 rounded-lg border border-slate-800/40 bg-slate-900/30 px-3 py-2">
+                        <p class="max-w-md text-xs leading-relaxed text-slate-400">
+                            Extra content appears when expanded. Toggle the row
+                            label to open or close.
+                        </p>
+                    </div>
                 }
             >
-                Transcript detail
+                <span class="text-slate-400">Transcript detail</span>
             </CollapsibleGhostRow>
         );
     },

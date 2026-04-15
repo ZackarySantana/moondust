@@ -1,3 +1,4 @@
+import Check from "lucide-solid/icons/check";
 import type { Component } from "solid-js";
 import { createSignal, Show } from "solid-js";
 import { CollapsibleGhostRow } from "@/components/thread/collapsible-ghost-row";
@@ -14,6 +15,7 @@ export const AssistantToolCallMessageRow: Component<{
 }> = (props) => {
     const [expanded, setExpanded] = createSignal(false);
     const isRunning = () => !!props.streaming && !props.tc.output?.trim();
+    const isDone = () => !isRunning() && !!props.tc.output?.trim();
 
     return (
         <CollapsibleGhostRow
@@ -23,10 +25,10 @@ export const AssistantToolCallMessageRow: Component<{
             ariaLabelExpanded={`Collapse ${props.tc.name}`}
             ariaLabelCollapsed={`Expand ${props.tc.name}`}
             body={
-                <div class="ml-1 overflow-hidden rounded-md border border-slate-700/30 bg-slate-900/50">
+                <div class="ml-4 mt-1 overflow-hidden rounded-lg border border-slate-800/40 bg-slate-900/30">
                     <Show when={props.tc.arguments?.trim()}>
-                        <div class="border-b border-slate-700/25 px-3 py-2">
-                            <p class="mb-1 text-[10px] font-medium uppercase tracking-wide text-slate-600">
+                        <div class="border-b border-slate-800/30 px-3 py-2">
+                            <p class="mb-1.5 text-[10px] font-medium uppercase tracking-widest text-slate-600">
                                 Arguments
                             </p>
                             <pre class="max-h-48 overflow-y-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-slate-400 wrap-anywhere">
@@ -36,7 +38,7 @@ export const AssistantToolCallMessageRow: Component<{
                     </Show>
                     <Show when={props.tc.output?.trim()}>
                         <div class="px-3 py-2">
-                            <p class="mb-1 text-[10px] font-medium uppercase tracking-wide text-slate-600">
+                            <p class="mb-1.5 text-[10px] font-medium uppercase tracking-widest text-slate-600">
                                 Result
                             </p>
                             <pre class="max-h-52 overflow-y-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-slate-400 wrap-anywhere">
@@ -47,10 +49,18 @@ export const AssistantToolCallMessageRow: Component<{
                 </div>
             }
         >
-            <span class="font-mono">{props.tc.name}</span>
-            <Show when={isRunning()}>
-                <span class="text-[10px] text-slate-600">running…</span>
-            </Show>
+            <span class="flex items-center gap-1.5">
+                <span class="font-mono text-slate-400">{props.tc.name}</span>
+                <Show when={isDone()}>
+                    <span class="flex size-3.5 items-center justify-center rounded-full bg-emerald-500/15">
+                        <Check
+                            class="size-2.5 text-emerald-400/80"
+                            stroke-width={2.5}
+                            aria-hidden
+                        />
+                    </span>
+                </Show>
+            </span>
         </CollapsibleGhostRow>
     );
 };

@@ -12,6 +12,7 @@ import {
     CategorizedModelList,
     MODEL_LIST_SCROLL_CLASS,
     MODEL_PANEL_HEIGHT_CLASS,
+    OrgBadge,
 } from "@/components/categorized-model-picker";
 import {
     CHAT_PROVIDERS,
@@ -27,8 +28,10 @@ import {
     FAVORITES_FILTER,
     isPriorityOrg,
     MISC_FILTER,
+    orgBadgeAbbr,
     orgBadgeClass,
     orgTitle,
+    pricingTierClass,
     PRIORITY_ORGS,
     providerSlug,
     resolveOpenRouterFlagships,
@@ -194,8 +197,19 @@ export const ChatProviderBar: Component<{
         return row?.label ?? cur;
     });
 
-    function toggleModelDetail(m: ModelChoice) {
-        menu.setDetailModelId((cur) => (cur === m.id ? null : m.id));
+    // ── Hover-based info panel ──
+    let hoverTimer: ReturnType<typeof setTimeout> | undefined;
+    const HOVER_DELAY = 200;
+
+    function handleInfoHover(m: ModelChoice) {
+        clearTimeout(hoverTimer);
+        hoverTimer = setTimeout(() => {
+            menu.setDetailModelId(m.id);
+        }, HOVER_DELAY);
+    }
+
+    function handleInfoLeave() {
+        clearTimeout(hoverTimer);
     }
 
     const detailAside = createMemo(() => {
@@ -203,17 +217,27 @@ export const ChatProviderBar: Component<{
         if (!mid) return null;
         const row = modelOptions().find((m) => m.id === mid);
         if (!row) return null;
+        const slug = row.provider ?? providerSlug(row.id);
+        const tierClass = pricingTierClass(row.pricing_tier);
         return (
             <aside
                 class="flex h-full w-[min(19rem,42vw)] shrink-0 flex-col overflow-y-auto border-l border-slate-800/60 bg-slate-900/35 p-3"
                 aria-label="Model details"
+                onMouseEnter={() => clearTimeout(hoverTimer)}
+                onMouseLeave={() => {
+                    hoverTimer = setTimeout(
+                        () => menu.setDetailModelId(null),
+                        300,
+                    );
+                }}
             >
-                <div class="flex items-start justify-between gap-2 border-b border-slate-800/50 pb-2">
-                    <div class="min-w-0">
+                <div class="flex items-start gap-2.5 border-b border-slate-800/50 pb-2.5">
+                    <OrgBadge slug={slug} />
+                    <div class="min-w-0 flex-1">
                         <p class="text-[13px] font-medium leading-snug text-slate-100">
                             {row.label}
                         </p>
-                        <p class="mt-1 break-all font-mono text-[10px] text-slate-500">
+                        <p class="mt-0.5 break-all font-mono text-[10px] text-slate-500">
                             {row.id}
                         </p>
                     </div>
@@ -230,14 +254,18 @@ export const ChatProviderBar: Component<{
                         />
                     </button>
                 </div>
-                <div class="mt-3 space-y-2 text-[11px] text-slate-300">
+                <div class="mt-3 space-y-2.5 text-[11px] text-slate-300">
                     <p class="whitespace-pre-wrap leading-relaxed text-slate-400">
                         {fullDescription(row)}
                     </p>
-                    <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 border-t border-slate-800/40 pt-3 text-[10px]">
+                    <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 border-t border-slate-800/40 pt-3 text-[10px]">
                         <dt class="text-slate-500">Provider</dt>
-                        <dd class="text-slate-300">
-                            {orgTitle(row.provider ?? providerSlug(row.id))}
+                        <dd class="flex items-center gap-1.5 text-slate-300">
+                            <OrgBadge
+                                slug={slug}
+                                compact
+                            />
+                            {orgTitle(slug)}
                         </dd>
                         <dt class="text-slate-500">Price</dt>
                         <dd class="text-slate-300">
@@ -252,7 +280,9 @@ export const ChatProviderBar: Component<{
                                     !!row.pricing_tier
                                 }
                             >
-                                <p class="mt-1 font-mono text-[10px] text-emerald-500/80">
+                                <p
+                                    class={`mt-1 font-mono text-[10px] font-semibold ${tierClass}`}
+                                >
                                     Tier {row.pricing_tier}
                                 </p>
                             </Show>
@@ -262,17 +292,17 @@ export const ChatProviderBar: Component<{
                     </dl>
                     <div class="flex flex-wrap gap-1 pt-1">
                         <Show when={row.vision}>
-                            <span class="rounded border border-slate-700/50 bg-slate-950/40 px-1.5 py-0.5 text-[10px] text-slate-400">
+                            <span class="rounded border border-sky-700/30 bg-sky-950/30 px-1.5 py-0.5 text-[10px] text-sky-400/80">
                                 Vision
                             </span>
                         </Show>
                         <Show when={row.reasoning}>
-                            <span class="rounded border border-slate-700/50 bg-slate-950/40 px-1.5 py-0.5 text-[10px] text-slate-400">
+                            <span class="rounded border border-violet-700/30 bg-violet-950/30 px-1.5 py-0.5 text-[10px] text-violet-400/80">
                                 Reasoning
                             </span>
                         </Show>
                         <Show when={row.long_context}>
-                            <span class="rounded border border-slate-700/50 bg-slate-950/40 px-1.5 py-0.5 text-[10px] text-slate-400">
+                            <span class="rounded border border-emerald-700/30 bg-emerald-950/30 px-1.5 py-0.5 text-[10px] text-emerald-400/80">
                                 Large context
                             </span>
                         </Show>
@@ -288,6 +318,7 @@ export const ChatProviderBar: Component<{
             class="flex min-w-0 flex-1 flex-col gap-1.5"
         >
             <div class="flex flex-wrap items-center gap-1">
+                {/* ── Provider trigger ── */}
                 <div class="relative shrink-0">
                     <button
                         type="button"
@@ -350,6 +381,7 @@ export const ChatProviderBar: Component<{
                     </Show>
                 </div>
 
+                {/* ── Model trigger ── */}
                 <div class="relative shrink-0">
                     <button
                         type="button"
@@ -403,6 +435,7 @@ export const ChatProviderBar: Component<{
                             <div
                                 class={`flex h-full min-w-0 shrink-0 flex-row overflow-hidden ${isCliProvider() ? "w-full max-w-[min(36rem,calc(100vw-2rem))]" : "w-[min(28rem,calc(100vw-2rem))]"}`}
                             >
+                                {/* ── Left org rail (OpenRouter only) ── */}
                                 <Show when={!isCliProvider()}>
                                     <aside
                                         class="flex h-full w-11 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-slate-800/60 bg-slate-950/60 py-1.5 pl-1 pr-0.5"
@@ -424,7 +457,7 @@ export const ChatProviderBar: Component<{
                                         </button>
                                         <button
                                             type="button"
-                                            title="Favorites (coming soon)"
+                                            title="Favorites"
                                             class={`${railFilterBtnClass} ${menu.filterOrg() === FAVORITES_FILTER ? "bg-amber-500/25 text-amber-100 ring-1 ring-amber-500/40" : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"}`}
                                             onClick={() =>
                                                 menu.setFilterOrg((cur) =>
@@ -445,7 +478,7 @@ export const ChatProviderBar: Component<{
                                                 <button
                                                     type="button"
                                                     title={orgTitle(slug)}
-                                                    class={`${railFilterBtnClass} text-[10px] font-semibold ${menu.filterOrg() === slug ? "ring-1 ring-violet-500/50" : ""} ${orgBadgeClass(slug)}`}
+                                                    class={`${railFilterBtnClass} text-[9px] font-semibold ${menu.filterOrg() === slug ? "ring-1 ring-violet-500/50" : ""} ${orgBadgeClass(slug)}`}
                                                     onClick={() =>
                                                         menu.setFilterOrg(
                                                             (cur) =>
@@ -455,9 +488,7 @@ export const ChatProviderBar: Component<{
                                                         )
                                                     }
                                                 >
-                                                    {(
-                                                        slug[0] ?? "?"
-                                                    ).toUpperCase()}
+                                                    {orgBadgeAbbr(slug)}
                                                 </button>
                                             )}
                                         </For>
@@ -481,6 +512,8 @@ export const ChatProviderBar: Component<{
                                         </button>
                                     </aside>
                                 </Show>
+
+                                {/* ── Search + list ── */}
                                 <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                                     <div class="flex shrink-0 items-center gap-1.5 border-b border-slate-800/60 px-2 py-1.5">
                                         <Search
@@ -512,13 +545,16 @@ export const ChatProviderBar: Component<{
                                                 props.onModelChange(id);
                                                 menu.close();
                                             }}
-                                            onInfo={toggleModelDetail}
+                                            onInfoHover={handleInfoHover}
+                                            onInfoLeave={handleInfoLeave}
                                             showSectionHeaders={showSectionHeaders()}
                                             showInfoButton={!isCliProvider()}
                                         />
                                     </div>
                                 </div>
                             </div>
+
+                            {/* ── Detail aside ── */}
                             {detailAside()}
                         </div>
                     </Show>

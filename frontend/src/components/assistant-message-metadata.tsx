@@ -6,8 +6,8 @@ import {
     shift,
 } from "@floating-ui/dom";
 import Info from "lucide-solid/icons/info";
-import type { Component } from "solid-js";
-import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
+import type { Component, JSX } from "solid-js";
+import { createEffect, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import type { store } from "@wails/go/models";
 
@@ -84,11 +84,214 @@ const formatUsd = (n: number) =>
 const formatInt = (n: number) =>
     new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
 
-/** Format a delta in plan-usage percentage points (same units as Cursor /usage). */
 const formatPercentPointsDelta = (n: number) => {
     const sign = n > 0 ? "+" : "";
     return `${sign}${n.toFixed(2)} pp`;
 };
+
+/* ------------------------------------------------------------------ */
+/*  Reusable sub-components for the popover interior                  */
+/* ------------------------------------------------------------------ */
+
+const StatPill: Component<{ label: string; value: string; accent?: boolean }> = (props) => (
+    <div class="flex flex-col gap-0.5 rounded-md bg-slate-800/40 px-2 py-1.5">
+        <span class="text-[9px] font-medium uppercase tracking-widest text-slate-600">
+            {props.label}
+        </span>
+        <span
+            class="font-mono text-[11px] font-medium"
+            classList={{
+                "text-emerald-400/90": props.accent,
+                "text-slate-200": !props.accent,
+            }}
+        >
+            {props.value}
+        </span>
+    </div>
+);
+
+const MetaRow: Component<{ label: string; children: JSX.Element }> = (props) => (
+    <div class="flex items-baseline justify-between gap-3">
+        <span class="text-[10px] text-slate-500">{props.label}</span>
+        <span class="font-mono text-[10px] text-slate-300">{props.children}</span>
+    </div>
+);
+
+const SectionHeading: Component<{ children: JSX.Element }> = (props) => (
+    <p class="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+        {props.children}
+    </p>
+);
+
+const SectionDivider = () => (
+    <div class="border-t border-slate-800/40" aria-hidden />
+);
+
+/* ------------------------------------------------------------------ */
+/*  OpenRouter section                                                */
+/* ------------------------------------------------------------------ */
+
+const OpenRouterSection: Component<{ m: store.OpenRouterChatMessageMetadata }> = (props) => {
+    const pills = () => {
+        const items: { label: string; value: string; accent?: boolean }[] = [];
+        if (props.m.prompt_tokens != null)
+            items.push({ label: "In", value: formatInt(props.m.prompt_tokens) });
+        if (props.m.completion_tokens != null)
+            items.push({ label: "Out", value: formatInt(props.m.completion_tokens) });
+        if (props.m.total_tokens != null)
+            items.push({ label: "Total", value: formatInt(props.m.total_tokens) });
+        if (props.m.cost_usd != null)
+            items.push({ label: "Cost", value: formatUsd(props.m.cost_usd), accent: true });
+        return items;
+    };
+    const toolCount = () => openRouterSegmentToolCount(props.m);
+
+    return (
+        <div class="flex flex-col gap-2">
+            <SectionHeading>OpenRouter</SectionHeading>
+            <Show when={pills().length > 0}>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <For each={pills()}>
+                        {(p) => <StatPill label={p.label} value={p.value} accent={p.accent} />}
+                    </For>
+                </div>
+            </Show>
+            <Show when={toolCount() > 0}>
+                <MetaRow label="Tool calls">{formatInt(toolCount())}</MetaRow>
+            </Show>
+        </div>
+    );
+};
+
+/* ------------------------------------------------------------------ */
+/*  Cursor section                                                    */
+/* ------------------------------------------------------------------ */
+
+const CursorSection: Component<{ m: store.CursorChatMessageMetadata }> = (props) => {
+    const tokenPills = () => {
+        const items: { label: string; value: string }[] = [];
+        if (props.m.input_tokens != null)
+            items.push({ label: "In", value: formatInt(props.m.input_tokens) });
+        if (props.m.output_tokens != null)
+            items.push({ label: "Out", value: formatInt(props.m.output_tokens) });
+        if (props.m.cache_read_tokens != null)
+            items.push({ label: "Cache R", value: formatInt(props.m.cache_read_tokens) });
+        if (props.m.cache_write_tokens != null)
+            items.push({ label: "Cache W", value: formatInt(props.m.cache_write_tokens) });
+        return items;
+    };
+
+    return (
+        <div class="flex flex-col gap-2">
+            <SectionHeading>Cursor</SectionHeading>
+            <Show when={tokenPills().length > 0}>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <For each={tokenPills()}>
+                        {(p) => <StatPill label={p.label} value={p.value} />}
+                    </For>
+                </div>
+            </Show>
+            <div class="flex flex-col gap-1">
+                <Show when={props.m.plan_auto_percent_delta != null}>
+                    <MetaRow label="Auto usage">
+                        {formatPercentPointsDelta(props.m.plan_auto_percent_delta!)}
+                    </MetaRow>
+                </Show>
+                <Show when={props.m.plan_api_percent_delta != null}>
+                    <MetaRow label="API usage">
+                        {formatPercentPointsDelta(props.m.plan_api_percent_delta!)}
+                    </MetaRow>
+                </Show>
+                <Show when={(props.m.tool_calls?.length ?? 0) > 0}>
+                    <MetaRow label="Tool calls">
+                        {formatInt(props.m.tool_calls!.length)}
+                    </MetaRow>
+                </Show>
+                <Show when={props.m.request_id != null && props.m.request_id !== ""}>
+                    <div class="mt-1 rounded-md bg-slate-800/30 px-2 py-1">
+                        <p class="text-[9px] font-medium uppercase tracking-widest text-slate-600">
+                            Request ID
+                        </p>
+                        <p class="mt-0.5 break-all font-mono text-[9px] leading-snug text-slate-500 select-all">
+                            {props.m.request_id}
+                        </p>
+                    </div>
+                </Show>
+            </div>
+            <p class="text-[9px] leading-snug text-slate-600">
+                Usage deltas match Settings &rarr; Cursor plan buckets. Other activity may affect them.
+            </p>
+        </div>
+    );
+};
+
+/* ------------------------------------------------------------------ */
+/*  Claude Code section                                               */
+/* ------------------------------------------------------------------ */
+
+const ClaudeSection: Component<{
+    m: store.ClaudeChatMessageMetadata | undefined;
+    chatProvider: string;
+}> = (props) => {
+    const hasMeta = () => hasClaudeMeta(props.m);
+
+    const tokenPills = () => {
+        if (!props.m) return [];
+        const items: { label: string; value: string }[] = [];
+        if (props.m.input_tokens != null)
+            items.push({ label: "In", value: formatInt(props.m.input_tokens) });
+        if (props.m.output_tokens != null)
+            items.push({ label: "Out", value: formatInt(props.m.output_tokens) });
+        if (props.m.cache_read_tokens != null)
+            items.push({ label: "Cache R", value: formatInt(props.m.cache_read_tokens) });
+        if (props.m.cache_write_tokens != null)
+            items.push({ label: "Cache W", value: formatInt(props.m.cache_write_tokens) });
+        return items;
+    };
+
+    return (
+        <div class="flex flex-col gap-2">
+            <SectionHeading>Claude Code</SectionHeading>
+            <Show
+                when={hasMeta()}
+                fallback={
+                    <p class="text-[10px] leading-snug text-slate-600">
+                        No usage details stored for this reply.
+                    </p>
+                }
+            >
+                <Show when={tokenPills().length > 0}>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <For each={tokenPills()}>
+                            {(p) => <StatPill label={p.label} value={p.value} />}
+                        </For>
+                    </div>
+                </Show>
+                <div class="flex flex-col gap-1">
+                    <Show when={(props.m!.tool_calls?.length ?? 0) > 0}>
+                        <MetaRow label="Tool calls">
+                            {formatInt(props.m!.tool_calls!.length)}
+                        </MetaRow>
+                    </Show>
+                    <Show when={props.m?.request_id != null && props.m!.request_id !== ""}>
+                        <div class="mt-1 rounded-md bg-slate-800/30 px-2 py-1">
+                            <p class="text-[9px] font-medium uppercase tracking-widest text-slate-600">
+                                Request ID
+                            </p>
+                            <p class="mt-0.5 break-all font-mono text-[9px] leading-snug text-slate-500 select-all">
+                                {props.m!.request_id}
+                            </p>
+                        </div>
+                    </Show>
+                </div>
+            </Show>
+        </div>
+    );
+};
+
+/* ------------------------------------------------------------------ */
+/*  Main button + popover                                             */
+/* ------------------------------------------------------------------ */
 
 export const AssistantMessageMetadataButton: Component<{
     msg: store.ChatMessage;
@@ -132,7 +335,7 @@ export const AssistantMessageMetadataButton: Component<{
                     placement: "bottom-start",
                     strategy: "fixed",
                     middleware: [
-                        offset(4),
+                        offset(6),
                         flip({
                             padding: 8,
                             fallbackPlacements: [
@@ -160,7 +363,6 @@ export const AssistantMessageMetadataButton: Component<{
             });
         };
 
-        // Portal + first paint: ensure the floating node has layout before measuring.
         rafOuter = requestAnimationFrame(() => {
             rafInner = requestAnimationFrame(start);
         });
@@ -178,6 +380,13 @@ export const AssistantMessageMetadataButton: Component<{
     const cur = () => props.msg.metadata?.cursor;
     const cl = () => props.msg.metadata?.claude;
 
+    const showOr = () => hasOpenRouterMeta(or());
+    const showCur = () => hasCursorMeta(cur());
+    const showCl = () => props.msg.chat_provider === "claude";
+
+    const sectionCount = () =>
+        (showOr() ? 1 : 0) + (showCur() ? 1 : 0) + (showCl() ? 1 : 0);
+
     return (
         <Show when={assistantMessageHasMetadata(props.msg)}>
             <div class="inline-flex shrink-0">
@@ -186,7 +395,7 @@ export const AssistantMessageMetadataButton: Component<{
                     ref={(el) => {
                         buttonEl = el;
                     }}
-                    class="rounded p-0.5 text-slate-500 transition-colors hover:bg-slate-800/60 hover:text-slate-300"
+                    class="rounded-md p-1 text-slate-600 transition-all duration-150 hover:bg-slate-800/50 hover:text-slate-300"
                     aria-label="Message details"
                     aria-expanded={open()}
                     onClick={() => {
@@ -204,21 +413,13 @@ export const AssistantMessageMetadataButton: Component<{
                         aria-hidden
                     />
                 </button>
-                <Show
-                    when={
-                        open() &&
-                        (or() ||
-                            cur() ||
-                            cl() ||
-                            props.msg.chat_provider === "claude")
-                    }
-                >
+                <Show when={open() && sectionCount() > 0}>
                     <Portal mount={document.body}>
                         <div
                             ref={(el) => {
                                 panelEl = el;
                             }}
-                            class="fixed z-100 max-w-[min(18rem,calc(100vw-1rem))] rounded-md border border-slate-800/60 bg-slate-950/98 px-3 py-2 text-[11px] text-slate-300 shadow-lg backdrop-blur-sm"
+                            class="fixed z-100 w-[min(17rem,calc(100vw-1rem))] animate-scale-in rounded-lg border border-slate-800/50 bg-slate-950 shadow-xl shadow-black/30 backdrop-blur-sm"
                             style={{
                                 left:
                                     pos() != null ? `${pos()!.x}px` : "-9999px",
@@ -229,293 +430,23 @@ export const AssistantMessageMetadataButton: Component<{
                             role="dialog"
                             aria-label="Message usage details"
                         >
-                            <Show when={or()}>
-                                <p class="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                                    OpenRouter
-                                </p>
-                                <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[10px]">
-                                    <Show when={or()!.prompt_tokens != null}>
-                                        <dt class="text-slate-500">
-                                            Prompt tokens
-                                        </dt>
-                                        <dd class="font-mono text-slate-200">
-                                            {formatInt(or()!.prompt_tokens!)}
-                                        </dd>
-                                    </Show>
-                                    <Show
-                                        when={or()!.completion_tokens != null}
-                                    >
-                                        <dt class="text-slate-500">
-                                            Completion tokens
-                                        </dt>
-                                        <dd class="font-mono text-slate-200">
-                                            {formatInt(
-                                                or()!.completion_tokens!,
-                                            )}
-                                        </dd>
-                                    </Show>
-                                    <Show when={or()!.total_tokens != null}>
-                                        <dt class="text-slate-500">
-                                            Total tokens
-                                        </dt>
-                                        <dd class="font-mono text-slate-200">
-                                            {formatInt(or()!.total_tokens!)}
-                                        </dd>
-                                    </Show>
-                                    <Show when={or()!.cost_usd != null}>
-                                        <dt class="text-slate-500">Cost</dt>
-                                        <dd class="font-mono text-emerald-400/90">
-                                            {formatUsd(or()!.cost_usd!)}
-                                        </dd>
-                                    </Show>
-                                    <Show
-                                        when={
-                                            openRouterSegmentToolCount(or()!) >
-                                            0
-                                        }
-                                    >
-                                        <dt class="text-slate-500">
-                                            Tool calls
-                                        </dt>
-                                        <dd class="font-mono text-slate-200">
-                                            {formatInt(
-                                                openRouterSegmentToolCount(
-                                                    or()!,
-                                                ),
-                                            )}
-                                        </dd>
-                                    </Show>
-                                </dl>
-                            </Show>
-                            <Show
-                                when={
-                                    or() &&
-                                    (cur() ||
-                                        cl() ||
-                                        props.msg.chat_provider === "claude")
-                                }
-                            >
-                                <div
-                                    class="my-2 border-t border-slate-800/60"
-                                    aria-hidden
-                                />
-                            </Show>
-                            <Show when={cur()}>
-                                <p class="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                                    Cursor
-                                </p>
-                                <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[10px]">
-                                    <Show when={cur()!.input_tokens != null}>
-                                        <dt class="text-slate-500">
-                                            Input tokens
-                                        </dt>
-                                        <dd class="font-mono text-slate-200">
-                                            {formatInt(cur()!.input_tokens!)}
-                                        </dd>
-                                    </Show>
-                                    <Show when={cur()!.output_tokens != null}>
-                                        <dt class="text-slate-500">
-                                            Output tokens
-                                        </dt>
-                                        <dd class="font-mono text-slate-200">
-                                            {formatInt(cur()!.output_tokens!)}
-                                        </dd>
-                                    </Show>
-                                    <Show
-                                        when={cur()!.cache_read_tokens != null}
-                                    >
-                                        <dt class="text-slate-500">
-                                            Cache read
-                                        </dt>
-                                        <dd class="font-mono text-slate-200">
-                                            {formatInt(
-                                                cur()!.cache_read_tokens!,
-                                            )}
-                                        </dd>
-                                    </Show>
-                                    <Show
-                                        when={cur()!.cache_write_tokens != null}
-                                    >
-                                        <dt class="text-slate-500">
-                                            Cache write
-                                        </dt>
-                                        <dd class="font-mono text-slate-200">
-                                            {formatInt(
-                                                cur()!.cache_write_tokens!,
-                                            )}
-                                        </dd>
-                                    </Show>
-                                    <Show
-                                        when={
-                                            cur()!.plan_auto_percent_delta !=
-                                            null
-                                        }
-                                    >
-                                        <dt class="text-slate-500">Auto Δ</dt>
-                                        <dd class="font-mono text-slate-200">
-                                            {formatPercentPointsDelta(
-                                                cur()!.plan_auto_percent_delta!,
-                                            )}
-                                        </dd>
-                                    </Show>
-                                    <Show
-                                        when={
-                                            cur()!.plan_api_percent_delta !=
-                                            null
-                                        }
-                                    >
-                                        <dt class="text-slate-500">API Δ</dt>
-                                        <dd class="font-mono text-slate-200">
-                                            {formatPercentPointsDelta(
-                                                cur()!.plan_api_percent_delta!,
-                                            )}
-                                        </dd>
-                                    </Show>
-                                    <Show
-                                        when={
-                                            cur()!.request_id != null &&
-                                            cur()!.request_id !== ""
-                                        }
-                                    >
-                                        <dt class="text-slate-500">Request</dt>
-                                        <dd class="break-all font-mono text-[10px] text-slate-400">
-                                            {cur()!.request_id}
-                                        </dd>
-                                    </Show>
-                                    <Show
-                                        when={
-                                            (cur()!.tool_calls?.length ?? 0) > 0
-                                        }
-                                    >
-                                        <dt class="text-slate-500">
-                                            Tool calls
-                                        </dt>
-                                        <dd class="font-mono text-slate-200">
-                                            {formatInt(
-                                                cur()!.tool_calls!.length,
-                                            )}
-                                        </dd>
-                                    </Show>
-                                </dl>
-                                <p class="mt-2 text-[9px] leading-snug text-slate-600">
-                                    Auto/API deltas are the change in plan usage
-                                    percentages around this request (same
-                                    buckets as Settings → Cursor). Other Cursor
-                                    activity can affect them.
-                                </p>
-                            </Show>
-                            <Show
-                                when={
-                                    (cur() || or()) &&
-                                    props.msg.chat_provider === "claude"
-                                }
-                            >
-                                <div
-                                    class="my-2 border-t border-slate-800/60"
-                                    aria-hidden
-                                />
-                            </Show>
-                            <Show when={props.msg.chat_provider === "claude"}>
-                                <p class="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                                    Claude Code
-                                </p>
-                                <Show
-                                    when={hasClaudeMeta(
-                                        props.msg.metadata?.claude,
-                                    )}
-                                >
-                                    <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[10px]">
-                                        <Show when={cl()!.input_tokens != null}>
-                                            <dt class="text-slate-500">
-                                                Input tokens
-                                            </dt>
-                                            <dd class="font-mono text-slate-200">
-                                                {formatInt(cl()!.input_tokens!)}
-                                            </dd>
-                                        </Show>
-                                        <Show
-                                            when={cl()!.output_tokens != null}
-                                        >
-                                            <dt class="text-slate-500">
-                                                Output tokens
-                                            </dt>
-                                            <dd class="font-mono text-slate-200">
-                                                {formatInt(
-                                                    cl()!.output_tokens!,
-                                                )}
-                                            </dd>
-                                        </Show>
-                                        <Show
-                                            when={
-                                                cl()!.cache_read_tokens != null
-                                            }
-                                        >
-                                            <dt class="text-slate-500">
-                                                Cache read
-                                            </dt>
-                                            <dd class="font-mono text-slate-200">
-                                                {formatInt(
-                                                    cl()!.cache_read_tokens!,
-                                                )}
-                                            </dd>
-                                        </Show>
-                                        <Show
-                                            when={
-                                                cl()!.cache_write_tokens != null
-                                            }
-                                        >
-                                            <dt class="text-slate-500">
-                                                Cache write
-                                            </dt>
-                                            <dd class="font-mono text-slate-200">
-                                                {formatInt(
-                                                    cl()!.cache_write_tokens!,
-                                                )}
-                                            </dd>
-                                        </Show>
-                                        <Show
-                                            when={
-                                                cl()!.request_id != null &&
-                                                cl()!.request_id !== ""
-                                            }
-                                        >
-                                            <dt class="text-slate-500">
-                                                Request
-                                            </dt>
-                                            <dd class="break-all font-mono text-[10px] text-slate-400">
-                                                {cl()!.request_id}
-                                            </dd>
-                                        </Show>
-                                        <Show
-                                            when={
-                                                (cl()!.tool_calls?.length ??
-                                                    0) > 0
-                                            }
-                                        >
-                                            <dt class="text-slate-500">
-                                                Tool calls
-                                            </dt>
-                                            <dd class="font-mono text-slate-200">
-                                                {formatInt(
-                                                    cl()!.tool_calls!.length,
-                                                )}
-                                            </dd>
-                                        </Show>
-                                    </dl>
+                            <div class="flex flex-col gap-3 p-3">
+                                <Show when={showOr()}>
+                                    <OpenRouterSection m={or()!} />
                                 </Show>
-                                <Show
-                                    when={
-                                        !hasClaudeMeta(
-                                            props.msg.metadata?.claude,
-                                        )
-                                    }
-                                >
-                                    <p class="text-[10px] leading-snug text-slate-500">
-                                        No usage details were stored for this
-                                        reply.
-                                    </p>
+                                <Show when={showOr() && (showCur() || showCl())}>
+                                    <SectionDivider />
                                 </Show>
-                            </Show>
+                                <Show when={showCur()}>
+                                    <CursorSection m={cur()!} />
+                                </Show>
+                                <Show when={showCur() && showCl()}>
+                                    <SectionDivider />
+                                </Show>
+                                <Show when={showCl()}>
+                                    <ClaudeSection m={cl()} chatProvider={props.msg.chat_provider ?? ""} />
+                                </Show>
+                            </div>
                         </div>
                     </Portal>
                 </Show>

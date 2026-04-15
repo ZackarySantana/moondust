@@ -1,19 +1,38 @@
-import { Show, splitProps, type Component, type JSX } from "solid-js";
+import {
+    Show,
+    createEffect,
+    splitProps,
+    type Component,
+    type JSX,
+} from "solid-js";
+import { pushModalEscapeHandler } from "@/lib/modal-escape-stack";
 import { cn } from "@/lib/utils";
 
 export interface DialogProps {
     open: boolean;
     children: JSX.Element;
+    /**
+     * Called when Escape is pressed while this dialog is open.
+     * Handlers are stacked: the most recently opened dialog receives Escape first.
+     */
+    onEscapeKeyDown?: () => void;
 }
 
 export const Dialog: Component<DialogProps> = (props) => {
+    const [local] = splitProps(props, ["open", "children", "onEscapeKeyDown"]);
+
+    createEffect(() => {
+        if (!local.open || !local.onEscapeKeyDown) return;
+        return pushModalEscapeHandler(() => local.onEscapeKeyDown?.());
+    });
+
     return (
-        <Show when={props.open}>
+        <Show when={local.open}>
             <div
                 class="fixed inset-0 z-100 flex items-center justify-center p-4"
                 role="presentation"
             >
-                {props.children}
+                {local.children}
             </div>
         </Show>
     );

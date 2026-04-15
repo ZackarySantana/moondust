@@ -32,6 +32,9 @@ export const CreateThreadModal: Component<CreateThreadModalProps> = (props) => {
             onOverlayClick={() => {
                 if (t.canClose()) props.onOpenChange(false);
             }}
+            onEscapeKeyDown={() => {
+                if (t.canClose()) props.onOpenChange(false);
+            }}
         />
     );
 };

@@ -46,6 +46,75 @@ export const TextOnly: Story = {
     ),
 };
 
+export const WithThinking: Story = {
+    render: () => (
+        <div class="max-w-2xl rounded-lg border border-slate-800/40 bg-slate-950/30 p-3">
+            <AssistantTurnView
+                parts={() => [
+                    {
+                        kind: "thought",
+                        text: "The user is asking about SolidJS signals. I should explain createSignal and how it differs from React useState...",
+                        thinkingPhase: false,
+                        durationSec: 3,
+                    },
+                    {
+                        kind: "text",
+                        text: "SolidJS uses `createSignal` for reactive state management. Unlike React's `useState`, signals are **fine-grained** and only re-run the specific expressions that depend on them.",
+                    },
+                ]}
+                streaming={false}
+                headerLine={() => "Claude Sonnet · OpenRouter"}
+            />
+        </div>
+    ),
+};
+
+export const WithToolCalls: Story = {
+    render: () => (
+        <div class="max-w-2xl rounded-lg border border-slate-800/40 bg-slate-950/30 p-3">
+            <AssistantTurnView
+                parts={() => [
+                    {
+                        kind: "tool",
+                        tool: {
+                            name: "read_file",
+                            arguments: '{"path": "src/main.go"}',
+                            output: 'package main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("hello")\n}',
+                        },
+                    },
+                    {
+                        kind: "text",
+                        text: "I've read the file. The main function simply prints \"hello\".",
+                    },
+                ]}
+                streaming={false}
+                headerLine={() => "Claude Sonnet · OpenRouter"}
+            />
+        </div>
+    ),
+};
+
+export const StreamingToolCall: Story = {
+    render: () => (
+        <div class="max-w-2xl rounded-lg border border-slate-800/40 bg-slate-950/30 p-3">
+            <AssistantTurnView
+                parts={() => [
+                    {
+                        kind: "tool",
+                        tool: {
+                            name: "execute_command",
+                            arguments: '{"command": "go test ./..."}',
+                            output: "",
+                        },
+                    },
+                ]}
+                streaming={true}
+                headerLine={() => "Claude Sonnet · OpenRouter"}
+            />
+        </div>
+    ),
+};
+
 export const WithMetadataChrome: Story = {
     render: () => (
         <div class="max-w-2xl rounded-lg border border-slate-800/40 bg-slate-950/30 p-3">

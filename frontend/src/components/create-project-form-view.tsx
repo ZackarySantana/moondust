@@ -35,7 +35,12 @@ export const CreateProjectFormView: Component<CreateProjectFormViewProps> = (
     props,
 ) => {
     return (
-        <Dialog open={props.open}>
+        <Dialog
+            open={props.open}
+            onEscapeKeyDown={() => {
+                if (!props.submitting) props.onCancel();
+            }}
+        >
             <DialogOverlay
                 aria-label="Close dialog"
                 onClick={() => props.onCancel()}

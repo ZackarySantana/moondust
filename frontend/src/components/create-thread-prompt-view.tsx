@@ -21,13 +21,15 @@ export interface CreateThreadPromptViewProps {
     onConfirm: () => void;
     onCancel: () => void;
     onOverlayClick: () => void;
+    /** Escape closes when allowed (e.g. prompt phase, not while creating). */
+    onEscapeKeyDown?: () => void;
 }
 
 export const CreateThreadPromptView: Component<CreateThreadPromptViewProps> = (
     props,
 ) => {
     return (
-        <Dialog open={props.open}>
+        <Dialog open={props.open} onEscapeKeyDown={props.onEscapeKeyDown}>
             <DialogOverlay
                 aria-label="Close dialog"
                 onClick={() => props.onOverlayClick()}

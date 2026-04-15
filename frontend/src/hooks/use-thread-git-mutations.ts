@@ -2,14 +2,23 @@ import { useMutation, useQueryClient } from "@tanstack/solid-query";
 import {
     GitCheckoutNewBranchAndCommit,
     GitCommit,
+    GitDiscardFile,
     GitDiscardUnstaged,
+    GitPull,
+    GitPush,
+    GitRenameBranch,
+    GitStageFile,
     GitStageUnstaged,
+    GitStageUntracked,
+    GitStash,
+    GitStashPop,
     GitUnstageAll,
+    GitUnstageFile,
 } from "@wails/go/app/App";
 import { queryKeys } from "@/lib/query-client";
 
 /**
- * Git mutations for the thread review sidebar (stage / discard / commit).
+ * Git mutations for the thread review sidebar.
  * Call from a page container (e.g. thread.tsx), not from presentational components.
  */
 export function useThreadGitMutations(threadId: string) {
@@ -56,12 +65,84 @@ export function useThreadGitMutations(threadId: string) {
         },
     }));
 
+    const pushMutation = useMutation(() => ({
+        mutationFn: () => GitPush(threadId),
+        onSuccess: async () => {
+            await invalidateGit();
+        },
+    }));
+
+    const pullMutation = useMutation(() => ({
+        mutationFn: () => GitPull(threadId),
+        onSuccess: async () => {
+            await invalidateGit();
+        },
+    }));
+
+    const stageFileMutation = useMutation(() => ({
+        mutationFn: (filePath: string) => GitStageFile(threadId, filePath),
+        onSuccess: async () => {
+            await invalidateGit();
+        },
+    }));
+
+    const unstageFileMutation = useMutation(() => ({
+        mutationFn: (filePath: string) => GitUnstageFile(threadId, filePath),
+        onSuccess: async () => {
+            await invalidateGit();
+        },
+    }));
+
+    const discardFileMutation = useMutation(() => ({
+        mutationFn: (filePath: string) => GitDiscardFile(threadId, filePath),
+        onSuccess: async () => {
+            await invalidateGit();
+        },
+    }));
+
+    const stageUntrackedMutation = useMutation(() => ({
+        mutationFn: () => GitStageUntracked(threadId),
+        onSuccess: async () => {
+            await invalidateGit();
+        },
+    }));
+
+    const stashMutation = useMutation(() => ({
+        mutationFn: () => GitStash(threadId),
+        onSuccess: async () => {
+            await invalidateGit();
+        },
+    }));
+
+    const stashPopMutation = useMutation(() => ({
+        mutationFn: () => GitStashPop(threadId),
+        onSuccess: async () => {
+            await invalidateGit();
+        },
+    }));
+
+    const renameBranchMutation = useMutation(() => ({
+        mutationFn: (newName: string) => GitRenameBranch(threadId, newName),
+        onSuccess: async () => {
+            await invalidateGit();
+        },
+    }));
+
     const gitBusy = () =>
         stageMutation.isPending ||
         discardMutation.isPending ||
         unstageMutation.isPending ||
         commitMutation.isPending ||
-        branchCommitMutation.isPending;
+        branchCommitMutation.isPending ||
+        pushMutation.isPending ||
+        pullMutation.isPending ||
+        stageFileMutation.isPending ||
+        stageUntrackedMutation.isPending ||
+        unstageFileMutation.isPending ||
+        discardFileMutation.isPending ||
+        stashMutation.isPending ||
+        stashPopMutation.isPending ||
+        renameBranchMutation.isPending;
 
     return {
         stageMutation,
@@ -69,6 +150,15 @@ export function useThreadGitMutations(threadId: string) {
         unstageMutation,
         commitMutation,
         branchCommitMutation,
+        pushMutation,
+        pullMutation,
+        stageFileMutation,
+        stageUntrackedMutation,
+        unstageFileMutation,
+        discardFileMutation,
+        stashMutation,
+        stashPopMutation,
+        renameBranchMutation,
         gitBusy,
     };
 }

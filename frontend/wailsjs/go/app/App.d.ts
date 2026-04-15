@@ -48,11 +48,29 @@ export function GitCheckoutNewBranchAndCommit(arg1:string,arg2:string,arg3:strin
 
 export function GitCommit(arg1:string,arg2:string):Promise<void>;
 
+export function GitDiscardFile(arg1:string,arg2:string):Promise<void>;
+
 export function GitDiscardUnstaged(arg1:string):Promise<void>;
+
+export function GitPull(arg1:string):Promise<void>;
+
+export function GitPush(arg1:string):Promise<void>;
+
+export function GitRenameBranch(arg1:string,arg2:string):Promise<void>;
+
+export function GitStageFile(arg1:string,arg2:string):Promise<void>;
 
 export function GitStageUnstaged(arg1:string):Promise<void>;
 
+export function GitStageUntracked(arg1:string):Promise<void>;
+
+export function GitStash(arg1:string):Promise<void>;
+
+export function GitStashPop(arg1:string):Promise<void>;
+
 export function GitUnstageAll(arg1:string):Promise<void>;
+
+export function GitUnstageFile(arg1:string,arg2:string):Promise<void>;
 
 export function IsPushAvailable():Promise<boolean>;
 

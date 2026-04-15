@@ -20,7 +20,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Shell: Story = {
     render: () => (
-        <Dialog open>
+        <Dialog open onEscapeKeyDown={() => {}}>
             <DialogOverlay aria-label="Close" onClick={() => {}} />
             <DialogContent>
                 <DialogTitle>Example dialog</DialogTitle>

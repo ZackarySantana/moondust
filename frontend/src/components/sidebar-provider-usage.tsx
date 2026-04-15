@@ -3,6 +3,7 @@ import ChevronDown from "lucide-solid/icons/chevron-down";
 import type { Accessor, Component, JSX } from "solid-js";
 import { createSignal, Show } from "solid-js";
 import { GetCursorCLIInfo } from "@wails/go/app/App";
+import { ExternalAnchor } from "@/components/external-anchor";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query-client";
 import { ClaudeLocalUsageBars } from "@/components/claude-local-usage-bars";
@@ -72,15 +73,13 @@ const ClaudeSection: Component<{
                     <>
                         <Show when={!info().installed}>
                             <p class="text-[10px] leading-snug text-slate-500">
-                                <a
+                                <ExternalAnchor
                                     href={CLAUDE_CODE_INSTALL_URL}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    class="text-slate-500 underline-offset-2 hover:text-slate-400 hover:underline"
+                                    class="cursor-pointer text-slate-500 underline-offset-2 hover:text-slate-400 hover:underline"
                                 >
                                     {info().probe_error ||
                                         CLAUDE_NOT_INSTALLED_HINT}
-                                </a>
+                                </ExternalAnchor>
                             </p>
                         </Show>
                         <Show when={info().installed && info().auth_error}>

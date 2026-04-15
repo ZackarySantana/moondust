@@ -46,6 +46,31 @@ export const OrgBadges: Story = {
             <OrgBadge slug="openai" />
             <OrgBadge slug="google" />
             <OrgBadge slug="meta-llama" />
+            <OrgBadge slug="deepseek" />
+            <OrgBadge slug="x-ai" />
+            <OrgBadge slug="qwen" />
+            <OrgBadge slug="mistralai" />
+            <OrgBadge slug="cursor" />
+        </div>
+    ),
+};
+
+export const OrgBadgesCompact: Story = {
+    name: "Org badges (compact)",
+    render: () => (
+        <div class="flex flex-wrap gap-3">
+            <OrgBadge
+                slug="anthropic"
+                compact
+            />
+            <OrgBadge
+                slug="openai"
+                compact
+            />
+            <OrgBadge
+                slug="google"
+                compact
+            />
         </div>
     ),
 };
@@ -57,13 +82,15 @@ export const ModelRow: Story = {
                 m={models[0]!}
                 selected={false}
                 onPick={() => {}}
-                onInfo={() => {}}
+                onInfoHover={() => {}}
+                onInfoLeave={() => {}}
             />
             <ModelRowButton
                 m={models[1]!}
                 selected
                 onPick={() => {}}
-                onInfo={() => {}}
+                onInfoHover={() => {}}
+                onInfoLeave={() => {}}
             />
         </div>
     ),
@@ -77,7 +104,8 @@ export const ModelRowNoInfo: Story = {
                 selected={false}
                 showInfoButton={false}
                 onPick={() => {}}
-                onInfo={() => {}}
+                onInfoHover={() => {}}
+                onInfoLeave={() => {}}
             />
         </div>
     ),
@@ -99,7 +127,8 @@ export const CategorizedList: Story = {
                     ]}
                     selectedId="openai/gpt-5.4-mini"
                     onPick={() => {}}
-                    onInfo={() => {}}
+                    onInfoHover={() => {}}
+                    onInfoLeave={() => {}}
                     showSectionHeaders
                     showInfoButton
                 />

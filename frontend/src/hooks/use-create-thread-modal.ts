@@ -71,7 +71,6 @@ export function useCreateThreadModal(opts: UseCreateThreadModalOptions) {
         if (!opts.open()) return;
         if (phase() !== "prompt") return;
         const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape") opts.onOpenChange(false);
             if (e.key === "Enter") {
                 e.preventDefault();
                 submit(useWorktree());

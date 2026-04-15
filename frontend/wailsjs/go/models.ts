@@ -57,6 +57,7 @@ export namespace store {
 	    cache_write_tokens?: number;
 	    request_id?: string;
 	    tool_calls?: OpenRouterToolCallRecord[];
+	    segments?: AssistantTurnSegment[];
 	
 	    static createFrom(source: any = {}) {
 	        return new ClaudeChatMessageMetadata(source);
@@ -70,6 +71,7 @@ export namespace store {
 	        this.cache_write_tokens = source["cache_write_tokens"];
 	        this.request_id = source["request_id"];
 	        this.tool_calls = this.convertValues(source["tool_calls"], OpenRouterToolCallRecord);
+	        this.segments = this.convertValues(source["segments"], AssistantTurnSegment);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -99,6 +101,7 @@ export namespace store {
 	    plan_auto_percent_delta?: number;
 	    plan_api_percent_delta?: number;
 	    tool_calls?: OpenRouterToolCallRecord[];
+	    segments?: AssistantTurnSegment[];
 	
 	    static createFrom(source: any = {}) {
 	        return new CursorChatMessageMetadata(source);
@@ -114,6 +117,7 @@ export namespace store {
 	        this.plan_auto_percent_delta = source["plan_auto_percent_delta"];
 	        this.plan_api_percent_delta = source["plan_api_percent_delta"];
 	        this.tool_calls = this.convertValues(source["tool_calls"], OpenRouterToolCallRecord);
+	        this.segments = this.convertValues(source["segments"], AssistantTurnSegment);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -492,6 +496,8 @@ export namespace store {
 	    main_commits: GitCommitSummary[];
 	    diff_stat: string;
 	    patch_preview: string;
+	    stash_count: number;
+	    has_remote: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new GitReview(source);
@@ -510,6 +516,8 @@ export namespace store {
 	        this.main_commits = this.convertValues(source["main_commits"], GitCommitSummary);
 	        this.diff_stat = source["diff_stat"];
 	        this.patch_preview = source["patch_preview"];
+	        this.stash_count = source["stash_count"];
+	        this.has_remote = source["has_remote"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

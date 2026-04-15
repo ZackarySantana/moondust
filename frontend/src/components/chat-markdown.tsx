@@ -2,6 +2,7 @@ import DOMPurify from "dompurify";
 import { marked } from "marked";
 import type { Component } from "solid-js";
 import { createEffect } from "solid-js";
+import { openExternalURL } from "@/lib/open-external-url";
 import { cn } from "@/lib/utils";
 
 marked.setOptions({
@@ -17,7 +18,6 @@ function markdownToSafeHtml(source: string): string {
     const sanitized = DOMPurify.sanitize(raw, { USE_PROFILES: { html: true } });
     const doc = new DOMParser().parseFromString(sanitized, "text/html");
     doc.querySelectorAll("a[href]").forEach((a) => {
-        a.setAttribute("target", "_blank");
         a.setAttribute("rel", "noopener noreferrer");
     });
     return doc.body.innerHTML;
@@ -46,6 +46,18 @@ export const ChatMarkdown: Component<{
         }
     });
 
+    function onLinkClick(e: MouseEvent) {
+        const t = e.target as HTMLElement | null;
+        const a = t?.closest?.("a[href]") as HTMLAnchorElement | null;
+        if (!a || !root?.contains(a)) return;
+        const href = a.getAttribute("href");
+        if (!href || (!href.startsWith("http://") && !href.startsWith("https://")))
+            return;
+        e.preventDefault();
+        e.stopPropagation();
+        openExternalURL(href);
+    }
+
     return (
         <div
             ref={(el) => {
@@ -56,6 +68,7 @@ export const ChatMarkdown: Component<{
                 props.variant === "user" && "chat-markdown--user",
                 props.class,
             )}
+            onClick={onLinkClick}
         />
     );
 };

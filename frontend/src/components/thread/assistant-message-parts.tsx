@@ -26,19 +26,21 @@ const ThoughtPartBlock: Component<{
             ariaLabelExpanded="Collapse thinking"
             ariaLabelCollapsed="Expand thinking"
             body={
-                <div class="ml-1 border-l-2 border-slate-700/40 py-0.5 pl-3">
+                <div class="ml-4 mt-1 rounded-lg border border-slate-800/30 bg-slate-900/20 px-3 py-2">
                     <pre class="max-h-52 overflow-y-auto whitespace-pre-wrap text-[11px] leading-relaxed text-slate-500 wrap-anywhere">
                         {props.part.text}
                     </pre>
                 </div>
             }
         >
-            <span>Thinking</span>
-            <Show when={!thinking() && props.part.durationSec != null}>
-                <span class="rounded-full bg-slate-800/70 px-1.5 py-px text-[10px] tabular-nums text-slate-500">
-                    {props.part.durationSec}s
-                </span>
-            </Show>
+            <span class="flex items-center gap-2">
+                <span class="text-slate-400">Thinking</span>
+                <Show when={!thinking() && props.part.durationSec != null}>
+                    <span class="rounded-full bg-slate-800/60 px-1.5 py-px text-[10px] tabular-nums text-slate-500">
+                        {props.part.durationSec}s
+                    </span>
+                </Show>
+            </span>
         </CollapsibleGhostRow>
     );
 };

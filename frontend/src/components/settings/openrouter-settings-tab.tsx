@@ -1,6 +1,7 @@
 import ExternalLink from "lucide-solid/icons/external-link";
 import type { Component } from "solid-js";
 import { Show } from "solid-js";
+import { ExternalAnchor } from "@/components/external-anchor";
 import { OpenRouterUsageMetricsPanel } from "@/components/settings/openrouter-usage-metrics-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,10 +45,8 @@ export const OpenRouterSettingsTab: Component = () => {
                                         ? "Waiting for browser…"
                                         : "Connect OpenRouter"}
                                 </Button>
-                                <a
+                                <ExternalAnchor
                                     href="https://openrouter.ai/workspaces/default/keys"
-                                    target="_blank"
-                                    rel="noreferrer"
                                     class="inline-flex cursor-pointer items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
                                 >
                                     API keys
@@ -56,11 +55,9 @@ export const OpenRouterSettingsTab: Component = () => {
                                         stroke-width={2}
                                         aria-hidden
                                     />
-                                </a>
-                                <a
+                                </ExternalAnchor>
+                                <ExternalAnchor
                                     href="https://openrouter.ai/docs/guides/overview/auth/oauth"
-                                    target="_blank"
-                                    rel="noreferrer"
                                     class="inline-flex cursor-pointer items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
                                 >
                                     OAuth docs
@@ -69,7 +66,7 @@ export const OpenRouterSettingsTab: Component = () => {
                                         stroke-width={2}
                                         aria-hidden
                                     />
-                                </a>
+                                </ExternalAnchor>
                             </div>
 
                             <Show when={o.oauthError()}>

@@ -1,6 +1,7 @@
 import ExternalLink from "lucide-solid/icons/external-link";
 import type { Component } from "solid-js";
 import { Show } from "solid-js";
+import { ExternalAnchor } from "@/components/external-anchor";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/settings-form";
 import { useCursorCliInfo } from "@/hooks/use-cursor-cli-info";
@@ -33,10 +34,8 @@ export const CursorCliSettingsTab: Component = () => {
                 >
                     {cursorQuery.isFetching ? "Refreshing…" : "Refresh"}
                 </Button>
-                <a
+                <ExternalAnchor
                     href={CURSOR_INSTALL_URL}
-                    target="_blank"
-                    rel="noreferrer"
                     class="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
                 >
                     Install Cursor CLI
@@ -45,7 +44,7 @@ export const CursorCliSettingsTab: Component = () => {
                         stroke-width={2}
                         aria-hidden
                     />
-                </a>
+                </ExternalAnchor>
             </div>
 
             <Show
@@ -125,14 +124,12 @@ export const CursorCliSettingsTab: Component = () => {
                                             </code>{" "}
                                             in the agent. From Cursor’s
                                             dashboard API; details also on{" "}
-                                            <a
+                                            <ExternalAnchor
                                                 href={CURSOR_DASHBOARD_URL}
-                                                target="_blank"
-                                                rel="noreferrer"
                                                 class="text-emerald-400/95 hover:underline"
                                             >
                                                 cursor.com/dashboard
-                                            </a>
+                                            </ExternalAnchor>
                                             .
                                         </p>
                                         {info().usage_error ? (

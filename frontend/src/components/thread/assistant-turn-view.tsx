@@ -8,14 +8,12 @@ import { AssistantPartMessageRow } from "@/components/thread/assistant-message-p
 import type { AssistantPart } from "@/lib/chat/types";
 import type { store } from "@wails/go/models";
 
-const iconColClass = "flex w-5 shrink-0 justify-center pt-0.5";
-
 function partLeadingIcon(part: AssistantPart) {
     if (part.kind === "text") {
         return (
             <Bot
-                class="size-3.5 text-slate-500"
-                stroke-width={2}
+                class="size-3.5 text-slate-600"
+                stroke-width={1.75}
                 aria-hidden
             />
         );
@@ -23,7 +21,7 @@ function partLeadingIcon(part: AssistantPart) {
     if (part.kind === "tool") {
         return (
             <Wrench
-                class="size-3.5 text-slate-500"
+                class="size-3 text-slate-600"
                 stroke-width={2}
                 aria-hidden
             />
@@ -39,11 +37,8 @@ function partLeadingIcon(part: AssistantPart) {
 export const AssistantTurnView: Component<{
     parts: () => AssistantPart[];
     streaming: boolean;
-    /** Small attribution line (model / provider); optional when tools/thought imply a header. */
     headerLine: () => string | null;
-    /** When set, shows per-message actions (e.g. metadata) on the header row. */
     metadataMsg?: () => store.ChatMessage | undefined;
-    /** Fork thread from this assistant message (copies history through this turn). */
     forkFromMessage?: () =>
         | {
               threadId: string;
@@ -71,54 +66,52 @@ export const AssistantTurnView: Component<{
         <div class="flex w-full min-w-0 flex-col items-stretch">
             <For each={props.parts()}>
                 {(part, index) => (
-                    <div class="flex w-full min-w-0 flex-col gap-1 overflow-x-hidden py-1">
+                    <div class="flex w-full min-w-0 flex-col gap-0.5 overflow-x-hidden py-0.5">
                         <Show when={index() === 0 && showFirstRowChrome()}>
-                            <div class="flex min-w-0 gap-2">
+                            <div class="flex min-w-0 items-center gap-2 pb-0.5">
                                 <div
                                     class="w-5 shrink-0"
                                     aria-hidden
                                 />
-                                <div class="flex min-w-0 flex-1 items-center gap-2">
-                                    <Show when={props.headerLine()?.trim()}>
-                                        <p class="min-w-0 flex-1 text-[10px] leading-tight text-slate-500">
-                                            {props.headerLine()}
-                                        </p>
-                                    </Show>
-                                    <div class="ml-auto flex shrink-0 items-center gap-0.5">
-                                        <Show when={metadata()}>
-                                            {(msg) => {
-                                                const o = forkOpts();
-                                                return (
-                                                    <>
-                                                        <Show when={!!o}>
-                                                            <AssistantMessageForkButton
-                                                                sourceUsesWorktree={
-                                                                    o!
-                                                                        .sourceUsesWorktree
-                                                                }
-                                                                fork={() =>
-                                                                    o!.forkMessage(
-                                                                        msg()
-                                                                            .id,
-                                                                    )
-                                                                }
-                                                                forkPending={o!.forkPending()}
-                                                                forkError={o!.forkError()}
-                                                            />
-                                                        </Show>
-                                                        <AssistantMessageMetadataButton
-                                                            msg={msg()}
+                                <Show when={props.headerLine()?.trim()}>
+                                    <p class="min-w-0 flex-1 text-[10px] leading-tight text-slate-600">
+                                        {props.headerLine()}
+                                    </p>
+                                </Show>
+                                <div class="ml-auto flex shrink-0 items-center gap-0.5">
+                                    <Show when={metadata()}>
+                                        {(msg) => {
+                                            const o = forkOpts();
+                                            return (
+                                                <>
+                                                    <Show when={!!o}>
+                                                        <AssistantMessageForkButton
+                                                            sourceUsesWorktree={
+                                                                o!
+                                                                    .sourceUsesWorktree
+                                                            }
+                                                            fork={() =>
+                                                                o!.forkMessage(
+                                                                    msg()
+                                                                        .id,
+                                                                )
+                                                            }
+                                                            forkPending={o!.forkPending()}
+                                                            forkError={o!.forkError()}
                                                         />
-                                                    </>
-                                                );
-                                            }}
-                                        </Show>
-                                    </div>
+                                                    </Show>
+                                                    <AssistantMessageMetadataButton
+                                                        msg={msg()}
+                                                    />
+                                                </>
+                                            );
+                                        }}
+                                    </Show>
                                 </div>
                             </div>
                         </Show>
                         <div class="flex min-w-0 gap-2">
-                            <div class={iconColClass}>
+                            <div class="flex w-5 shrink-0 justify-center pt-1">
                                 {partLeadingIcon(part)}
                             </div>
                             <div class="flex min-w-0 max-w-full flex-1 flex-col">

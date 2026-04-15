@@ -106,7 +106,6 @@ const DeleteProjectModal: Component<{
     createEffect(() => {
         if (!props.open) return;
         const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape") close();
             if (e.key === "Enter" && canConfirm()) {
                 e.preventDefault();
                 void handleDelete();
@@ -131,7 +130,7 @@ const DeleteProjectModal: Component<{
     }
 
     return (
-        <Dialog open={props.open}>
+        <Dialog open={props.open} onEscapeKeyDown={close}>
             <DialogOverlay
                 aria-label="Close dialog"
                 onClick={() => close()}

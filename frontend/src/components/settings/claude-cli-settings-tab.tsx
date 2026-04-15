@@ -2,6 +2,7 @@ import ExternalLink from "lucide-solid/icons/external-link";
 import type { Component } from "solid-js";
 import { Show } from "solid-js";
 import { ClaudeLocalUsageBars } from "@/components/claude-local-usage-bars";
+import { ExternalAnchor } from "@/components/external-anchor";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/settings-form";
 import { useClaudeCliInfo } from "@/hooks/use-claude-cli-info";
@@ -39,10 +40,8 @@ export const ClaudeCliSettingsTab: Component = () => {
                 >
                     {claudeQuery.isFetching ? "Refreshing…" : "Refresh"}
                 </Button>
-                <a
+                <ExternalAnchor
                     href={CLAUDE_CODE_DOCS}
-                    target="_blank"
-                    rel="noreferrer"
                     class="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
                 >
                     Claude Code setup
@@ -51,11 +50,9 @@ export const ClaudeCliSettingsTab: Component = () => {
                         stroke-width={2}
                         aria-hidden
                     />
-                </a>
-                <a
+                </ExternalAnchor>
+                <ExternalAnchor
                     href={ANTHROPIC_CONSOLE_URL}
-                    target="_blank"
-                    rel="noreferrer"
                     class="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
                 >
                     Anthropic console
@@ -64,7 +61,7 @@ export const ClaudeCliSettingsTab: Component = () => {
                         stroke-width={2}
                         aria-hidden
                     />
-                </a>
+                </ExternalAnchor>
             </div>
 
             <Show
@@ -91,15 +88,13 @@ export const ClaudeCliSettingsTab: Component = () => {
                                     when={info().installed}
                                     fallback={
                                         <p class="rounded-md border border-amber-800/40 bg-amber-950/25 px-2.5 py-2 text-xs text-amber-100/90">
-                                            <a
+                                            <ExternalAnchor
                                                 href={CLAUDE_CODE_INSTALL_URL}
-                                                target="_blank"
-                                                rel="noreferrer"
                                                 class="text-amber-200/95 underline-offset-2 hover:underline"
                                             >
                                                 {info().probe_error ||
                                                     CLAUDE_NOT_INSTALLED_HINT}
-                                            </a>
+                                            </ExternalAnchor>
                                         </p>
                                     }
                                 >
@@ -151,14 +146,12 @@ export const ClaudeCliSettingsTab: Component = () => {
                                                 /usage
                                             </code>
                                             ); open the{" "}
-                                            <a
+                                            <ExternalAnchor
                                                 href={ANTHROPIC_CONSOLE_URL}
-                                                target="_blank"
-                                                rel="noreferrer"
                                                 class="text-emerald-400/95 underline-offset-2 hover:underline"
                                             >
                                                 Anthropic console
-                                            </a>{" "}
+                                            </ExternalAnchor>{" "}
                                             for usage, quotas, and billing.
                                         </p>
                                         <Show when={info().auth_error}>

@@ -59,6 +59,8 @@ type CursorChatMessageMetadata struct {
 	PlanAPIPercentDelta  *float64 `json:"plan_api_percent_delta,omitempty"`
 	// ToolCalls are best-effort from Cursor stream-json tool_call / completed events (same shape as OpenRouter).
 	ToolCalls []OpenRouterToolCallRecord `json:"tool_calls,omitempty"`
+	// Segments interleaves streamed text and tool calls in execution order (set when any tool ran).
+	Segments []AssistantTurnSegment `json:"segments,omitempty"`
 }
 
 // ClaudeChatMessageMetadata is usage / request metadata for Claude Code CLI (`claude -p`) turns.
@@ -69,6 +71,8 @@ type ClaudeChatMessageMetadata struct {
 	CacheWriteTokens *int                       `json:"cache_write_tokens,omitempty"`
 	RequestID        string                     `json:"request_id,omitempty"`
 	ToolCalls        []OpenRouterToolCallRecord `json:"tool_calls,omitempty"`
+	// Segments interleaves streamed text and tool calls in execution order (set when any tool ran).
+	Segments []AssistantTurnSegment `json:"segments,omitempty"`
 }
 
 // OpenRouterToolCallRecord is one tool invocation from an assistant turn (persisted for history).
@@ -183,6 +187,8 @@ type GitReview struct {
 	MainCommits  []GitCommitSummary `json:"main_commits"`
 	DiffStat     string             `json:"diff_stat"`
 	PatchPreview string             `json:"patch_preview"`
+	StashCount   int                `json:"stash_count"`
+	HasRemote    bool               `json:"has_remote"`
 }
 
 type FileDiff struct {

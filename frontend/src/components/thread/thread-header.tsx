@@ -61,10 +61,6 @@ export const ThreadHeader: Component<{
     createEffect(() => {
         if (!deleteOpen()) return;
         const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape") {
-                closeDeleteModal();
-                return;
-            }
             if (e.key !== "Enter" || e.shiftKey || deleting()) return;
             e.preventDefault();
             void confirmDelete();
@@ -232,7 +228,7 @@ export const ThreadHeader: Component<{
                 </div>
             </header>
 
-            <Dialog open={deleteOpen()}>
+            <Dialog open={deleteOpen()} onEscapeKeyDown={closeDeleteModal}>
                 <DialogOverlay onClick={closeDeleteModal} />
                 <DialogContent
                     role="dialog"

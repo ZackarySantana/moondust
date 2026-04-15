@@ -94,16 +94,52 @@ export function GitCommit(arg1, arg2) {
   return window['go']['app']['App']['GitCommit'](arg1, arg2);
 }
 
+export function GitDiscardFile(arg1, arg2) {
+  return window['go']['app']['App']['GitDiscardFile'](arg1, arg2);
+}
+
 export function GitDiscardUnstaged(arg1) {
   return window['go']['app']['App']['GitDiscardUnstaged'](arg1);
+}
+
+export function GitPull(arg1) {
+  return window['go']['app']['App']['GitPull'](arg1);
+}
+
+export function GitPush(arg1) {
+  return window['go']['app']['App']['GitPush'](arg1);
+}
+
+export function GitRenameBranch(arg1, arg2) {
+  return window['go']['app']['App']['GitRenameBranch'](arg1, arg2);
+}
+
+export function GitStageFile(arg1, arg2) {
+  return window['go']['app']['App']['GitStageFile'](arg1, arg2);
 }
 
 export function GitStageUnstaged(arg1) {
   return window['go']['app']['App']['GitStageUnstaged'](arg1);
 }
 
+export function GitStageUntracked(arg1) {
+  return window['go']['app']['App']['GitStageUntracked'](arg1);
+}
+
+export function GitStash(arg1) {
+  return window['go']['app']['App']['GitStash'](arg1);
+}
+
+export function GitStashPop(arg1) {
+  return window['go']['app']['App']['GitStashPop'](arg1);
+}
+
 export function GitUnstageAll(arg1) {
   return window['go']['app']['App']['GitUnstageAll'](arg1);
+}
+
+export function GitUnstageFile(arg1, arg2) {
+  return window['go']['app']['App']['GitUnstageFile'](arg1, arg2);
 }
 
 export function IsPushAvailable() {

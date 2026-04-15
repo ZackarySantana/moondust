@@ -76,6 +76,19 @@ func (s *Service) GetThreadGitReview(ctx context.Context, threadID string) (*sto
 		review.MainCommits = parseCommitsWithDate(mainOut)
 	}
 
+	stashOut, err := runGit(ctx, dir, "stash", "list")
+	if err == nil {
+		stashOut = strings.TrimSpace(stashOut)
+		if stashOut != "" {
+			review.StashCount = len(strings.Split(stashOut, "\n"))
+		}
+	}
+
+	remoteOut, err := runGit(ctx, dir, "remote")
+	if err == nil && strings.TrimSpace(remoteOut) != "" {
+		review.HasRemote = true
+	}
+
 	diffStatOut, err := runGit(ctx, dir, "diff", "--stat")
 	if err == nil {
 		review.DiffStat = strings.TrimSpace(diffStatOut)

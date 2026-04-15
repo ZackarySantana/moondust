@@ -64,18 +64,40 @@ func (s *Service) streamAssistantCursor(
 	}
 
 	var toolRecords []store.OpenRouterToolCallRecord
+	var segments []store.AssistantTurnSegment
+	var roundText strings.Builder
+
+	appendSegText := func() {
+		t := strings.TrimSpace(roundText.String())
+		if t != "" {
+			segments = append(segments, store.AssistantTurnSegment{Text: t})
+		}
+		roundText.Reset()
+	}
+
+	wrappedDelta := func(delta string) error {
+		roundText.WriteString(delta)
+		return onDelta(delta)
+	}
+
 	onTool := func(round []store.OpenRouterToolCallRecord) error {
+		appendSegText()
 		toolRecords = append(toolRecords, round...)
+		for i := range round {
+			r := round[i]
+			segments = append(segments, store.AssistantTurnSegment{Tool: &r})
+		}
 		if onToolRound != nil {
 			return onToolRound(round)
 		}
 		return nil
 	}
 
-	final, usage, err := cursorcli.StreamPrintHeadless(ctx, agentPath, workDir, model, prompt, onDelta, onTool)
+	final, usage, err := cursorcli.StreamPrintHeadless(ctx, agentPath, workDir, model, prompt, wrappedDelta, onTool)
 	if err != nil {
 		return err
 	}
+	appendSegText()
 	final = strings.TrimSpace(final)
 	if final == "" {
 		return fmt.Errorf("cursor agent: empty assistant reply")
@@ -134,6 +156,7 @@ func (s *Service) streamAssistantCursor(
 			cur = &store.CursorChatMessageMetadata{}
 		}
 		cur.ToolCalls = toolRecords
+		cur.Segments = segments
 	}
 	if cursorChatMetadataNonEmpty(cur) {
 		replyMessage.Metadata = &store.ChatMessageMetadata{Cursor: cur}

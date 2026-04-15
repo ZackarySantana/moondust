@@ -155,14 +155,7 @@ export function useCreateProjectModal(opts: UseCreateProjectModalOptions) {
         const id = requestAnimationFrame(() => {
             if (createTab() === "url") urlInputRef?.focus();
         });
-        const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape") close();
-        };
-        document.addEventListener("keydown", onKey);
-        onCleanup(() => {
-            cancelAnimationFrame(id);
-            document.removeEventListener("keydown", onKey);
-        });
+        onCleanup(() => cancelAnimationFrame(id));
     });
 
     function onTabChange(tab: CreateProjectTab) {

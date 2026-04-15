@@ -60,18 +60,40 @@ func (s *Service) streamAssistantClaude(
 	prompt := chat.BuildCLIStylePrompt(system, history)
 
 	var toolRecords []store.OpenRouterToolCallRecord
+	var segments []store.AssistantTurnSegment
+	var roundText strings.Builder
+
+	appendSegText := func() {
+		t := strings.TrimSpace(roundText.String())
+		if t != "" {
+			segments = append(segments, store.AssistantTurnSegment{Text: t})
+		}
+		roundText.Reset()
+	}
+
+	wrappedDelta := func(delta string) error {
+		roundText.WriteString(delta)
+		return onDelta(delta)
+	}
+
 	onTool := func(round []store.OpenRouterToolCallRecord) error {
+		appendSegText()
 		toolRecords = append(toolRecords, round...)
+		for i := range round {
+			r := round[i]
+			segments = append(segments, store.AssistantTurnSegment{Tool: &r})
+		}
 		if onToolRound != nil {
 			return onToolRound(round)
 		}
 		return nil
 	}
 
-	final, usage, err := claudecli.StreamPrintHeadless(ctx, claudePath, workDir, model, prompt, onDelta, onTool)
+	final, usage, err := claudecli.StreamPrintHeadless(ctx, claudePath, workDir, model, prompt, wrappedDelta, onTool)
 	if err != nil {
 		return err
 	}
+	appendSegText()
 	final = strings.TrimSpace(final)
 	if final == "" {
 		return fmt.Errorf("claude code: empty assistant reply")
@@ -116,6 +138,7 @@ func (s *Service) streamAssistantClaude(
 			meta = &store.ClaudeChatMessageMetadata{}
 		}
 		meta.ToolCalls = toolRecords
+		meta.Segments = segments
 	}
 	if claudeChatMetadataNonEmpty(meta) {
 		replyMessage.Metadata = &store.ChatMessageMetadata{Claude: meta}

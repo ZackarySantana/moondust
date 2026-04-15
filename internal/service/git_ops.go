@@ -166,6 +166,26 @@ func (s *Service) GitStageUnstaged(ctx context.Context, threadID string) error {
 	return s.gitAdd(ctx, dir, paths)
 }
 
+// GitStageUntracked runs git add on all paths currently listed as untracked in the thread repo.
+func (s *Service) GitStageUntracked(ctx context.Context, threadID string) error {
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return err
+	}
+	review, err := s.GetThreadGitReview(ctx, threadID)
+	if err != nil {
+		return err
+	}
+	paths, err := collectPathsFromChanges(review.Untracked)
+	if err != nil {
+		return err
+	}
+	if len(paths) == 0 {
+		return fmt.Errorf("no untracked files")
+	}
+	return s.gitAdd(ctx, dir, paths)
+}
+
 // GitDiscardUnstaged discards unstaged working tree changes (git restore --worktree). Staged content is unchanged.
 func (s *Service) GitDiscardUnstaged(ctx context.Context, threadID string) error {
 	dir, err := s.gitDirForThread(ctx, threadID)
@@ -217,6 +237,104 @@ func (s *Service) GitCommit(ctx context.Context, threadID, message string) error
 		return err
 	}
 	return commitWithMessage(ctx, dir, message)
+}
+
+// GitPush pushes the current branch to its upstream remote.
+func (s *Service) GitPush(ctx context.Context, threadID string) error {
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return err
+	}
+	_, err = runGit(ctx, dir, "push")
+	if err != nil {
+		// Try push with --set-upstream for branches without a tracking branch.
+		branchOut, branchErr := runGit(ctx, dir, "rev-parse", "--abbrev-ref", "HEAD")
+		if branchErr != nil {
+			return err
+		}
+		branch := strings.TrimSpace(branchOut)
+		_, err = runGit(ctx, dir, "push", "--set-upstream", "origin", branch)
+	}
+	return err
+}
+
+// GitPull pulls from the upstream remote for the current branch.
+func (s *Service) GitPull(ctx context.Context, threadID string) error {
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return err
+	}
+	_, err = runGit(ctx, dir, "pull")
+	return err
+}
+
+// GitStageFile stages a single file (git add).
+func (s *Service) GitStageFile(ctx context.Context, threadID, filePath string) error {
+	if err := validateRepoRelPath(filePath); err != nil {
+		return err
+	}
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return err
+	}
+	return s.gitAdd(ctx, dir, []string{normalizeGitPathForOps(filePath)})
+}
+
+// GitUnstageFile unstages a single file (git restore --staged).
+func (s *Service) GitUnstageFile(ctx context.Context, threadID, filePath string) error {
+	if err := validateRepoRelPath(filePath); err != nil {
+		return err
+	}
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return err
+	}
+	return s.gitRestoreStaged(ctx, dir, []string{normalizeGitPathForOps(filePath)})
+}
+
+// GitDiscardFile discards working tree changes for a single file.
+func (s *Service) GitDiscardFile(ctx context.Context, threadID, filePath string) error {
+	if err := validateRepoRelPath(filePath); err != nil {
+		return err
+	}
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return err
+	}
+	return s.gitRestoreWorktree(ctx, dir, []string{normalizeGitPathForOps(filePath)})
+}
+
+// GitStash stashes all working tree and staged changes.
+func (s *Service) GitStash(ctx context.Context, threadID string) error {
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return err
+	}
+	_, err = runGit(ctx, dir, "stash", "push", "-m", "moondust stash")
+	return err
+}
+
+// GitStashPop pops the most recent stash entry.
+func (s *Service) GitStashPop(ctx context.Context, threadID string) error {
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return err
+	}
+	_, err = runGit(ctx, dir, "stash", "pop")
+	return err
+}
+
+// GitRenameBranch renames the current branch.
+func (s *Service) GitRenameBranch(ctx context.Context, threadID, newName string) error {
+	if err := validateBranchName(newName); err != nil {
+		return err
+	}
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return err
+	}
+	_, err = runGit(ctx, dir, "branch", "-m", strings.TrimSpace(newName))
+	return err
 }
 
 // GitCheckoutNewBranchAndCommit creates a new branch from HEAD and commits staged changes with the given message.

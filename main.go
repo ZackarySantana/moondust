@@ -67,6 +67,8 @@ func main() {
 		Title:  "Moondust",
 		Width:  1024,
 		Height: 768,
+		Mac:    wailsMacOptions(),
+		Menu:   wailsApplicationMenu(),
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

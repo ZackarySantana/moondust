@@ -1,15 +1,17 @@
-import ChevronDown from "lucide-solid/icons/chevron-down";
 import ChevronRight from "lucide-solid/icons/chevron-right";
 import Loader2 from "lucide-solid/icons/loader-2";
 import type { JSX } from "solid-js";
 import { Show } from "solid-js";
 
-const ghostTriggerClass =
-    "flex w-fit items-center gap-1.5 rounded px-1 py-0.5 text-[11px] text-slate-500 transition-colors hover:bg-slate-800/40 hover:text-slate-400";
+const ghostTriggerBase =
+    "flex w-fit items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] transition-all duration-150 select-none";
+const ghostTriggerIdle =
+    "text-slate-500 hover:bg-slate-800/50 hover:text-slate-300";
+const ghostTriggerBusy = "text-slate-400";
 
 /**
  * Shared chrome for transcript rows that use a ghost-style toggle (thought, tool calls).
- * Leading slot is either a busy spinner or expand/collapse chevrons.
+ * Leading slot is either a busy spinner or expand/collapse chevron.
  */
 export function CollapsibleGhostRow(props: {
     expanded: boolean;
@@ -21,11 +23,11 @@ export function CollapsibleGhostRow(props: {
     body?: JSX.Element;
 }) {
     return (
-        <div class="flex flex-col gap-0.5">
+        <div class="flex flex-col">
             <button
                 type="button"
                 onClick={() => props.onToggle()}
-                class={ghostTriggerClass}
+                class={`${ghostTriggerBase} ${props.showBusy ? ghostTriggerBusy : ghostTriggerIdle}`}
                 aria-expanded={props.expanded}
                 aria-label={
                     props.expanded
@@ -36,33 +38,32 @@ export function CollapsibleGhostRow(props: {
                 <Show
                     when={props.showBusy}
                     fallback={
-                        <Show
-                            when={props.expanded}
-                            fallback={
-                                <ChevronRight
-                                    class="size-3 shrink-0"
-                                    stroke-width={2}
-                                    aria-hidden
-                                />
-                            }
-                        >
-                            <ChevronDown
-                                class="size-3 shrink-0"
-                                stroke-width={2}
-                                aria-hidden
-                            />
-                        </Show>
+                        <ChevronRight
+                            class="size-3 shrink-0 transition-transform duration-150"
+                            classList={{ "rotate-90": props.expanded }}
+                            stroke-width={2}
+                            aria-hidden
+                        />
                     }
                 >
                     <Loader2
-                        class="size-3 shrink-0 animate-spin"
+                        class="size-3 shrink-0 animate-spin text-emerald-500/70"
                         stroke-width={2}
                         aria-hidden
                     />
                 </Show>
                 {props.children}
             </button>
-            <Show when={props.expanded}>{props.body}</Show>
+            <div
+                class="grid transition-[grid-template-rows] duration-200 ease-out"
+                style={{
+                    "grid-template-rows": props.expanded ? "1fr" : "0fr",
+                }}
+            >
+                <div class="overflow-hidden">
+                    {props.body}
+                </div>
+            </div>
         </div>
     );
 }

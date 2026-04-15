@@ -1,5 +1,6 @@
 import type { Component } from "solid-js";
 import { Show } from "solid-js";
+import { openExternalURL } from "@/lib/open-external-url";
 import type { store } from "@wails/go/models";
 
 export const CommitRow: Component<{
@@ -18,9 +19,8 @@ export const CommitRow: Component<{
 
     function openOnGitHub() {
         if (props.githubURL) {
-            window.open(
+            openExternalURL(
                 `${props.githubURL}/commit/${props.commit.hash}`,
-                "_blank",
             );
         }
     }

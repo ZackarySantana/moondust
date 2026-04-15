@@ -1,25 +1,37 @@
+import ArrowDown from "lucide-solid/icons/arrow-down";
+import ArrowUp from "lucide-solid/icons/arrow-up";
+import Archive from "lucide-solid/icons/archive";
+import ArchiveRestore from "lucide-solid/icons/archive-restore";
+import Check from "lucide-solid/icons/check";
+import ExternalLink from "lucide-solid/icons/external-link";
+import GitBranch from "lucide-solid/icons/git-branch";
+import GitPullRequest from "lucide-solid/icons/git-pull-request";
 import Loader2 from "lucide-solid/icons/loader-2";
 import Minus from "lucide-solid/icons/minus";
+import Pencil from "lucide-solid/icons/pencil";
 import Plus from "lucide-solid/icons/plus";
+import RefreshCw from "lucide-solid/icons/refresh-cw";
+import X from "lucide-solid/icons/x";
 import type { Component } from "solid-js";
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { CommitRow } from "@/components/review/commit-row";
 import {
     BranchCommitGitDialog,
     CommitStagedGitDialog,
+    DiscardFileGitDialog,
     DiscardUnstagedGitDialog,
 } from "@/components/review/git-review-dialogs";
 import { CollapsibleSection } from "@/components/review/collapsible-section";
 import { FileChangeRow } from "@/components/review/file-change-row";
 import type { ThreadGitMutations } from "@/hooks/use-thread-git-mutations";
 import { cleanBranchName, deriveGitHubURL } from "@/lib/git-display";
+import { openExternalURL } from "@/lib/open-external-url";
 import type { store } from "@wails/go/models";
 
 export interface ReviewSidebarProps {
     width: number;
     threadId: string;
     git: store.GitReview | null;
-    /** Git mutations from `useThreadGitMutations` in the thread page container. */
     gitMut: ThreadGitMutations;
     onRefresh: () => void;
     onCopySummary: () => void;
@@ -37,6 +49,17 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
     const [branchCommitMsg, setBranchCommitMsg] = createSignal("");
     const [gitActionError, setGitActionError] = createSignal("");
 
+    // Per-file discard confirmation
+    const [discardFilePath, setDiscardFilePath] = createSignal<string | null>(
+        null,
+    );
+    const discardFileOpen = () => discardFilePath() !== null;
+
+    // Inline branch rename
+    const [editingBranch, setEditingBranch] = createSignal(false);
+    const [branchDraft, setBranchDraft] = createSignal("");
+    let branchInputRef!: HTMLInputElement;
+
     const gm = () => props.gitMut;
 
     const stageMutation = () => gm().stageMutation;
@@ -44,6 +67,15 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
     const unstageMutation = () => gm().unstageMutation;
     const commitMutation = () => gm().commitMutation;
     const branchCommitMutation = () => gm().branchCommitMutation;
+    const pushMutation = () => gm().pushMutation;
+    const pullMutation = () => gm().pullMutation;
+    const stageFileMutation = () => gm().stageFileMutation;
+    const unstageFileMutation = () => gm().unstageFileMutation;
+    const discardFileMutation = () => gm().discardFileMutation;
+    const stageUntrackedMutation = () => gm().stageUntrackedMutation;
+    const stashMutation = () => gm().stashMutation;
+    const stashPopMutation = () => gm().stashPopMutation;
+    const renameBranchMutation = () => gm().renameBranchMutation;
     const gitBusy = () => gm().gitBusy();
 
     const branch = () => cleanBranchName(props.git?.branch ?? "");
@@ -54,13 +86,46 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
     const untracked = () => props.git?.untracked ?? [];
     const localCommits = () => props.git?.local_commits ?? [];
     const mainCommits = () => props.git?.main_commits ?? [];
+    const stashCount = () => props.git?.stash_count ?? 0;
+    const hasRemote = () => props.git?.has_remote ?? false;
     const githubURL = createMemo(() => deriveGitHubURL(props.git?.remote_url));
+    const DEFAULT_BRANCHES = new Set(["main", "master", "develop"]);
+    const prURL = createMemo(() => {
+        const base = githubURL();
+        const b = branch();
+        if (!base || !b || DEFAULT_BRANCHES.has(b)) return null;
+        return `${base}/compare/${encodeURIComponent(b)}?expand=1`;
+    });
     const activeCommits = () =>
         commitTab() === "local" ? localCommits() : mainCommits();
 
-    const gitIconBtn =
-        "flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-800/60 hover:text-slate-100 disabled:cursor-not-allowed disabled:opacity-35";
+    const iconBtn =
+        "flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-800/60 hover:text-slate-100 disabled:cursor-not-allowed disabled:opacity-35";
 
+    // ── Branch rename ──
+    function startEditingBranch() {
+        setBranchDraft(branch() || "");
+        setEditingBranch(true);
+        requestAnimationFrame(() => {
+            branchInputRef?.focus();
+            branchInputRef?.select();
+        });
+    }
+
+    async function commitBranchRename() {
+        const trimmed = branchDraft().trim();
+        setEditingBranch(false);
+        if (trimmed && trimmed !== branch()) {
+            setGitActionError("");
+            try {
+                await renameBranchMutation().mutateAsync(trimmed);
+            } catch (e) {
+                setGitActionError(e instanceof Error ? e.message : String(e));
+            }
+        }
+    }
+
+    // ── Discard all ──
     async function runDiscard() {
         setGitActionError("");
         try {
@@ -71,6 +136,20 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
         }
     }
 
+    // ── Discard single file ──
+    async function runDiscardFile() {
+        const filePath = discardFilePath();
+        if (!filePath) return;
+        setGitActionError("");
+        try {
+            await discardFileMutation().mutateAsync(filePath);
+            setDiscardFilePath(null);
+        } catch (e) {
+            setGitActionError(e instanceof Error ? e.message : String(e));
+        }
+    }
+
+    // ── Commit ──
     async function runCommit() {
         const m = commitMsg().trim();
         if (!m) return;
@@ -84,6 +163,7 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
         }
     }
 
+    // ── Branch + Commit ──
     async function runBranchCommit() {
         const b = branchNameInput().trim();
         const m = branchCommitMsg().trim();
@@ -102,56 +182,143 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
         }
     }
 
+    // ── Push / Pull ──
+    async function runPush() {
+        setGitActionError("");
+        try {
+            await pushMutation().mutateAsync();
+        } catch (e) {
+            setGitActionError(e instanceof Error ? e.message : String(e));
+        }
+    }
+
+    async function runPull() {
+        setGitActionError("");
+        try {
+            await pullMutation().mutateAsync();
+        } catch (e) {
+            setGitActionError(e instanceof Error ? e.message : String(e));
+        }
+    }
+
+    // ── Stash ──
+    async function runStash() {
+        setGitActionError("");
+        try {
+            await stashMutation().mutateAsync();
+        } catch (e) {
+            setGitActionError(e instanceof Error ? e.message : String(e));
+        }
+    }
+
+    async function runStashPop() {
+        setGitActionError("");
+        try {
+            await stashPopMutation().mutateAsync();
+        } catch (e) {
+            setGitActionError(e instanceof Error ? e.message : String(e));
+        }
+    }
+
     return (
         <aside
             class="flex min-h-0 shrink-0 flex-col bg-app-panel"
             style={{ width: `${props.width}px` }}
         >
-            <header class="flex items-center justify-between border-b border-slate-800/40 px-3 py-2.5">
+            {/* ── Header ── */}
+            <header class="flex items-center justify-between border-b border-slate-800/40 px-3 py-2">
                 <h2 class="text-xs font-semibold text-slate-200">Review</h2>
-                <div class="flex items-center gap-1">
+                <div class="flex items-center gap-0.5">
                     <button
                         type="button"
-                        class="cursor-pointer rounded p-1 text-slate-500 transition-colors hover:bg-slate-800/50 hover:text-slate-300"
+                        class={iconBtn}
                         onClick={props.onRefresh}
                         title="Refresh"
                     >
-                        <svg
-                            class="h-3.5 w-3.5"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                        >
-                            <path
-                                fill-rule="evenodd"
-                                d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H4.598a.75.75 0 00-.75.75v3.634a.75.75 0 001.5 0v-2.033l.312.312a7 7 0 0011.712-3.138.75.75 0 00-1.449-.391zm-10.624-3.85a5.5 5.5 0 019.201-2.465l.312.31H11.77a.75.75 0 000 1.5h3.634a.75.75 0 00.75-.75V2.535a.75.75 0 00-1.5 0v2.033l-.312-.312A7 7 0 002.63 7.394a.75.75 0 001.45.39z"
-                                clip-rule="evenodd"
-                            />
-                        </svg>
-                    </button>
-                    <button
-                        type="button"
-                        class="cursor-pointer rounded p-1 text-slate-500 transition-colors hover:bg-slate-800/50 hover:text-slate-300"
-                        onClick={props.onCopySummary}
-                        title="Copy summary"
-                    >
-                        <svg
-                            class="h-3.5 w-3.5"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                        >
-                            <path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z" />
-                            <path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.439A1.5 1.5 0 008.378 6H4.5z" />
-                        </svg>
+                        <RefreshCw
+                            class="h-3 w-3"
+                            stroke-width={2}
+                            aria-hidden
+                        />
                     </button>
                 </div>
             </header>
 
-            <div class="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3 text-xs">
+            <div class="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-2.5 text-xs">
+                {/* ── Branch card ── */}
                 <div class="rounded-md bg-slate-900/50 px-3 py-2">
-                    <p class="break-all font-mono text-[11px] text-slate-200">
-                        {branch() || "unknown"}
-                    </p>
-                    <div class="mt-1.5 flex gap-1.5">
+                    <div class="flex items-center gap-1.5">
+                        <GitBranch
+                            class="h-3 w-3 shrink-0 text-slate-500"
+                            stroke-width={2}
+                            aria-hidden
+                        />
+                        <Show
+                            when={editingBranch()}
+                            fallback={
+                                <div class="group flex min-w-0 flex-1 items-center gap-1">
+                                    <p class="min-w-0 flex-1 truncate font-mono text-[11px] text-slate-200">
+                                        {branch() || "unknown"}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        class="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded text-slate-600 opacity-0 transition-all hover:bg-slate-800/60 hover:text-slate-300 group-hover:opacity-100"
+                                        title="Rename branch"
+                                        onClick={startEditingBranch}
+                                    >
+                                        <Pencil
+                                            class="h-2.5 w-2.5"
+                                            stroke-width={2}
+                                            aria-hidden
+                                        />
+                                    </button>
+                                </div>
+                            }
+                        >
+                            <div class="flex min-w-0 flex-1 items-center gap-1">
+                                <input
+                                    ref={branchInputRef!}
+                                    type="text"
+                                    class="min-w-0 flex-1 rounded border border-slate-700/50 bg-slate-950/50 px-1.5 py-0.5 font-mono text-[11px] text-slate-200 focus:border-emerald-700/50 focus:outline-none"
+                                    value={branchDraft()}
+                                    onInput={(e) =>
+                                        setBranchDraft(e.currentTarget.value)
+                                    }
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter")
+                                            void commitBranchRename();
+                                        if (e.key === "Escape")
+                                            setEditingBranch(false);
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    class="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded text-emerald-400 transition-colors hover:bg-emerald-900/30"
+                                    onClick={() => void commitBranchRename()}
+                                    title="Confirm rename"
+                                >
+                                    <Check
+                                        class="h-3 w-3"
+                                        stroke-width={2.5}
+                                        aria-hidden
+                                    />
+                                </button>
+                                <button
+                                    type="button"
+                                    class="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded text-slate-500 transition-colors hover:bg-slate-800/60 hover:text-slate-300"
+                                    onClick={() => setEditingBranch(false)}
+                                    title="Cancel"
+                                >
+                                    <X
+                                        class="h-3 w-3"
+                                        stroke-width={2}
+                                        aria-hidden
+                                    />
+                                </button>
+                            </div>
+                        </Show>
+                    </div>
+                    <div class="mt-1.5 flex flex-wrap gap-1.5">
                         <Show
                             when={ahead() > 0 || behind() > 0}
                             fallback={
@@ -171,13 +338,19 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                                 </span>
                             </Show>
                         </Show>
+                        <Show when={stashCount() > 0}>
+                            <span class="rounded-full bg-sky-900/30 px-2 py-0.5 text-[10px] text-sky-300">
+                                {stashCount()} stash{stashCount() > 1 ? "es" : ""}
+                            </span>
+                        </Show>
                     </div>
                 </div>
 
-                <div class="flex flex-wrap gap-1.5">
+                {/* ── Action bar ── */}
+                <div class="flex flex-wrap gap-1">
                     <button
                         type="button"
-                        class="rounded border border-slate-700/60 bg-slate-800/40 px-2 py-1 text-[10px] text-slate-300 transition-colors hover:bg-slate-800/70 disabled:cursor-not-allowed disabled:opacity-40"
+                        class="inline-flex cursor-pointer items-center gap-1 rounded border border-slate-700/60 bg-slate-800/40 px-2 py-1 text-[10px] text-slate-300 transition-colors hover:bg-slate-800/70 disabled:cursor-not-allowed disabled:opacity-40"
                         disabled={
                             staged().length === 0 ||
                             gitBusy() ||
@@ -189,11 +362,16 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                             setCommitOpen(true);
                         }}
                     >
-                        Commit…
+                        <Check
+                            class="h-3 w-3"
+                            stroke-width={2}
+                            aria-hidden
+                        />
+                        Commit
                     </button>
                     <button
                         type="button"
-                        class="rounded border border-slate-700/60 bg-slate-800/40 px-2 py-1 text-[10px] text-slate-300 transition-colors hover:bg-slate-800/70 disabled:cursor-not-allowed disabled:opacity-40"
+                        class="inline-flex cursor-pointer items-center gap-1 rounded border border-slate-700/60 bg-slate-800/40 px-2 py-1 text-[10px] text-slate-300 transition-colors hover:bg-slate-800/70 disabled:cursor-not-allowed disabled:opacity-40"
                         disabled={
                             staged().length === 0 ||
                             gitBusy() ||
@@ -206,22 +384,158 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                             setBranchCommitOpen(true);
                         }}
                     >
-                        Branch & commit…
+                        <GitBranch
+                            class="h-3 w-3"
+                            stroke-width={2}
+                            aria-hidden
+                        />
+                        Branch & commit
                     </button>
+                    <Show when={hasRemote()}>
+                        <button
+                            type="button"
+                            class="inline-flex cursor-pointer items-center gap-1 rounded border border-slate-700/60 bg-slate-800/40 px-2 py-1 text-[10px] text-slate-300 transition-colors hover:bg-slate-800/70 disabled:cursor-not-allowed disabled:opacity-40"
+                            disabled={gitBusy() || !props.threadId}
+                            onClick={() => void runPush()}
+                        >
+                            <Show
+                                when={pushMutation().isPending}
+                                fallback={
+                                    <ArrowUp
+                                        class="h-3 w-3"
+                                        stroke-width={2}
+                                        aria-hidden
+                                    />
+                                }
+                            >
+                                <Loader2
+                                    class="h-3 w-3 animate-spin"
+                                    stroke-width={2}
+                                    aria-hidden
+                                />
+                            </Show>
+                            Push
+                        </button>
+                        <button
+                            type="button"
+                            class="inline-flex cursor-pointer items-center gap-1 rounded border border-slate-700/60 bg-slate-800/40 px-2 py-1 text-[10px] text-slate-300 transition-colors hover:bg-slate-800/70 disabled:cursor-not-allowed disabled:opacity-40"
+                            disabled={gitBusy() || !props.threadId}
+                            onClick={() => void runPull()}
+                        >
+                            <Show
+                                when={pullMutation().isPending}
+                                fallback={
+                                    <ArrowDown
+                                        class="h-3 w-3"
+                                        stroke-width={2}
+                                        aria-hidden
+                                    />
+                                }
+                            >
+                                <Loader2
+                                    class="h-3 w-3 animate-spin"
+                                    stroke-width={2}
+                                    aria-hidden
+                                />
+                            </Show>
+                            Pull
+                        </button>
+                    </Show>
+                    <Show when={prURL()}>
+                        {(url) => (
+                            <button
+                                type="button"
+                                class="inline-flex cursor-pointer items-center gap-1 rounded border border-emerald-700/40 bg-emerald-900/20 px-2 py-1 text-[10px] text-emerald-300 transition-colors hover:bg-emerald-900/35"
+                                onClick={() => openExternalURL(url())}
+                                title="Open or create pull request on GitHub"
+                            >
+                                <GitPullRequest
+                                    class="h-3 w-3"
+                                    stroke-width={2}
+                                    aria-hidden
+                                />
+                                PR
+                                <ExternalLink
+                                    class="h-2.5 w-2.5 text-emerald-400/60"
+                                    stroke-width={2}
+                                    aria-hidden
+                                />
+                            </button>
+                        )}
+                    </Show>
+                    <button
+                        type="button"
+                        class="inline-flex cursor-pointer items-center gap-1 rounded border border-slate-700/60 bg-slate-800/40 px-2 py-1 text-[10px] text-slate-300 transition-colors hover:bg-slate-800/70 disabled:cursor-not-allowed disabled:opacity-40"
+                        disabled={
+                            (staged().length === 0 &&
+                                unstaged().length === 0) ||
+                            gitBusy() ||
+                            !props.threadId
+                        }
+                        onClick={() => void runStash()}
+                    >
+                        <Show
+                            when={stashMutation().isPending}
+                            fallback={
+                                <Archive
+                                    class="h-3 w-3"
+                                    stroke-width={2}
+                                    aria-hidden
+                                />
+                            }
+                        >
+                            <Loader2
+                                class="h-3 w-3 animate-spin"
+                                stroke-width={2}
+                                aria-hidden
+                            />
+                        </Show>
+                        Stash
+                    </button>
+                    <Show when={stashCount() > 0}>
+                        <button
+                            type="button"
+                            class="inline-flex cursor-pointer items-center gap-1 rounded border border-slate-700/60 bg-slate-800/40 px-2 py-1 text-[10px] text-slate-300 transition-colors hover:bg-slate-800/70 disabled:cursor-not-allowed disabled:opacity-40"
+                            disabled={gitBusy() || !props.threadId}
+                            onClick={() => void runStashPop()}
+                        >
+                            <Show
+                                when={stashPopMutation().isPending}
+                                fallback={
+                                    <ArchiveRestore
+                                        class="h-3 w-3"
+                                        stroke-width={2}
+                                        aria-hidden
+                                    />
+                                }
+                            >
+                                <Loader2
+                                    class="h-3 w-3 animate-spin"
+                                    stroke-width={2}
+                                    aria-hidden
+                                />
+                            </Show>
+                            Pop
+                        </button>
+                    </Show>
                 </div>
+
+                {/* ── Error display ── */}
                 <Show
                     when={
                         gitActionError() &&
                         !discardOpen() &&
                         !commitOpen() &&
-                        !branchCommitOpen()
+                        !branchCommitOpen() &&
+                        !discardFileOpen()
                     }
                 >
-                    <p class="text-[10px] leading-snug text-red-400">
+                    <p class="rounded border border-red-900/30 bg-red-950/15 px-2.5 py-1.5 text-[10px] leading-snug text-red-400">
                         {gitActionError()}
                     </p>
                 </Show>
 
+                {/* ── Staged ── */}
                 <CollapsibleSection
                     title="Staged"
                     count={staged().length}
@@ -230,8 +544,8 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                     trailing={
                         <button
                             type="button"
-                            class={gitIconBtn}
-                            title="Unstage all (keep changes in files)"
+                            class={iconBtn}
+                            title="Unstage all"
                             disabled={
                                 staged().length === 0 ||
                                 unstageMutation().isPending ||
@@ -266,13 +580,26 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                             </p>
                         }
                     >
-                        <div class="space-y-0.5">
+                        <div class="space-y-px">
                             <For each={staged()}>
                                 {(f) => (
                                     <FileChangeRow
                                         path={f.path}
                                         status={f.status}
+                                        context="staged"
+                                        disabled={gitBusy()}
+                                        pendingPath={
+                                            unstageFileMutation().isPending
+                                                ? (unstageFileMutation()
+                                                      .variables as
+                                                      | string
+                                                      | undefined) ?? null
+                                                : null
+                                        }
                                         onClick={props.onFileClick}
+                                        onUnstage={(p) =>
+                                            unstageFileMutation().mutate(p)
+                                        }
                                     />
                                 )}
                             </For>
@@ -280,6 +607,7 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                     </Show>
                 </CollapsibleSection>
 
+                {/* ── Unstaged ── */}
                 <CollapsibleSection
                     title="Unstaged"
                     count={unstaged().length}
@@ -289,8 +617,8 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                         <div class="flex items-center gap-0.5">
                             <button
                                 type="button"
-                                class={gitIconBtn}
-                                title="Stage all unstaged changes"
+                                class={iconBtn}
+                                title="Stage all"
                                 disabled={
                                     unstaged().length === 0 ||
                                     stageMutation().isPending ||
@@ -317,8 +645,8 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                             </button>
                             <button
                                 type="button"
-                                class={gitIconBtn}
-                                title="Discard unstaged changes in the working tree"
+                                class={iconBtn}
+                                title="Discard all unstaged"
                                 disabled={
                                     unstaged().length === 0 ||
                                     discardMutation().isPending ||
@@ -357,13 +685,36 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                             </p>
                         }
                     >
-                        <div class="space-y-0.5">
+                        <div class="space-y-px">
                             <For each={unstaged()}>
                                 {(f) => (
                                     <FileChangeRow
                                         path={f.path}
                                         status={f.status}
+                                        context="unstaged"
+                                        disabled={gitBusy()}
+                                        pendingPath={
+                                            stageFileMutation().isPending
+                                                ? (stageFileMutation()
+                                                      .variables as
+                                                      | string
+                                                      | undefined) ?? null
+                                                : discardFileMutation()
+                                                        .isPending
+                                                  ? (discardFileMutation()
+                                                        .variables as
+                                                        | string
+                                                        | undefined) ?? null
+                                                  : null
+                                        }
                                         onClick={props.onFileClick}
+                                        onStage={(p) =>
+                                            stageFileMutation().mutate(p)
+                                        }
+                                        onDiscard={(p) => {
+                                            setGitActionError("");
+                                            setDiscardFilePath(p);
+                                        }}
                                     />
                                 )}
                             </For>
@@ -371,11 +722,45 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                     </Show>
                 </CollapsibleSection>
 
+                {/* ── Untracked ── */}
                 <CollapsibleSection
                     title="Untracked"
                     count={untracked().length}
                     tone="sky"
                     defaultOpen
+                    trailing={
+                        <Show when={untracked().length > 0}>
+                            <button
+                                type="button"
+                                class={iconBtn}
+                                title="Stage all untracked"
+                                disabled={
+                                    stageUntrackedMutation().isPending ||
+                                    gitBusy()
+                                }
+                                onClick={() =>
+                                    stageUntrackedMutation().mutate()
+                                }
+                            >
+                                <Show
+                                    when={stageUntrackedMutation().isPending}
+                                    fallback={
+                                        <Plus
+                                            class="h-3.5 w-3.5"
+                                            stroke-width={2}
+                                            aria-hidden
+                                        />
+                                    }
+                                >
+                                    <Loader2
+                                        class="h-3.5 w-3.5 animate-spin"
+                                        stroke-width={2}
+                                        aria-hidden
+                                    />
+                                </Show>
+                            </button>
+                        </Show>
+                    }
                 >
                     <Show
                         when={untracked().length > 0}
@@ -385,13 +770,26 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                             </p>
                         }
                     >
-                        <div class="space-y-0.5">
+                        <div class="space-y-px">
                             <For each={untracked()}>
                                 {(f) => (
                                     <FileChangeRow
                                         path={f.path}
                                         status={f.status}
+                                        context="untracked"
+                                        disabled={gitBusy()}
+                                        pendingPath={
+                                            stageFileMutation().isPending
+                                                ? (stageFileMutation()
+                                                      .variables as
+                                                      | string
+                                                      | undefined) ?? null
+                                                : null
+                                        }
                                         onClick={props.onFileClick}
+                                        onStage={(p) =>
+                                            stageFileMutation().mutate(p)
+                                        }
                                     />
                                 )}
                             </For>
@@ -399,6 +797,7 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                     </Show>
                 </CollapsibleSection>
 
+                {/* ── Commits ── */}
                 <CollapsibleSection
                     title="Commits"
                     count={activeCommits().length}
@@ -452,6 +851,7 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                     </Show>
                 </CollapsibleSection>
 
+                {/* ── Diff ── */}
                 <CollapsibleSection
                     title="Diff"
                     count={0}
@@ -482,6 +882,8 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                 </CollapsibleSection>
             </div>
 
+            {/* ── Dialogs ── */}
+
             <DiscardUnstagedGitDialog
                 open={discardOpen()}
                 pending={discardMutation().isPending}
@@ -490,6 +892,19 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                 }
                 onClose={() => setDiscardOpen(false)}
                 onConfirm={() => void runDiscard()}
+            />
+
+            <DiscardFileGitDialog
+                open={discardFileOpen()}
+                filePath={discardFilePath() ?? ""}
+                pending={discardFileMutation().isPending}
+                error={
+                    gitActionError() && discardFileOpen()
+                        ? gitActionError()
+                        : ""
+                }
+                onClose={() => setDiscardFilePath(null)}
+                onConfirm={() => void runDiscardFile()}
             />
 
             <CommitStagedGitDialog

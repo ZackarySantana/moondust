@@ -46,6 +46,12 @@ func ConsumeStreamJSON(
 	var final string
 	var usage *StreamUsage
 
+	// Track cumulative text emitted so far. Both Cursor (--stream-partial-output) and
+	// Claude Code (--include-partial-messages) send cumulative snapshots in each
+	// assistant event, not incremental deltas. We diff against the last snapshot to
+	// extract the true delta for the frontend.
+	var lastCumulativeText string
+
 	for sc.Scan() {
 		line := strings.TrimSpace(sc.Text())
 		if line == "" {
@@ -91,7 +97,18 @@ func ConsumeStreamJSON(
 					b.WriteString(c.Text)
 				}
 			}
-			delta := b.String()
+			snapshot := b.String()
+			if snapshot == "" {
+				continue
+			}
+			// Compute incremental delta from cumulative snapshot.
+			var delta string
+			if strings.HasPrefix(snapshot, lastCumulativeText) {
+				delta = snapshot[len(lastCumulativeText):]
+			} else {
+				delta = snapshot
+			}
+			lastCumulativeText = snapshot
 			if delta == "" {
 				continue
 			}
