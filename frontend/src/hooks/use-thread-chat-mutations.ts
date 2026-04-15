@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/solid-query";
 import { useNavigate } from "@solidjs/router";
+import type { Accessor } from "solid-js";
 import {
     ForkThreadAtMessage,
     SendThreadMessage,
@@ -15,7 +16,8 @@ import {
 import type { store } from "@wails/go/models";
 
 export interface ThreadChatMutationsOptions {
-    threadId: string;
+    /** Reactive current thread id (route param accessor). */
+    threadId: Accessor<string>;
     setSendError: (msg: string) => void;
     setDraft: (s: string) => void;
 }
@@ -27,18 +29,18 @@ export function useThreadChatMutations(opts: ThreadChatMutationsOptions) {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
 
-    const threadDetailKey = () => queryKeys.threads.detail(opts.threadId);
+    const threadDetailKey = () => queryKeys.threads.detail(opts.threadId());
 
     const sendMutation = useMutation(() => ({
         mutationFn: (content: string) =>
-            SendThreadMessage(opts.threadId, content),
+            SendThreadMessage(opts.threadId(), content),
         onMutate: () => {
             opts.setSendError("");
         },
         onSuccess: async () => {
             opts.setDraft("");
             opts.setSendError("");
-            await invalidateThreadScoped(queryClient, opts.threadId);
+            await invalidateThreadScoped(queryClient, opts.threadId());
             await invalidateThreadList(queryClient);
         },
         onError: (err: unknown) => {
@@ -54,13 +56,14 @@ export function useThreadChatMutations(opts: ThreadChatMutationsOptions) {
 
     const setChatProviderMutation = useMutation(() => ({
         mutationFn: async (provider: ChatProviderId) => {
-            await SetThreadChatProvider(opts.threadId, provider);
+            const tid = opts.threadId();
+            await SetThreadChatProvider(tid, provider);
             if (provider === "cursor") {
-                await SetThreadChatModel(opts.threadId, "composer-2-fast");
+                await SetThreadChatModel(tid, "composer-2-fast");
             } else if (provider === "claude") {
-                await SetThreadChatModel(opts.threadId, "sonnet");
+                await SetThreadChatModel(tid, "sonnet");
             } else {
-                await SetThreadChatModel(opts.threadId, "openai/gpt-4o-mini");
+                await SetThreadChatModel(tid, "openai/gpt-4o-mini");
             }
         },
         onMutate: async (provider) => {
@@ -88,12 +91,13 @@ export function useThreadChatMutations(opts: ThreadChatMutationsOptions) {
             }
         },
         onSuccess: async () => {
-            await invalidateThreadScoped(queryClient, opts.threadId);
+            await invalidateThreadScoped(queryClient, opts.threadId());
         },
     }));
 
     const setChatModelMutation = useMutation(() => ({
-        mutationFn: (model: string) => SetThreadChatModel(opts.threadId, model),
+        mutationFn: (model: string) =>
+            SetThreadChatModel(opts.threadId(), model),
         onMutate: async (model) => {
             await queryClient.cancelQueries({ queryKey: threadDetailKey() });
             const prev =
@@ -112,13 +116,13 @@ export function useThreadChatMutations(opts: ThreadChatMutationsOptions) {
             }
         },
         onSuccess: async () => {
-            await invalidateThreadScoped(queryClient, opts.threadId);
+            await invalidateThreadScoped(queryClient, opts.threadId());
         },
     }));
 
     const forkThreadMutation = useMutation(() => ({
         mutationFn: (messageId: string) =>
-            ForkThreadAtMessage(opts.threadId, messageId),
+            ForkThreadAtMessage(opts.threadId(), messageId),
         onSuccess: async (newThread) => {
             await invalidateThreadList(queryClient);
             navigate(`/project/${newThread.project_id}/thread/${newThread.id}`);

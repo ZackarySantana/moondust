@@ -1,5 +1,5 @@
-import { keepPreviousData, useQuery } from "@tanstack/solid-query";
-import { createMemo } from "solid-js";
+import { useQuery } from "@tanstack/solid-query";
+import { createMemo, type Accessor } from "solid-js";
 import {
     GetProject,
     GetSettings,
@@ -30,46 +30,60 @@ export interface UseThreadPageQueriesOptions {
 /**
  * Thread route: project/thread/settings queries, messages, git status, and model list
  * for the active chat provider.
+ *
+ * Pass **accessors** for ids so TanStack Solid Query re-subscribes when the route changes
+ * (`params.threadId`); plain strings are not reactive inside `useQuery(() => …)`.
  */
 export function useThreadPageQueries(
-    projectId: string,
-    threadId: string,
+    projectId: Accessor<string>,
+    threadId: Accessor<string>,
     options?: UseThreadPageQueriesOptions,
 ) {
-    const projectQuery = useQuery(() => ({
-        queryKey: queryKeys.projects.detail(projectId),
-        queryFn: () => GetProject(projectId),
-        enabled: !!projectId,
-    }));
+    const projectQuery = useQuery(() => {
+        const id = projectId();
+        return {
+            queryKey: queryKeys.projects.detail(id),
+            queryFn: () => GetProject(id),
+            enabled: !!id,
+        };
+    });
 
     const settingsQuery = useQuery(() => ({
         queryKey: queryKeys.settings,
         queryFn: GetSettings,
     }));
 
-    const threadQuery = useQuery(() => ({
-        queryKey: queryKeys.threads.detail(threadId),
-        queryFn: () => GetThread(threadId),
-        enabled: !!threadId,
-    }));
+    const threadQuery = useQuery(() => {
+        const id = threadId();
+        return {
+            queryKey: queryKeys.threads.detail(id),
+            queryFn: () => GetThread(id),
+            enabled: !!id,
+        };
+    });
 
     const thread = createMemo(() => threadQuery.data);
 
-    const messagesQuery = useQuery(() => ({
-        queryKey: queryKeys.threads.messages(threadId),
-        queryFn: () => ListThreadMessages(threadId),
-        enabled: !!threadId,
-        staleTime: 0,
-        placeholderData: keepPreviousData,
-    }));
+    const messagesQuery = useQuery(() => {
+        const id = threadId();
+        return {
+            queryKey: queryKeys.threads.messages(id),
+            queryFn: () => ListThreadMessages(id),
+            enabled: !!id,
+            staleTime: 0,
+        };
+    });
 
-    const gitStatusQuery = useQuery(() => ({
-        queryKey: queryKeys.threads.gitStatus(threadId),
-        queryFn: () => GetThreadGitReview(threadId),
-        enabled: !!threadId,
-        refetchInterval: () =>
-            options?.gitReviewOpen?.() !== false ? 5_000 : false,
-    }));
+    const gitStatusQuery = useQuery(() => {
+        const id = threadId();
+        return {
+            queryKey: queryKeys.threads.gitStatus(id),
+            queryFn: () => GetThreadGitReview(id),
+            enabled: !!id,
+            refetchInterval: () =>
+                options?.gitReviewOpen?.() !== false ? 5_000 : false,
+        };
+    });
 
     const chatProvider = createMemo((): ChatProviderId | undefined => {
         const t = thread();

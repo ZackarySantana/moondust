@@ -1,7 +1,14 @@
 import { useQueryClient } from "@tanstack/solid-query";
 import { useNavigate, useParams } from "@solidjs/router";
 import type { Component } from "solid-js";
-import { createMemo, createSignal, onCleanup, Show } from "solid-js";
+import {
+    createEffect,
+    createMemo,
+    createSignal,
+    on,
+    onCleanup,
+    Show,
+} from "solid-js";
 import { DeleteThread, RenameThread } from "@wails/go/app/App";
 import type { DiffNav } from "@/components/diff-viewer";
 import { ResizeHandle } from "@/components/resize-handle";
@@ -37,6 +44,8 @@ import type { store } from "@wails/go/models";
 
 export const ThreadPage: Component = () => {
     const params = useParams<{ projectId: string; threadId: string }>();
+    const projectId = () => params.projectId;
+    const threadId = () => params.threadId;
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { onAction, formatKey } = useShortcuts();
@@ -52,7 +61,7 @@ export const ThreadPage: Component = () => {
         streamingChunks,
         streamingPhase,
     } = useThreadChatStream(
-        () => params.threadId,
+        threadId,
         (msg) => setSendError(msg),
     );
 
@@ -67,11 +76,11 @@ export const ThreadPage: Component = () => {
         chatModel,
         streamingAttribution,
         workingDir,
-    } = useThreadPageQueries(params.projectId, params.threadId, {
+    } = useThreadPageQueries(projectId, threadId, {
         gitReviewOpen: () => sidebarOpen(),
     });
 
-    const threadGitMut = useThreadGitMutations(params.threadId);
+    const threadGitMut = useThreadGitMutations(threadId);
 
     const {
         sendMutation,
@@ -79,7 +88,7 @@ export const ThreadPage: Component = () => {
         setChatModelMutation,
         forkThreadMutation,
     } = useThreadChatMutations({
-        threadId: params.threadId,
+        threadId,
         setSendError,
         setDraft,
     });
@@ -126,9 +135,23 @@ export const ThreadPage: Component = () => {
     const [sideBySide, setSideBySide] = createSignal(true);
     const [diffNav, setDiffNav] = createSignal<DiffNav | null>(null);
 
-    const diffQuery = useThreadFileDiff(params.threadId, diffTarget);
+    const diffQuery = useThreadFileDiff(threadId, diffTarget);
 
     const [editingTitle, setEditingTitle] = createSignal(false);
+
+    createEffect(
+        on(
+            () => params.threadId,
+            (id, prev) => {
+                if (prev !== undefined && id !== prev) {
+                    setDraft("");
+                    setSendError("");
+                    setEditingTitle(false);
+                    setDiffNav(null);
+                }
+            },
+        ),
+    );
     const [titleDraft, setTitleDraft] = createSignal("");
     let titleInputRef!: HTMLInputElement;
 

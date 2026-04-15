@@ -6,17 +6,20 @@ import { queryKeys } from "@/lib/query-client";
 
 /** Loads unified diff for the review sidebar file selection. */
 export function useThreadFileDiff(
-    threadId: string,
+    threadId: Accessor<string>,
     diffTarget: Accessor<DiffTarget | null>,
 ) {
-    return useQuery(() => ({
-        queryKey: queryKeys.threads.fileDiff(
-            threadId,
-            diffTarget()?.path ?? "",
-            diffTarget()?.status ?? "",
-        ),
-        queryFn: () =>
-            GetFileDiff(threadId, diffTarget()!.path, diffTarget()!.status),
-        enabled: !!diffTarget() && !!threadId,
-    }));
+    return useQuery(() => {
+        const tid = threadId();
+        const t = diffTarget();
+        return {
+            queryKey: queryKeys.threads.fileDiff(
+                tid,
+                t?.path ?? "",
+                t?.status ?? "",
+            ),
+            queryFn: () => GetFileDiff(tid, t!.path, t!.status),
+            enabled: !!t && !!tid,
+        };
+    });
 }

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/solid-query";
+import type { Accessor } from "solid-js";
 import {
     GitCheckoutNewBranchAndCommit,
     GitCommit,
@@ -21,37 +22,37 @@ import { queryKeys } from "@/lib/query-client";
  * Git mutations for the thread review sidebar.
  * Call from a page container (e.g. thread.tsx), not from presentational components.
  */
-export function useThreadGitMutations(threadId: string) {
+export function useThreadGitMutations(threadId: Accessor<string>) {
     const queryClient = useQueryClient();
 
     const invalidateGit = () =>
         queryClient.invalidateQueries({
-            queryKey: queryKeys.threads.gitStatus(threadId),
+            queryKey: queryKeys.threads.gitStatus(threadId()),
         });
 
     const stageMutation = useMutation(() => ({
-        mutationFn: () => GitStageUnstaged(threadId),
+        mutationFn: () => GitStageUnstaged(threadId()),
         onSuccess: async () => {
             await invalidateGit();
         },
     }));
 
     const discardMutation = useMutation(() => ({
-        mutationFn: () => GitDiscardUnstaged(threadId),
+        mutationFn: () => GitDiscardUnstaged(threadId()),
         onSuccess: async () => {
             await invalidateGit();
         },
     }));
 
     const unstageMutation = useMutation(() => ({
-        mutationFn: () => GitUnstageAll(threadId),
+        mutationFn: () => GitUnstageAll(threadId()),
         onSuccess: async () => {
             await invalidateGit();
         },
     }));
 
     const commitMutation = useMutation(() => ({
-        mutationFn: (message: string) => GitCommit(threadId, message),
+        mutationFn: (message: string) => GitCommit(threadId(), message),
         onSuccess: async () => {
             await invalidateGit();
         },
@@ -59,70 +60,74 @@ export function useThreadGitMutations(threadId: string) {
 
     const branchCommitMutation = useMutation(() => ({
         mutationFn: (vars: { branch: string; message: string }) =>
-            GitCheckoutNewBranchAndCommit(threadId, vars.branch, vars.message),
+            GitCheckoutNewBranchAndCommit(
+                threadId(),
+                vars.branch,
+                vars.message,
+            ),
         onSuccess: async () => {
             await invalidateGit();
         },
     }));
 
     const pushMutation = useMutation(() => ({
-        mutationFn: () => GitPush(threadId),
+        mutationFn: () => GitPush(threadId()),
         onSuccess: async () => {
             await invalidateGit();
         },
     }));
 
     const pullMutation = useMutation(() => ({
-        mutationFn: () => GitPull(threadId),
+        mutationFn: () => GitPull(threadId()),
         onSuccess: async () => {
             await invalidateGit();
         },
     }));
 
     const stageFileMutation = useMutation(() => ({
-        mutationFn: (filePath: string) => GitStageFile(threadId, filePath),
+        mutationFn: (filePath: string) => GitStageFile(threadId(), filePath),
         onSuccess: async () => {
             await invalidateGit();
         },
     }));
 
     const unstageFileMutation = useMutation(() => ({
-        mutationFn: (filePath: string) => GitUnstageFile(threadId, filePath),
+        mutationFn: (filePath: string) => GitUnstageFile(threadId(), filePath),
         onSuccess: async () => {
             await invalidateGit();
         },
     }));
 
     const discardFileMutation = useMutation(() => ({
-        mutationFn: (filePath: string) => GitDiscardFile(threadId, filePath),
+        mutationFn: (filePath: string) => GitDiscardFile(threadId(), filePath),
         onSuccess: async () => {
             await invalidateGit();
         },
     }));
 
     const stageUntrackedMutation = useMutation(() => ({
-        mutationFn: () => GitStageUntracked(threadId),
+        mutationFn: () => GitStageUntracked(threadId()),
         onSuccess: async () => {
             await invalidateGit();
         },
     }));
 
     const stashMutation = useMutation(() => ({
-        mutationFn: () => GitStash(threadId),
+        mutationFn: () => GitStash(threadId()),
         onSuccess: async () => {
             await invalidateGit();
         },
     }));
 
     const stashPopMutation = useMutation(() => ({
-        mutationFn: () => GitStashPop(threadId),
+        mutationFn: () => GitStashPop(threadId()),
         onSuccess: async () => {
             await invalidateGit();
         },
     }));
 
     const renameBranchMutation = useMutation(() => ({
-        mutationFn: (newName: string) => GitRenameBranch(threadId, newName),
+        mutationFn: (newName: string) => GitRenameBranch(threadId(), newName),
         onSuccess: async () => {
             await invalidateGit();
         },
