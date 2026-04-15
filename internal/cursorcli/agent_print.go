@@ -78,6 +78,7 @@ func StreamPrintHeadless(
 		"--stream-partial-output",
 		prompt,
 	)
+	setHideConsole(cmd)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return "", nil, err

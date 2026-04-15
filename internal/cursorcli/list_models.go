@@ -39,6 +39,7 @@ func ListChatModels(ctx context.Context) ([]store.OpenRouterChatModel, error) {
 	cctx, cancel := context.WithTimeout(ctx, listModelsTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(cctx, path, "--list-models")
+	setHideConsole(cmd)
 	out, err := cmd.CombinedOutput()
 	text := StripANSI(string(out))
 	if err != nil {

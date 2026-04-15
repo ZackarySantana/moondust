@@ -57,6 +57,7 @@ func Probe(ctx context.Context) (*store.CursorCLIInfo, error) {
 		cctx, cancel := context.WithTimeout(ctx, probeTimeout)
 		defer cancel()
 		cmd := exec.CommandContext(cctx, path, args...)
+		setHideConsole(cmd)
 		out, err := cmd.CombinedOutput()
 		s := StripANSI(strings.TrimSpace(string(out)))
 		if err != nil {
