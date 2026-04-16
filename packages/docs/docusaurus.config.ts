@@ -6,7 +6,7 @@ import type * as Preset from "@docusaurus/preset-classic";
 
 const config: Config = {
     title: "Moondust",
-    tagline: "Desktop command center for AI agents.",
+    tagline: "Desktop hub for AI agents, Git review, and real repos.",
     favicon: "img/favicon.ico",
 
     // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future

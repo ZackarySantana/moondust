@@ -1,6 +1,6 @@
 ---
 name: go-tests
-description: Writes and edits Go tests with testify require/assert, t.Run subtests, and one Test function per code under test—no suites. Use when adding or changing Go tests, running go test, or when the user mentions Go testing, testify, subtests, or TestFoo naming.
+description: Writes and edits Go tests with testify require/assert, t.Run subtests, and one Test function per code under test; no suites. Use when adding or changing Go tests, running go test, or when the user mentions Go testing, testify, subtests, or TestFoo naming.
 ---
 
 # Go tests (project rules)

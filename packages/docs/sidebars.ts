@@ -1,7 +1,7 @@
 import type { SidebarsConfig } from "@docusaurus/plugin-content-docs";
 
 /**
- * Explicit order: intro → getting started → features → providers → plans → contributing → architecture → storybook.
+ * Explicit order: intro → getting started → features (incl. git sidebar) → providers → plans → contributing → architecture → storybook.
  */
 const sidebars: SidebarsConfig = {
     tutorialSidebar: [
@@ -14,7 +14,11 @@ const sidebars: SidebarsConfig = {
         {
             type: "category",
             label: "Features",
-            items: ["features/overview", "features/workspaces"],
+            items: [
+                "features/overview",
+                "features/workspaces",
+                "features/git-sidebar",
+            ],
         },
         {
             type: "category",

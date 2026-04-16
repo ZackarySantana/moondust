@@ -8,7 +8,7 @@ On **[GitHub Releases](https://github.com/zackarysantana/moondust/releases)** yo
 
 ## Quick launch
 
-The [`moondust`](https://www.npmjs.com/package/moondust) package on npm is a small **launcher** that downloads the same kind of binary for your platform, caches it under `~/.cache/moondust/`, and starts the app. You can run it with **either** [Bun](https://bun.sh/) or Node.js (npm)—pick one:
+The [`moondust`](https://www.npmjs.com/package/moondust) package on npm is a small **launcher** that downloads the same kind of binary for your platform, caches it under `~/.cache/moondust/`, and starts the app. You can run it with **either** [Bun](https://bun.sh/) or Node.js (npm); pick one:
 
 ```bash
 bunx moondust
@@ -31,10 +31,14 @@ The desktop build needs WebKit2GTK on the host (not inside the binary). On Debia
 ## After you install
 
 1. **Start Moondust** (binary or `bunx` / `npx` launcher).
-2. **Add or open a project** — pick a local folder (or follow the flow to create from a remote, if offered).
+2. **Add or open a project**: pick a local folder (or follow the flow to create from a remote, if offered).
 3. **Create a thread** under that project (sidebar: plus under the project).
-4. **Connect OpenRouter** in **Settings → Providers** if you have not already (OAuth or API key).
-5. **Choose a model** in the thread’s chat bar, then **send a message**.
+4. **Configure a chat provider** in **Settings → Providers**:
+   - **OpenRouter**: OAuth or API key (no extra install).
+   - **Cursor**: install [Cursor Agent CLI](https://cursor.com/install) so `agent` is on `PATH`.
+   - **Claude**: install [Claude Code](https://docs.anthropic.com/en/docs/claude-code) so `claude` is on `PATH`.
+5. Optionally set the **utility model** (same screen) for commit messages, review drafts, quick questions, and Git wizard conflict help.
+6. **Choose provider + model** in the thread’s chat bar, then **send a message**.
 
 The home view stays empty until you select a thread from the sidebar.
 

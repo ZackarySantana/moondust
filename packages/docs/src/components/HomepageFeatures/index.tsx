@@ -15,8 +15,9 @@ const FeatureList: FeatureItem[] = [
         Svg: require("@site/static/img/undraw_docusaurus_mountain.svg").default,
         description: (
             <>
-                Bring your own keys and pick the model providers that fit your
-                workflow and budget.
+                OpenRouter in the app, or drive <strong>Cursor</strong> and{" "}
+                <strong>Claude</strong> via their CLIs, plus a separate utility
+                model for helpers (commit text, review, Git wizard).
             </>
         ),
     },
@@ -25,7 +26,8 @@ const FeatureList: FeatureItem[] = [
         Svg: require("@site/static/img/undraw_docusaurus_tree.svg").default,
         description: (
             <>
-                Workspaces, threads, and review-friendly flows, without turning
+                Workspaces, threads, a full <strong>Git and review sidebar</strong>
+                (diffs, graph, branch review), and a terminal, without turning
                 Moondust into a second IDE.
             </>
         ),

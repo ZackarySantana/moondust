@@ -1,4 +1,4 @@
-# Agent guidelines — documentation site (`packages/docs/`)
+# Agent guidelines: documentation site (`packages/docs/`)
 
 **Purpose:** Keep the Docusaurus user docs accurate, link-safe, and consistent with the product.
 
@@ -15,12 +15,12 @@
 From `packages/docs/`:
 
 - `bun install`
-- `bun run build` — must succeed before merging doc changes that touch links or nav.
-- `bun run start` — local preview.
+- `bun run build`: must succeed before merging doc changes that touch links or nav.
+- `bun run start`: local preview.
 
 ## Deployment
 
-- GitHub Pages workflow: [`.github/workflows/docs-deploy.yml`](../../.github/workflows/docs-deploy.yml) builds this site **and** the Storybook static bundle, then merges them. Path filters in that workflow decide when deploy runs—large unrelated edits only under `docs/` still trigger a docs deploy when pushed to `main`.
+- GitHub Pages workflow: [`.github/workflows/docs-deploy.yml`](../../.github/workflows/docs-deploy.yml) builds this site **and** the Storybook static bundle, then merges them. Path filters in that workflow decide when deploy runs; large unrelated edits only under `docs/` still trigger a docs deploy when pushed to `main`.
 
 ## Style
 

@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Contributing
 
-Moondust is open source. Bug reports, doc fixes, and code contributions are welcome—use **GitHub Issues** and **Discussions** on the main repository to coordinate.
+Moondust is open source. Bug reports, doc fixes, and code contributions are welcome; use **GitHub Issues** and **Discussions** on the main repository to coordinate.
 
 ## Repository layout
 
@@ -19,8 +19,8 @@ Moondust is open source. Bug reports, doc fixes, and code contributions are welc
 ## Prerequisites
 
 - **Go** (see `go.mod` for the toolchain line used by the module).
-- **Wails v2** CLI — [install](https://wails.io/docs/gettingstarted/installation) for your OS.
-- **Bun** (or Node + npm) — the repo pins Bun for the frontend and docs; `wails.json` uses `bun` for `frontend:install` and `frontend:build`.
+- **Wails v2** CLI: [install](https://wails.io/docs/gettingstarted/installation) for your OS.
+- **Bun** (or Node + npm): the repo pins Bun for the frontend and docs; `wails.json` uses `bun` for `frontend:install` and `frontend:build`.
 
 On **Linux**, WebKit2GTK is required at runtime for the desktop shell (same as [installation](getting-started/installation#linux)).
 

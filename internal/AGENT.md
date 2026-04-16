@@ -1,4 +1,4 @@
-# Agent guidelines — backend (`internal/`)
+# Agent guidelines: backend (`internal/`)
 
 **Purpose:** Keep Go services, storage, and the Wails app API coherent and testable.
 
@@ -22,7 +22,7 @@ For comment style on new or heavily edited exported APIs, see [`.cursor/skills/g
 
 ## Don’t
 
-- Don’t hand-edit generated Wails TS bindings under `frontend/wailsjs/` from backend work—regenerate via Wails when models/APIs change.
+- Don’t hand-edit generated Wails TS bindings under `frontend/wailsjs/` from backend work; regenerate via Wails when models/APIs change.
 - Don’t pull unrelated refactors into feature fixes.
 
 For full setup and repo layout, see [`packages/docs/docs/contributing.md`](../packages/docs/docs/contributing.md).

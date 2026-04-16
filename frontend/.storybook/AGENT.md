@@ -1,8 +1,8 @@
-# Agent guidelines — Storybook (`frontend/.storybook/` + stories)
+# Agent guidelines: Storybook (`frontend/.storybook/` + stories)
 
 **Purpose:** Maintain isolated UI examples for components without running the full Wails app.
 
-**Scope:** Config lives in [`main.ts`](main.ts), [`preview.ts`](preview.ts), and this folder. Stories live next to components as `frontend/src/**/*.stories.tsx`. Change Storybook config only when fixing preview/build behavior or shared decorators—not for one-off hacks that belong in a single story.
+**Scope:** Config lives in [`main.ts`](main.ts), [`preview.ts`](preview.ts), and this folder. Stories live next to components as `frontend/src/**/*.stories.tsx`. Change Storybook config only when fixing preview/build behavior or shared decorators, not for one-off hacks that belong in a single story.
 
 ## Stack
 
@@ -19,12 +19,12 @@
 
 From `frontend/`:
 
-- `bun run storybook` — dev server (default port 6006).
-- `bun run build-storybook` — output to `storybook-static/` (also consumed by the docs deploy job).
+- `bun run storybook`: dev server (default port 6006).
+- `bun run build-storybook`: output to `storybook-static/` (also consumed by the docs deploy job).
 
 ## Story conventions
 
-- **Wails models:** Use `store.*.createFrom(...)` with plain objects and **ISO strings** for times—avoid passing JS `Date` into fields that map to Go `time` (see existing stories and [`expandable-metric-list.stories.tsx`](../src/components/settings/expandable-metric-list.stories.tsx)).
+- **Wails models:** Use `store.*.createFrom(...)` with plain objects and **ISO strings** for times; avoid passing JS `Date` into fields that map to Go `time` (see existing stories and [`expandable-metric-list.stories.tsx`](../src/components/settings/expandable-metric-list.stories.tsx)).
 - **Router:** Components using `<A>` or `useNavigate` need `MemoryRouter` + a matching `Route` (not `MemoryRouter` alone); see [`vertical-nav.stories.tsx`](../src/components/vertical-nav.stories.tsx).
 - **TanStack Query:** For panels that use `useQuery`, wrap with `QueryClientProvider` and `setQueryData` for stable mock data (see OpenRouter metrics / Cursor CLI stories).
 
