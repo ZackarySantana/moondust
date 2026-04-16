@@ -1,0 +1,13 @@
+<svg width="320" height="64" viewBox="0 0 320 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Moon mark (compact) -->
+  <circle cx="32" cy="32" r="24" fill="#34D399"/>
+  <circle cx="41" cy="24" r="18" fill="#0A0E0C"/>
+  <!-- Dust -->
+  <circle cx="46" cy="14" r="1.5" fill="#6EE7B7" opacity="0.9"/>
+  <circle cx="52" cy="21" r="1" fill="#6EE7B7" opacity="0.7"/>
+  <circle cx="49" cy="28" r="0.8" fill="#A7F3D0" opacity="0.5"/>
+  <circle cx="54" cy="15" r="0.6" fill="#A7F3D0" opacity="0.6"/>
+  <circle cx="48" cy="34" r="0.9" fill="#6EE7B7" opacity="0.45"/>
+  <!-- Wordmark -->
+  <text x="72" y="42" font-family="Inter, system-ui, sans-serif" font-size="30" font-weight="600" fill="#E2E8F0" letter-spacing="-0.02em">moondust</text>
+</svg>

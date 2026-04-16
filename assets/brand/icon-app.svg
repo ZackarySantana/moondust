@@ -1,0 +1,18 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Rounded square background -->
+  <rect width="256" height="256" rx="48" fill="#0A0E0C"/>
+  <!-- Crescent moon centered in the square -->
+  <circle cx="128" cy="128" r="72" fill="#34D399"/>
+  <circle cx="155" cy="104" r="54" fill="#0A0E0C"/>
+  <!-- Dust particles -->
+  <circle cx="170" cy="68" r="4.5" fill="#6EE7B7" opacity="0.9"/>
+  <circle cx="188" cy="88" r="3" fill="#6EE7B7" opacity="0.7"/>
+  <circle cx="180" cy="110" r="2.2" fill="#A7F3D0" opacity="0.5"/>
+  <circle cx="194" cy="72" r="1.8" fill="#A7F3D0" opacity="0.6"/>
+  <circle cx="182" cy="54" r="1.5" fill="#D1FAE5" opacity="0.4"/>
+  <circle cx="200" cy="98" r="1.5" fill="#D1FAE5" opacity="0.35"/>
+  <circle cx="176" cy="128" r="2.5" fill="#6EE7B7" opacity="0.45"/>
+  <circle cx="192" cy="118" r="1.2" fill="#A7F3D0" opacity="0.3"/>
+  <!-- Subtle inner glow on crescent edge -->
+  <circle cx="128" cy="128" r="72" fill="none" stroke="#34D399" stroke-width="0.5" opacity="0.2"/>
+</svg>
