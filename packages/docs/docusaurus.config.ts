@@ -7,7 +7,7 @@ import type * as Preset from "@docusaurus/preset-classic";
 const config: Config = {
     title: "Moondust",
     tagline: "Desktop hub for AI agents, Git review, and real repos.",
-    favicon: "img/favicon.ico",
+    favicon: "img/favicon.svg",
 
     // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
     future: {
@@ -63,6 +63,9 @@ const config: Config = {
             logo: {
                 alt: "Moondust",
                 src: "img/logo.svg",
+                srcDark: "img/logo-dark.svg",
+                width: 32,
+                height: 32,
             },
             items: [
                 {

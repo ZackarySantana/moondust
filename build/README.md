@@ -1,9 +1,19 @@
 # Build Directory
 
-The build directory is used to house all the build files and assets for your application. 
+The build directory is used to house all the build files and assets for your application.
+
+## App icon (`appicon.png`)
+
+Wails reads **`appicon.png`** in **this `build/` directory** (next to `darwin/` and `windows/`) as the master icon:
+
+- Use a **square PNG** with transparency, typically **1024×1024** pixels.
+- Export from the brand SVGs in [`../assets/brand/`](../assets/brand/) (e.g. `icon-app.svg`).
+
+If **`appicon.png` is missing**, Wails generates a default on build. For **Windows**, `windows/icon.ico` can be supplied directly; if it is missing, Wails can build it from `appicon.png`.
 
 The structure is:
 
+* `appicon.png` - Master application icon (recommended; source for platform icons)
 * bin - Output directory
 * darwin - macOS specific files
 * windows - Windows specific files

@@ -66,9 +66,17 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                 <A
                     href="/"
                     end
-                    class="text-sm font-semibold tracking-tight text-slate-200 hover:text-slate-100 transition-colors duration-100"
+                    class="flex items-center gap-2 text-sm font-semibold tracking-tight text-slate-200 transition-colors duration-100 hover:text-slate-100"
                 >
-                    Moondust
+                    <img
+                        src="/logo-dark.svg"
+                        alt=""
+                        class="size-7 shrink-0"
+                        width="28"
+                        height="28"
+                        decoding="async"
+                    />
+                    <span>Moondust</span>
                 </A>
                 <div />
             </header>

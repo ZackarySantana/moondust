@@ -13,6 +13,15 @@ function HomepageHeader() {
     return (
         <header className={clsx("hero hero--primary", styles.heroBanner)}>
             <div className="container">
+                <div className={styles.heroLogoWrap}>
+                    <img
+                        className={styles.heroLogo}
+                        src="/img/logo.svg"
+                        alt="Moondust logo"
+                        width={88}
+                        height={88}
+                    />
+                </div>
                 <Heading as="h1" className="hero__title">
                     {siteConfig.title}
                 </Heading>

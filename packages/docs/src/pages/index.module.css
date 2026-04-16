@@ -10,6 +10,17 @@
   overflow: hidden;
 }
 
+.heroLogoWrap {
+  margin-bottom: 1rem;
+}
+
+.heroLogo {
+  display: inline-block;
+  width: 88px;
+  height: 88px;
+  vertical-align: middle;
+}
+
 @media screen and (max-width: 996px) {
   .heroBanner {
     padding: 2rem;
