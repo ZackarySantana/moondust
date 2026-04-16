@@ -60,6 +60,8 @@ export function GitListBranches(arg1:string):Promise<Array<string>>;
 
 export function GitMerge(arg1:string,arg2:string):Promise<string>;
 
+export function GitMergeContinue(arg1:string):Promise<string>;
+
 export function GitPull(arg1:string):Promise<void>;
 
 export function GitPush(arg1:string):Promise<void>;
@@ -106,6 +108,8 @@ export function ListThreads():Promise<Array<store.Thread>>;
 
 export function RenameThread(arg1:string,arg2:string):Promise<void>;
 
+export function ResolveGitConflictsWithUtilityAgent(arg1:string):Promise<string>;
+
 export function ReviewBranchDiff(arg1:string):Promise<string>;
 
 export function SaveSettings(arg1:store.Settings):Promise<void>;
@@ -121,6 +125,8 @@ export function SetLogStreaming(arg1:boolean):Promise<void>;
 export function SetThreadChatModel(arg1:string,arg2:string):Promise<void>;
 
 export function SetThreadChatProvider(arg1:string,arg2:string):Promise<void>;
+
+export function StreamResolveGitConflictsWithUtilityAgent(arg1:string):Promise<void>;
 
 export function StreamReviewBranchDiff(arg1:string):Promise<void>;
 

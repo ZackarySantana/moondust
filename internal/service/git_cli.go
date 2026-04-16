@@ -25,6 +25,18 @@ func runGit(ctx context.Context, dir string, args ...string) (string, error) {
 	return string(out), nil
 }
 
+// runGitWithEnv runs git with extra environment variables (e.g. GIT_EDITOR=true for non-interactive continue).
+func runGitWithEnv(ctx context.Context, dir string, extraEnv []string, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...)
+	cmd.Env = append(os.Environ(), extraEnv...)
+	oschild.HideConsole(cmd)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("git %s: %w: %s", strings.Join(args, " "), err, strings.TrimSpace(string(out)))
+	}
+	return string(out), nil
+}
+
 // detectDefaultBranchAfterClone returns the checked-out branch name after `git clone`, or a best-effort fallback.
 func detectDefaultBranchAfterClone(ctx context.Context, dir string) string {
 	out, err := runGit(ctx, dir, "rev-parse", "--abbrev-ref", "HEAD")

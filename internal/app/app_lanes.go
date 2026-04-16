@@ -95,6 +95,45 @@ func (a *App) GitRebaseContinue(threadID string) (string, error) {
 	return a.service.GitRebaseContinue(a.Ctx, threadID)
 }
 
+// GitMergeContinue continues a merge after resolving conflicts.
+func (a *App) GitMergeContinue(threadID string) (string, error) {
+	return a.service.GitMergeContinue(a.Ctx, threadID)
+}
+
+// ResolveGitConflictsWithUtilityAgent resolves conflicted files with the utility LLM, stages, then continues.
+func (a *App) ResolveGitConflictsWithUtilityAgent(threadID string) (string, error) {
+	return a.service.ResolveGitConflictsWithUtilityAgent(a.Ctx, threadID)
+}
+
+// StreamResolveGitConflictsWithUtilityAgent streams utility-model output via gitwizard:stream* events, then finishes.
+func (a *App) StreamResolveGitConflictsWithUtilityAgent(threadID string) error {
+	emitCtx := a.Ctx
+	go func() {
+		runtime.EventsEmit(emitCtx, "gitwizard:stream_start", map[string]string{
+			"thread_id": threadID,
+		})
+		out, err := a.service.StreamResolveGitConflictsWithUtilityAgent(context.Background(), threadID, func(delta string) error {
+			runtime.EventsEmit(emitCtx, "gitwizard:stream", map[string]string{
+				"thread_id": threadID,
+				"delta":     delta,
+			})
+			return nil
+		})
+		if err != nil {
+			runtime.EventsEmit(emitCtx, "gitwizard:stream_error", map[string]string{
+				"thread_id": threadID,
+				"error":     err.Error(),
+			})
+			return
+		}
+		runtime.EventsEmit(emitCtx, "gitwizard:stream_done", map[string]string{
+			"thread_id": threadID,
+			"output":    out,
+		})
+	}()
+	return nil
+}
+
 // GitConflictState returns the current merge/rebase conflict state.
 func (a *App) GitConflictState(threadID string) (*store.GitConflictState, error) {
 	return a.service.GitConflictState(a.Ctx, threadID)

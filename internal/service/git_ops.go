@@ -347,6 +347,92 @@ func (s *Service) GitFetch(ctx context.Context, threadID string) error {
 	return err
 }
 
+// gitPathExists reports whether a path under the repo's git directory exists.
+// Uses `git rev-parse --git-path` so linked worktrees resolve to the correct
+// location (e.g. .git/worktrees/<id>/rebase-merge), not cwd/.git/rebase-merge.
+func gitPathExists(ctx context.Context, dir, gitPath string) bool {
+	out, err := runGit(ctx, dir, "rev-parse", "--git-path", gitPath)
+	if err != nil {
+		return false
+	}
+	p := strings.TrimSpace(out)
+	if p == "" {
+		return false
+	}
+	_, err = os.Stat(p)
+	return err == nil
+}
+
+func mergeInProgress(ctx context.Context, dir string) bool {
+	return gitPathExists(ctx, dir, "MERGE_HEAD")
+}
+
+func rebaseInProgress(ctx context.Context, dir string) bool {
+	return gitPathExists(ctx, dir, "rebase-merge") || gitPathExists(ctx, dir, "rebase-apply")
+}
+
+// prepareWorktreeForRebase aborts any in-progress merge or rebase so a new
+// `git rebase` can start. The wizard "Run" flow expects a clean start; users
+// mid-conflict use Continue/Abort in the UI instead.
+func prepareWorktreeForRebase(ctx context.Context, dir string) (string, error) {
+	var notes []string
+	if mergeInProgress(ctx, dir) {
+		out, err := runGit(ctx, dir, "merge", "--abort")
+		if err != nil {
+			return "", fmt.Errorf("aborting previous merge before rebase: %w", err)
+		}
+		s := strings.TrimSpace(out)
+		if s != "" {
+			notes = append(notes, "Aborted previous merge before rebase.\n"+s)
+		} else {
+			notes = append(notes, "Aborted previous merge before rebase.")
+		}
+	}
+	if rebaseInProgress(ctx, dir) {
+		out, err := runGit(ctx, dir, "rebase", "--abort")
+		if err != nil {
+			return "", fmt.Errorf("aborting previous rebase: %w", err)
+		}
+		s := strings.TrimSpace(out)
+		if s != "" {
+			notes = append(notes, "Aborted incomplete rebase before starting.\n"+s)
+		} else {
+			notes = append(notes, "Aborted incomplete rebase before starting.")
+		}
+	}
+	return strings.Join(notes, "\n\n"), nil
+}
+
+// prepareWorktreeForMerge aborts any in-progress rebase or merge so a new merge can start.
+func prepareWorktreeForMerge(ctx context.Context, dir string) (string, error) {
+	var notes []string
+	if rebaseInProgress(ctx, dir) {
+		out, err := runGit(ctx, dir, "rebase", "--abort")
+		if err != nil {
+			return "", fmt.Errorf("aborting previous rebase before merge: %w", err)
+		}
+		s := strings.TrimSpace(out)
+		if s != "" {
+			notes = append(notes, "Aborted incomplete rebase before merge.\n"+s)
+		} else {
+			notes = append(notes, "Aborted incomplete rebase before merge.")
+		}
+	}
+	if mergeInProgress(ctx, dir) {
+		out, err := runGit(ctx, dir, "merge", "--abort")
+		if err != nil {
+			return "", fmt.Errorf("aborting previous merge: %w", err)
+		}
+		s := strings.TrimSpace(out)
+		if s != "" {
+			notes = append(notes, "Aborted previous merge before starting.\n"+s)
+		} else {
+			notes = append(notes, "Aborted previous merge before starting.")
+		}
+	}
+	return strings.Join(notes, "\n\n"), nil
+}
+
 // GitMerge merges the given branch into the current branch. Returns git output.
 func (s *Service) GitMerge(ctx context.Context, threadID, branch string) (string, error) {
 	if err := validateBranchName(branch); err != nil {
@@ -356,8 +442,19 @@ func (s *Service) GitMerge(ctx context.Context, threadID, branch string) (string
 	if err != nil {
 		return "", err
 	}
+	prep, err := prepareWorktreeForMerge(ctx, dir)
+	if err != nil {
+		return "", err
+	}
 	// --no-edit avoids opening an editor for the merge commit message.
-	return runGit(ctx, dir, "merge", "--no-edit", strings.TrimSpace(branch))
+	out, err := runGit(ctx, dir, "merge", "--no-edit", strings.TrimSpace(branch))
+	if err != nil {
+		return "", err
+	}
+	if prep != "" {
+		return prep + "\n\n" + out, nil
+	}
+	return out, nil
 }
 
 // GitRebaseOnto rebases the current branch onto the specified branch. Returns git output.
@@ -369,7 +466,18 @@ func (s *Service) GitRebaseOnto(ctx context.Context, threadID, onto string) (str
 	if err != nil {
 		return "", err
 	}
-	return runGit(ctx, dir, "rebase", strings.TrimSpace(onto))
+	prep, err := prepareWorktreeForRebase(ctx, dir)
+	if err != nil {
+		return "", err
+	}
+	out, err := runGit(ctx, dir, "rebase", strings.TrimSpace(onto))
+	if err != nil {
+		return "", err
+	}
+	if prep != "" {
+		return prep + "\n\n" + out, nil
+	}
+	return out, nil
 }
 
 // GitRebaseAbort aborts a rebase in progress.
@@ -388,7 +496,16 @@ func (s *Service) GitRebaseContinue(ctx context.Context, threadID string) (strin
 	if err != nil {
 		return "", err
 	}
-	return runGit(ctx, dir, "rebase", "--continue")
+	return runGitWithEnv(ctx, dir, []string{"GIT_EDITOR=true", "GIT_SEQUENCE_EDITOR=true"}, "rebase", "--continue")
+}
+
+// GitMergeContinue continues a merge after conflicts are resolved (non-interactive).
+func (s *Service) GitMergeContinue(ctx context.Context, threadID string) (string, error) {
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return "", err
+	}
+	return runGitWithEnv(ctx, dir, []string{"GIT_EDITOR=true"}, "merge", "--continue")
 }
 
 // GitConflictState detects merge/rebase state and lists conflicted files.
@@ -399,22 +516,9 @@ func (s *Service) GitConflictState(ctx context.Context, threadID string) (*store
 	}
 	state := &store.GitConflictState{}
 
-	// Check for merge in progress
-	if _, mergeErr := os.Stat(filepath.Join(dir, ".git", "MERGE_HEAD")); mergeErr == nil {
-		state.InMerge = true
-	}
-
-	// Check for rebase in progress
-	rebasePaths := []string{
-		filepath.Join(dir, ".git", "rebase-merge"),
-		filepath.Join(dir, ".git", "rebase-apply"),
-	}
-	for _, rp := range rebasePaths {
-		if info, err := os.Stat(rp); err == nil && info.IsDir() {
-			state.InRebase = true
-			break
-		}
-	}
+	// Use git-path resolution so linked worktrees see the real state (not cwd/.git/...).
+	state.InMerge = mergeInProgress(ctx, dir)
+	state.InRebase = rebaseInProgress(ctx, dir)
 
 	// List unmerged (conflict) files
 	out, err := runGit(ctx, dir, "diff", "--name-only", "--diff-filter=U")

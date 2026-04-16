@@ -90,6 +90,21 @@ func ReviewUserPrompt(diff string) string {
 	return "Review this diff:\n\n" + diff
 }
 
+// ConflictResolveSystemPrompt is the system prompt for LLM merge-conflict resolution.
+const ConflictResolveSystemPrompt = `You resolve git merge conflicts in a single source file. Output ONLY the complete merged file contents.
+
+Rules:
+- No markdown fences, no code blocks, no backticks, no commentary before or after the file.
+- Remove every conflict marker: <<<<<<<, =======, >>>>>>> (and any branch labels on those lines).
+- Combine both sides sensibly: merge imports, delete duplicates, keep non-overlapping edits from both sides.
+- Preserve the project's style (indentation, quotes) from the surrounding code.
+- If one side is clearly wrong or obsolete, prefer the correct side; otherwise integrate both.`
+
+// ConflictResolveUserPrompt builds the user message for conflict resolution.
+func ConflictResolveUserPrompt(relPath, fileContent string) string {
+	return fmt.Sprintf("File path: %s\n\nResolve this merge conflict. Output the full file only:\n\n%s", relPath, fileContent)
+}
+
 // UtilityGenerate is a function that takes a system prompt and user message and returns the generated text.
 // It abstracts away the LLM provider.
 type UtilityGenerate func(ctx context.Context, system, user string) (string, error)

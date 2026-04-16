@@ -118,6 +118,10 @@ export function GitMerge(arg1, arg2) {
   return window['go']['app']['App']['GitMerge'](arg1, arg2);
 }
 
+export function GitMergeContinue(arg1) {
+  return window['go']['app']['App']['GitMergeContinue'](arg1);
+}
+
 export function GitPull(arg1) {
   return window['go']['app']['App']['GitPull'](arg1);
 }
@@ -210,6 +214,10 @@ export function RenameThread(arg1, arg2) {
   return window['go']['app']['App']['RenameThread'](arg1, arg2);
 }
 
+export function ResolveGitConflictsWithUtilityAgent(arg1) {
+  return window['go']['app']['App']['ResolveGitConflictsWithUtilityAgent'](arg1);
+}
+
 export function ReviewBranchDiff(arg1) {
   return window['go']['app']['App']['ReviewBranchDiff'](arg1);
 }
@@ -240,6 +248,10 @@ export function SetThreadChatModel(arg1, arg2) {
 
 export function SetThreadChatProvider(arg1, arg2) {
   return window['go']['app']['App']['SetThreadChatProvider'](arg1, arg2);
+}
+
+export function StreamResolveGitConflictsWithUtilityAgent(arg1) {
+  return window['go']['app']['App']['StreamResolveGitConflictsWithUtilityAgent'](arg1);
 }
 
 export function StreamReviewBranchDiff(arg1) {
