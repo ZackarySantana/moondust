@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	"moondust/internal/oschild"
 )
 
 const maxDiffBytes = 60_000
@@ -13,6 +15,7 @@ const maxDiffBytes = 60_000
 func StagedDiff(dir string) (string, error) {
 	cmd := exec.Command("git", "diff", "--cached", "--no-color")
 	cmd.Dir = dir
+	oschild.HideConsole(cmd)
 	out, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("git diff --cached: %w", err)
@@ -36,6 +39,7 @@ func BranchDiff(dir string) (string, error) {
 	}
 	cmd := exec.Command("git", "diff", "--no-color", mb+"...HEAD")
 	cmd.Dir = dir
+	oschild.HideConsole(cmd)
 	out, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("git diff merge-base: %w", err)
@@ -51,6 +55,7 @@ func defaultBranch(dir string) (string, error) {
 	for _, ref := range []string{"refs/remotes/origin/main", "refs/remotes/origin/master"} {
 		cmd := exec.Command("git", "rev-parse", "--verify", ref)
 		cmd.Dir = dir
+		oschild.HideConsole(cmd)
 		if err := cmd.Run(); err == nil {
 			return strings.TrimPrefix(ref, "refs/remotes/origin/"), nil
 		}
@@ -61,6 +66,7 @@ func defaultBranch(dir string) (string, error) {
 func mergeBase(dir, branch string) (string, error) {
 	cmd := exec.Command("git", "merge-base", "origin/"+branch, "HEAD")
 	cmd.Dir = dir
+	oschild.HideConsole(cmd)
 	out, err := cmd.Output()
 	if err != nil {
 		return "", err

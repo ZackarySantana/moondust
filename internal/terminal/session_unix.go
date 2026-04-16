@@ -185,6 +185,8 @@ func (s *unixSession) unsubscribe(id int) {
 	close(ch)
 }
 
+// shellCommand builds the interactive shell for the in-app terminal. Do not call
+// oschild.HideConsole here — the user must see that process (PTY).
 func shellCommand() *exec.Cmd {
 	sh := os.Getenv("SHELL")
 	if sh == "" {

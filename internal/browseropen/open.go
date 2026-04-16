@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+
+	"moondust/internal/oschild"
 )
 
 // Open tries several strategies so OAuth and other flows work on WSL, Linux, macOS, and Windows.
@@ -20,10 +22,13 @@ func Open(raw string) error {
 
 	switch runtime.GOOS {
 	case "darwin":
-		return exec.Command("open", raw).Start()
+		cmd := exec.Command("open", raw)
+		oschild.HideConsole(cmd)
+		return cmd.Start()
 	case "windows":
-		// Reliable on native Windows (including WebView2 hosts).
-		return exec.Command("rundll32", "url.dll,FileProtocolHandler", raw).Start()
+		cmd := exec.Command("rundll32", "url.dll,FileProtocolHandler", raw)
+		oschild.HideConsole(cmd)
+		return cmd.Start()
 	default:
 		return openUnixLike(raw)
 	}
@@ -54,7 +59,9 @@ func openUnixLike(url string) error {
 		if err != nil {
 			continue
 		}
-		err = exec.Command(lp, c[1:]...).Start()
+		cmd := exec.Command(lp, c[1:]...)
+		oschild.HideConsole(cmd)
+		err = cmd.Start()
 		if err == nil {
 			return nil
 		}
@@ -81,7 +88,9 @@ func openViaWindowsCmd(url string) error {
 		return err
 	}
 	// cmd /c start "" <url> — empty arg is the window title required by `start` for URLs.
-	return exec.Command(cmdExe, "/c", "start", "", url).Start()
+	cmd := exec.Command(cmdExe, "/c", "start", "", url)
+	oschild.HideConsole(cmd)
+	return cmd.Start()
 }
 
 func openViaWslview(url string) error {
@@ -89,7 +98,9 @@ func openViaWslview(url string) error {
 	if err != nil {
 		return err
 	}
-	return exec.Command(lp, url).Start()
+	cmd := exec.Command(lp, url)
+	oschild.HideConsole(cmd)
+	return cmd.Start()
 }
 
 func openViaPowerShell(url string) error {
@@ -98,6 +109,8 @@ func openViaPowerShell(url string) error {
 		return err
 	}
 	// Start-Process with a quoted URL works for OpenRouter's long query strings.
-	return exec.Command(pwsh, "-NoProfile", "-STA", "-Command",
-		fmt.Sprintf("Start-Process %q", url)).Start()
+	cmd := exec.Command(pwsh, "-NoProfile", "-STA", "-Command",
+		fmt.Sprintf("Start-Process %q", url))
+	oschild.HideConsole(cmd)
+	return cmd.Start()
 }

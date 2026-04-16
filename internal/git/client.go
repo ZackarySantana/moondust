@@ -5,9 +5,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
+
+	"moondust/internal/oschild"
 )
 
 // Client is the surface for git operations the app needs (clone today; more later).
@@ -24,11 +25,9 @@ func NewCommandClient() *CommandClient {
 }
 
 // Clone runs `git clone -- <remoteURL> <targetDir>` using the git on PATH.
-// GIT_TERMINAL_PROMPT=0 avoids blocking on interactive credential prompts in the GUI.
 func (*CommandClient) Clone(ctx context.Context, remoteURL, targetDir string) error {
 	cmd := exec.CommandContext(ctx, "git", "clone", "--", remoteURL, targetDir)
-	hideExecWindow(cmd)
-	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+	oschild.HideConsole(cmd)
 	var out bytes.Buffer
 	cmd.Stderr = &out
 	cmd.Stdout = &out

@@ -356,7 +356,8 @@ func (s *Service) GitMerge(ctx context.Context, threadID, branch string) (string
 	if err != nil {
 		return "", err
 	}
-	return runGit(ctx, dir, "merge", strings.TrimSpace(branch))
+	// --no-edit avoids opening an editor for the merge commit message.
+	return runGit(ctx, dir, "merge", "--no-edit", strings.TrimSpace(branch))
 }
 
 // GitRebaseOnto rebases the current branch onto the specified branch. Returns git output.

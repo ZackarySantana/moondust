@@ -7,8 +7,9 @@ import (
 	"syscall"
 )
 
-// HideConsole avoids a flashing console window when Moondust runs a CLI subprocess
-// from the Wails GUI on Windows.
+// HideConsole suppresses an extra console window for CLI subprocesses on Windows
+// (CREATE_NO_WINDOW + HideWindow). No-op on other platforms. Do not use for the
+// embedded interactive terminal (PTY).
 func HideConsole(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		HideWindow:    true,
