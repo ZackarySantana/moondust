@@ -250,10 +250,6 @@ export function SetThreadChatProvider(arg1, arg2) {
   return window['go']['app']['App']['SetThreadChatProvider'](arg1, arg2);
 }
 
-export function StreamResolveGitConflictsWithUtilityAgent(arg1) {
-  return window['go']['app']['App']['StreamResolveGitConflictsWithUtilityAgent'](arg1);
-}
-
 export function StreamReviewBranchDiff(arg1) {
   return window['go']['app']['App']['StreamReviewBranchDiff'](arg1);
 }

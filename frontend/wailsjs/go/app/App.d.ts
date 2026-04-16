@@ -126,8 +126,6 @@ export function SetThreadChatModel(arg1:string,arg2:string):Promise<void>;
 
 export function SetThreadChatProvider(arg1:string,arg2:string):Promise<void>;
 
-export function StreamResolveGitConflictsWithUtilityAgent(arg1:string):Promise<void>;
-
 export function StreamReviewBranchDiff(arg1:string):Promise<void>;
 
 export function SuggestCommitMessage(arg1:string):Promise<string>;
