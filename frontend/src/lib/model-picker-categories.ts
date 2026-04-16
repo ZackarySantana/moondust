@@ -163,3 +163,13 @@ export function buildCursorModelCategories(
     }
     return out;
 }
+
+/**
+ * Claude Code CLI: single sorted list (aliases from `claude --model`).
+ */
+export function buildClaudeModelCategories(
+    models: readonly ModelChoice[],
+): ModelPickerCategory[] {
+    const rest = [...models].sort((a, b) => a.label.localeCompare(b.label));
+    return [{ id: "claude", label: "Claude models", models: rest }];
+}

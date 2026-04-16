@@ -19,6 +19,7 @@ import {
     invalidateThreadScoped,
     queryKeys,
 } from "@/lib/query-client";
+import { CurrentThreadProvider } from "@/lib/current-thread-context";
 import { globalSidebarThreadOrder } from "@/lib/sidebar-thread-order";
 import { ShortcutProvider, useShortcuts } from "@/lib/shortcut-context";
 import {
@@ -35,7 +36,9 @@ import { EventsOn, WindowSetTitle } from "@wails/runtime/runtime";
 export const AppShell: Component<RouteSectionProps> = (props) => {
     return (
         <ShortcutProvider>
-            <AppShellInner {...props} />
+            <CurrentThreadProvider>
+                <AppShellInner {...props} />
+            </CurrentThreadProvider>
         </ShortcutProvider>
     );
 };

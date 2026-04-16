@@ -5,6 +5,7 @@ import {
     GetSettings,
     GetThread,
     GetThreadGitReview,
+    ListClaudeChatModels,
     ListCursorChatModels,
     ListOpenRouterChatModels,
     ListThreadMessages,
@@ -13,6 +14,7 @@ import {
     assistantAttributionLabel,
     chatModelFromThread,
     parseChatProviderId,
+    CLAUDE_CHAT_MODELS_FALLBACK,
     CURSOR_CHAT_MODELS_FALLBACK,
     OPENROUTER_CHAT_MODELS_FALLBACK,
     type ChatProviderId,
@@ -89,6 +91,13 @@ export function useThreadPageQueries(
         enabled: chatProvider() === "cursor",
     }));
 
+    const claudeModelsQuery = useQuery(() => ({
+        queryKey: queryKeys.claudeChatModels,
+        queryFn: ListClaudeChatModels,
+        staleTime: 60 * 60 * 1000,
+        enabled: chatProvider() === "claude",
+    }));
+
     const modelChoices = createMemo(() => {
         const cp = chatProvider();
         if (cp === undefined) return [] as ModelChoice[];
@@ -112,6 +121,27 @@ export function useThreadPageQueries(
                 }));
             }
             return [...CURSOR_CHAT_MODELS_FALLBACK];
+        }
+        if (cp === "claude") {
+            const rows = claudeModelsQuery.data;
+            if (rows && rows.length > 0) {
+                return rows.map((m) => ({
+                    id: m.id,
+                    label: (m.name && m.name.trim()) || m.id,
+                    provider: m.provider ?? "anthropic",
+                    description: m.description,
+                    description_full: m.description_full,
+                    pricing_tier: m.pricing_tier,
+                    pricing_summary: m.pricing_summary,
+                    pricing_prompt: m.pricing_prompt,
+                    pricing_completion: m.pricing_completion,
+                    vision: m.vision,
+                    reasoning: m.reasoning,
+                    long_context: m.long_context,
+                    context_length: m.context_length,
+                }));
+            }
+            return [...CLAUDE_CHAT_MODELS_FALLBACK];
         }
         const rows = openRouterModelsQuery.data;
         if (rows && rows.length > 0) {

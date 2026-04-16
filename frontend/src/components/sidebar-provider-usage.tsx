@@ -5,77 +5,16 @@ import { createSignal, Show } from "solid-js";
 import { GetCursorCLIInfo } from "@wails/go/app/App";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query-client";
+import { ClaudeLocalUsageBars } from "@/components/claude-local-usage-bars";
+import { UsageBarRow, UsageBarRowLoading } from "@/components/usage-bar-row";
+import { useClaudeCliInfo } from "@/hooks/use-claude-cli-info";
+import {
+    CLAUDE_CODE_INSTALL_URL,
+    CLAUDE_LOGIN_COMMAND,
+    CLAUDE_NOT_INSTALLED_HINT,
+    friendlyClaudeAuthErrorMessage,
+} from "@/lib/claude-auth-display";
 import type { store } from "@wails/go/models";
-
-/** Placeholder until Anthropic usage is wired (single bar). */
-const FAKE_CLAUDE_INCLUDED_PCT = 36.5;
-
-function clampPct(n: number | undefined): number {
-    if (n == null || !Number.isFinite(n)) return 0;
-    return Math.min(100, Math.max(0, n));
-}
-
-function formatPct(n: number | undefined): string {
-    if (n == null || !Number.isFinite(n)) return "—";
-    return `${n.toFixed(1)}%`;
-}
-
-const Bar: Component<{
-    label: string;
-    value: number | undefined;
-    fillClass: string;
-}> = (props) => {
-    const w = () => clampPct(props.value);
-    return (
-        <div class="min-w-0">
-            <div class="mb-0.5 flex items-baseline justify-between gap-1 text-[10px] leading-none text-slate-500">
-                <span class="min-w-0 truncate">{props.label}</span>
-                <span class="shrink-0 tabular-nums text-slate-400">
-                    {formatPct(props.value)}
-                </span>
-            </div>
-            <div
-                class="h-1.5 w-full overflow-hidden rounded-full bg-slate-800/90 ring-1 ring-slate-800/60"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(w())}
-                aria-label={`${props.label} usage`}
-            >
-                <div
-                    class={`h-full max-w-full rounded-full transition-[width] duration-300 ease-out ${props.fillClass}`}
-                    style={{ width: `${w()}%` }}
-                />
-            </div>
-        </div>
-    );
-};
-
-/** Same row layout as {@link Bar}; track shows an indeterminate sliding segment. */
-const LoadingBarRow: Component<{
-    label: string;
-    fillClass: string;
-}> = (props) => {
-    return (
-        <div class="min-w-0">
-            <div class="mb-0.5 flex items-baseline justify-between gap-1 text-[10px] leading-none text-slate-500">
-                <span class="min-w-0 truncate">{props.label}</span>
-                <span class="shrink-0 tabular-nums text-slate-500">—</span>
-            </div>
-            <div
-                class="relative h-1.5 w-full overflow-hidden rounded-full bg-slate-800/90 ring-1 ring-slate-800/60"
-                role="progressbar"
-                aria-busy="true"
-                aria-valuetext="Loading"
-                aria-label={`${props.label} usage loading`}
-            >
-                <div
-                    class={`absolute inset-y-0 left-0 w-[38%] rounded-full ${props.fillClass} animate-usage-bar`}
-                />
-            </div>
-        </div>
-    );
-};
 
 const CursorSection: Component<{
     usage: store.CursorUsageSnapshot | undefined;
@@ -87,11 +26,11 @@ const CursorSection: Component<{
                 when={!props.loading}
                 fallback={
                     <>
-                        <LoadingBarRow
+                        <UsageBarRowLoading
                             label="Auto"
                             fillClass="bg-emerald-600/80"
                         />
-                        <LoadingBarRow
+                        <UsageBarRowLoading
                             label="API"
                             fillClass="bg-sky-600/75"
                         />
@@ -99,12 +38,12 @@ const CursorSection: Component<{
                 }
             >
                 <>
-                    <Bar
+                    <UsageBarRow
                         label="Auto"
                         value={props.usage?.auto_percent_used}
                         fillClass="bg-emerald-600/80"
                     />
-                    <Bar
+                    <UsageBarRow
                         label="API"
                         value={props.usage?.api_percent_used}
                         fillClass="bg-sky-600/75"
@@ -115,14 +54,74 @@ const CursorSection: Component<{
     );
 };
 
-const ClaudePlaceholderSection: Component = () => {
+const ClaudeSection: Component<{
+    loading: boolean;
+    info: store.ClaudeCLIInfo | undefined;
+}> = (props) => {
     return (
         <div class="space-y-2">
-            <Bar
-                label="Included"
-                value={FAKE_CLAUDE_INCLUDED_PCT}
-                fillClass="bg-amber-600/70"
-            />
+            <Show when={props.loading}>
+                <ClaudeLocalUsageBars
+                    loading
+                    usage={undefined}
+                    usageError={undefined}
+                />
+            </Show>
+            <Show when={!props.loading && props.info}>
+                {(info) => (
+                    <>
+                        <Show when={!info().installed}>
+                            <p class="text-[10px] leading-snug text-slate-500">
+                                <a
+                                    href={CLAUDE_CODE_INSTALL_URL}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    class="text-slate-500 underline-offset-2 hover:text-slate-400 hover:underline"
+                                >
+                                    {info().probe_error ||
+                                        CLAUDE_NOT_INSTALLED_HINT}
+                                </a>
+                            </p>
+                        </Show>
+                        <Show when={info().installed && info().auth_error}>
+                            <p class="mb-1 text-[10px] leading-snug text-amber-500/85">
+                                {friendlyClaudeAuthErrorMessage(
+                                    info().auth_error,
+                                )}
+                            </p>
+                        </Show>
+                        <Show
+                            when={
+                                info().installed &&
+                                info().auth != null &&
+                                info().auth_error == null &&
+                                info().auth?.logged_in === false
+                            }
+                        >
+                            <p class="mb-1 text-[10px] leading-snug text-slate-500">
+                                Not signed in. Run{" "}
+                                <code class="rounded bg-slate-900/80 px-1 py-0.5 font-mono text-[9px] text-slate-400">
+                                    {CLAUDE_LOGIN_COMMAND}
+                                </code>{" "}
+                                in a terminal.
+                            </p>
+                        </Show>
+                        <Show when={info().installed}>
+                            <ClaudeLocalUsageBars
+                                loading={false}
+                                usage={info().local_usage}
+                                usageError={info().local_usage_error}
+                                suppressEmptyUsageMessage={
+                                    !!(
+                                        info().auth_error ||
+                                        info().auth?.logged_in === false
+                                    )
+                                }
+                            />
+                        </Show>
+                    </>
+                )}
+            </Show>
         </div>
     );
 };
@@ -171,7 +170,7 @@ const CollapsibleUsageSection: Component<{
     );
 };
 
-/** In-flow footer block: Cursor (live) + Claude (placeholder). Replaces the old Usage row. */
+/** In-flow footer block: Cursor (live usage) + Claude (local JSONL usage). */
 export const SidebarProviderUsage: Component = () => {
     const [cursorOpen, setCursorOpen] = createSignal(true);
     const [claudeOpen, setClaudeOpen] = createSignal(true);
@@ -182,7 +181,11 @@ export const SidebarProviderUsage: Component = () => {
         staleTime: 60_000,
     }));
 
+    const { claudeQuery } = useClaudeCliInfo();
+
     const usageLoading = () => cursorCliQuery.isLoading && !cursorCliQuery.data;
+
+    const claudeLoading = () => claudeQuery.isLoading && !claudeQuery.data;
 
     /** Probe finished: hide the whole block when `agent` is not on PATH. */
     const hideBecauseCliMissing = () =>
@@ -193,9 +196,9 @@ export const SidebarProviderUsage: Component = () => {
     return (
         <Show when={!hideBecauseCliMissing()}>
             <div
-                class="space-y-1.5 px-1"
+                class="space-y-1.5 pl-2.5 pr-2"
                 aria-label="Provider usage"
-                aria-busy={usageLoading()}
+                aria-busy={usageLoading() || claudeLoading()}
             >
                 <CollapsibleUsageSection
                     title="Cursor"
@@ -214,12 +217,15 @@ export const SidebarProviderUsage: Component = () => {
                 </CollapsibleUsageSection>
 
                 <CollapsibleUsageSection
-                    title="Claude"
+                    title="Claude (LOCAL)"
                     expanded={claudeOpen}
                     onToggle={() => setClaudeOpen((v) => !v)}
                     sectionClass="mt-3 border-t border-slate-800/50 pt-3"
                 >
-                    <ClaudePlaceholderSection />
+                    <ClaudeSection
+                        loading={claudeLoading()}
+                        info={claudeQuery.data ?? undefined}
+                    />
                 </CollapsibleUsageSection>
             </div>
         </Show>

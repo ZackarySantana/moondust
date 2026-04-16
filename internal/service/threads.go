@@ -252,7 +252,7 @@ func (s *Service) SetThreadChatProvider(ctx context.Context, threadID, provider 
 	if provider == "" {
 		return fmt.Errorf("provider is required")
 	}
-	if provider != "openrouter" && provider != "cursor" {
+	if provider != "openrouter" && provider != "cursor" && provider != "claude" {
 		return fmt.Errorf("unsupported chat provider: %q", provider)
 	}
 	thread, err := s.threadStore.Get(ctx, threadID)

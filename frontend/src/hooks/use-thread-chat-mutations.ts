@@ -57,6 +57,8 @@ export function useThreadChatMutations(opts: ThreadChatMutationsOptions) {
             await SetThreadChatProvider(opts.threadId, provider);
             if (provider === "cursor") {
                 await SetThreadChatModel(opts.threadId, "composer-2-fast");
+            } else if (provider === "claude") {
+                await SetThreadChatModel(opts.threadId, "sonnet");
             } else {
                 await SetThreadChatModel(opts.threadId, "openai/gpt-4o-mini");
             }
@@ -69,7 +71,9 @@ export function useThreadChatMutations(opts: ThreadChatMutationsOptions) {
                 const nextModel =
                     provider === "cursor"
                         ? "composer-2-fast"
-                        : "openai/gpt-4o-mini";
+                        : provider === "claude"
+                          ? "sonnet"
+                          : "openai/gpt-4o-mini";
                 queryClient.setQueryData(threadDetailKey(), {
                     ...prev,
                     chat_provider: provider,

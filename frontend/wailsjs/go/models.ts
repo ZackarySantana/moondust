@@ -50,6 +50,46 @@ export namespace store {
 		    return a;
 		}
 	}
+	export class ClaudeChatMessageMetadata {
+	    input_tokens?: number;
+	    output_tokens?: number;
+	    cache_read_tokens?: number;
+	    cache_write_tokens?: number;
+	    request_id?: string;
+	    tool_calls?: OpenRouterToolCallRecord[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ClaudeChatMessageMetadata(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.input_tokens = source["input_tokens"];
+	        this.output_tokens = source["output_tokens"];
+	        this.cache_read_tokens = source["cache_read_tokens"];
+	        this.cache_write_tokens = source["cache_write_tokens"];
+	        this.request_id = source["request_id"];
+	        this.tool_calls = this.convertValues(source["tool_calls"], OpenRouterToolCallRecord);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class CursorChatMessageMetadata {
 	    input_tokens?: number;
 	    output_tokens?: number;
@@ -139,6 +179,7 @@ export namespace store {
 	export class ChatMessageMetadata {
 	    openrouter?: OpenRouterChatMessageMetadata;
 	    cursor?: CursorChatMessageMetadata;
+	    claude?: ClaudeChatMessageMetadata;
 	
 	    static createFrom(source: any = {}) {
 	        return new ChatMessageMetadata(source);
@@ -148,6 +189,7 @@ export namespace store {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.openrouter = this.convertValues(source["openrouter"], OpenRouterChatMessageMetadata);
 	        this.cursor = this.convertValues(source["cursor"], CursorChatMessageMetadata);
+	        this.claude = this.convertValues(source["claude"], ClaudeChatMessageMetadata);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -213,6 +255,110 @@ export namespace store {
 		    return a;
 		}
 	}
+	
+	export class ClaudeAuthStatus {
+	    logged_in: boolean;
+	    auth_method?: string;
+	    api_provider?: string;
+	    email?: string;
+	    org_id?: string;
+	    org_name?: string;
+	    subscription_type?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ClaudeAuthStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.logged_in = source["logged_in"];
+	        this.auth_method = source["auth_method"];
+	        this.api_provider = source["api_provider"];
+	        this.email = source["email"];
+	        this.org_id = source["org_id"];
+	        this.org_name = source["org_name"];
+	        this.subscription_type = source["subscription_type"];
+	    }
+	}
+	export class ClaudeLocalUsage {
+	    window_days: number;
+	    files_scanned: number;
+	    lines_matched: number;
+	    total_tokens: number;
+	    input_tokens: number;
+	    output_tokens: number;
+	    cache_read_tokens: number;
+	    cache_write_tokens: number;
+	    input_percent_used?: number;
+	    output_percent_used?: number;
+	    cache_percent_used?: number;
+	    scan_error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ClaudeLocalUsage(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.window_days = source["window_days"];
+	        this.files_scanned = source["files_scanned"];
+	        this.lines_matched = source["lines_matched"];
+	        this.total_tokens = source["total_tokens"];
+	        this.input_tokens = source["input_tokens"];
+	        this.output_tokens = source["output_tokens"];
+	        this.cache_read_tokens = source["cache_read_tokens"];
+	        this.cache_write_tokens = source["cache_write_tokens"];
+	        this.input_percent_used = source["input_percent_used"];
+	        this.output_percent_used = source["output_percent_used"];
+	        this.cache_percent_used = source["cache_percent_used"];
+	        this.scan_error = source["scan_error"];
+	    }
+	}
+	export class ClaudeCLIInfo {
+	    installed: boolean;
+	    binary_path: string;
+	    version: string;
+	    auth?: ClaudeAuthStatus;
+	    auth_error?: string;
+	    probe_error?: string;
+	    local_usage?: ClaudeLocalUsage;
+	    local_usage_error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ClaudeCLIInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.installed = source["installed"];
+	        this.binary_path = source["binary_path"];
+	        this.version = source["version"];
+	        this.auth = this.convertValues(source["auth"], ClaudeAuthStatus);
+	        this.auth_error = source["auth_error"];
+	        this.probe_error = source["probe_error"];
+	        this.local_usage = this.convertValues(source["local_usage"], ClaudeLocalUsage);
+	        this.local_usage_error = source["local_usage_error"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 	
 	export class CursorUsageSnapshot {
 	    auto_percent_used?: number;

@@ -32,7 +32,7 @@ func (t *Thread) Validate() error {
 	if cp == "" {
 		return errors.New("chat_provider is required")
 	}
-	if cp != "openrouter" && cp != "cursor" {
+	if cp != "openrouter" && cp != "cursor" && cp != "claude" {
 		return fmt.Errorf("unsupported chat_provider %q", cp)
 	}
 	return nil
@@ -42,6 +42,7 @@ func (t *Thread) Validate() error {
 type ChatMessageMetadata struct {
 	OpenRouter *OpenRouterChatMessageMetadata `json:"openrouter,omitempty"`
 	Cursor     *CursorChatMessageMetadata     `json:"cursor,omitempty"`
+	Claude     *ClaudeChatMessageMetadata     `json:"claude,omitempty"`
 }
 
 // CursorChatMessageMetadata is usage / request metadata for Cursor Agent CLI (`agent --print`) turns.
@@ -58,6 +59,16 @@ type CursorChatMessageMetadata struct {
 	PlanAPIPercentDelta  *float64 `json:"plan_api_percent_delta,omitempty"`
 	// ToolCalls are best-effort from Cursor stream-json tool_call / completed events (same shape as OpenRouter).
 	ToolCalls []OpenRouterToolCallRecord `json:"tool_calls,omitempty"`
+}
+
+// ClaudeChatMessageMetadata is usage / request metadata for Claude Code CLI (`claude -p`) turns.
+type ClaudeChatMessageMetadata struct {
+	InputTokens      *int                       `json:"input_tokens,omitempty"`
+	OutputTokens     *int                       `json:"output_tokens,omitempty"`
+	CacheReadTokens  *int                       `json:"cache_read_tokens,omitempty"`
+	CacheWriteTokens *int                       `json:"cache_write_tokens,omitempty"`
+	RequestID        string                     `json:"request_id,omitempty"`
+	ToolCalls        []OpenRouterToolCallRecord `json:"tool_calls,omitempty"`
 }
 
 // OpenRouterToolCallRecord is one tool invocation from an assistant turn (persisted for history).
@@ -136,7 +147,7 @@ func (m *ChatMessage) Validate() error {
 	if cp == "" {
 		return errors.New("chat_provider is required")
 	}
-	if cp != "openrouter" && cp != "cursor" {
+	if cp != "openrouter" && cp != "cursor" && cp != "claude" {
 		return fmt.Errorf("unsupported chat_provider %q", cp)
 	}
 	return nil

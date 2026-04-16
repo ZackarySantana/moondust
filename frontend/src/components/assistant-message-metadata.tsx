@@ -48,12 +48,28 @@ function hasCursorMeta(
     );
 }
 
+function hasClaudeMeta(
+    m: store.ClaudeChatMessageMetadata | undefined,
+): boolean {
+    if (!m) return false;
+    return (
+        m.input_tokens != null ||
+        m.output_tokens != null ||
+        m.cache_read_tokens != null ||
+        m.cache_write_tokens != null ||
+        (m.request_id != null && m.request_id !== "") ||
+        (m.tool_calls != null && m.tool_calls.length > 0)
+    );
+}
+
 /** True when this assistant message has any provider metadata to show. */
 export function assistantMessageHasMetadata(msg: store.ChatMessage): boolean {
     if (msg.role !== "assistant") return false;
+    if (msg.chat_provider === "claude") return true;
     return (
         hasOpenRouterMeta(msg.metadata?.openrouter) ||
-        hasCursorMeta(msg.metadata?.cursor)
+        hasCursorMeta(msg.metadata?.cursor) ||
+        hasClaudeMeta(msg.metadata?.claude)
     );
 }
 
@@ -160,6 +176,7 @@ export const AssistantMessageMetadataButton: Component<{
 
     const or = () => props.msg.metadata?.openrouter;
     const cur = () => props.msg.metadata?.cursor;
+    const cl = () => props.msg.metadata?.claude;
 
     return (
         <Show when={assistantMessageHasMetadata(props.msg)}>
@@ -187,7 +204,15 @@ export const AssistantMessageMetadataButton: Component<{
                         aria-hidden
                     />
                 </button>
-                <Show when={open() && (or() || cur())}>
+                <Show
+                    when={
+                        open() &&
+                        (or() ||
+                            cur() ||
+                            cl() ||
+                            props.msg.chat_provider === "claude")
+                    }
+                >
                     <Portal mount={document.body}>
                         <div
                             ref={(el) => {
@@ -262,7 +287,14 @@ export const AssistantMessageMetadataButton: Component<{
                                     </Show>
                                 </dl>
                             </Show>
-                            <Show when={or() && cur()}>
+                            <Show
+                                when={
+                                    or() &&
+                                    (cur() ||
+                                        cl() ||
+                                        props.msg.chat_provider === "claude")
+                                }
+                            >
                                 <div
                                     class="my-2 border-t border-slate-800/60"
                                     aria-hidden
@@ -371,6 +403,118 @@ export const AssistantMessageMetadataButton: Component<{
                                     buckets as Settings → Cursor). Other Cursor
                                     activity can affect them.
                                 </p>
+                            </Show>
+                            <Show
+                                when={
+                                    (cur() || or()) &&
+                                    props.msg.chat_provider === "claude"
+                                }
+                            >
+                                <div
+                                    class="my-2 border-t border-slate-800/60"
+                                    aria-hidden
+                                />
+                            </Show>
+                            <Show when={props.msg.chat_provider === "claude"}>
+                                <p class="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
+                                    Claude Code
+                                </p>
+                                <Show
+                                    when={hasClaudeMeta(
+                                        props.msg.metadata?.claude,
+                                    )}
+                                >
+                                    <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[10px]">
+                                        <Show when={cl()!.input_tokens != null}>
+                                            <dt class="text-slate-500">
+                                                Input tokens
+                                            </dt>
+                                            <dd class="font-mono text-slate-200">
+                                                {formatInt(cl()!.input_tokens!)}
+                                            </dd>
+                                        </Show>
+                                        <Show
+                                            when={cl()!.output_tokens != null}
+                                        >
+                                            <dt class="text-slate-500">
+                                                Output tokens
+                                            </dt>
+                                            <dd class="font-mono text-slate-200">
+                                                {formatInt(
+                                                    cl()!.output_tokens!,
+                                                )}
+                                            </dd>
+                                        </Show>
+                                        <Show
+                                            when={
+                                                cl()!.cache_read_tokens != null
+                                            }
+                                        >
+                                            <dt class="text-slate-500">
+                                                Cache read
+                                            </dt>
+                                            <dd class="font-mono text-slate-200">
+                                                {formatInt(
+                                                    cl()!.cache_read_tokens!,
+                                                )}
+                                            </dd>
+                                        </Show>
+                                        <Show
+                                            when={
+                                                cl()!.cache_write_tokens != null
+                                            }
+                                        >
+                                            <dt class="text-slate-500">
+                                                Cache write
+                                            </dt>
+                                            <dd class="font-mono text-slate-200">
+                                                {formatInt(
+                                                    cl()!.cache_write_tokens!,
+                                                )}
+                                            </dd>
+                                        </Show>
+                                        <Show
+                                            when={
+                                                cl()!.request_id != null &&
+                                                cl()!.request_id !== ""
+                                            }
+                                        >
+                                            <dt class="text-slate-500">
+                                                Request
+                                            </dt>
+                                            <dd class="break-all font-mono text-[10px] text-slate-400">
+                                                {cl()!.request_id}
+                                            </dd>
+                                        </Show>
+                                        <Show
+                                            when={
+                                                (cl()!.tool_calls?.length ??
+                                                    0) > 0
+                                            }
+                                        >
+                                            <dt class="text-slate-500">
+                                                Tool calls
+                                            </dt>
+                                            <dd class="font-mono text-slate-200">
+                                                {formatInt(
+                                                    cl()!.tool_calls!.length,
+                                                )}
+                                            </dd>
+                                        </Show>
+                                    </dl>
+                                </Show>
+                                <Show
+                                    when={
+                                        !hasClaudeMeta(
+                                            props.msg.metadata?.claude,
+                                        )
+                                    }
+                                >
+                                    <p class="text-[10px] leading-snug text-slate-500">
+                                        No usage details were stored for this
+                                        reply.
+                                    </p>
+                                </Show>
                             </Show>
                         </div>
                     </Portal>
