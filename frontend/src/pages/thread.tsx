@@ -390,6 +390,17 @@ export const ThreadPage: Component = () => {
                     onFileClick={(path, status) =>
                         setDiffTarget({ path, status })
                     }
+                    onInsertReviewIntoComposer={(text) => {
+                        setDraft(text);
+                        requestAnimationFrame(() => {
+                            const el = chatTextareaRef;
+                            if (!el) return;
+                            el.focus();
+                            const len = text.length;
+                            el.selectionStart = len;
+                            el.selectionEnd = len;
+                        });
+                    }}
                 />
             </Show>
         </div>

@@ -25,14 +25,14 @@ import {
 import { CollapsibleSection } from "@/components/review/collapsible-section";
 import { FileChangeRow } from "@/components/review/file-change-row";
 import Eye from "lucide-solid/icons/eye";
-import Send from "lucide-solid/icons/send";
+import MessageSquarePlus from "lucide-solid/icons/message-square-plus";
 import Wand2 from "lucide-solid/icons/wand-2";
 import type { ThreadGitMutations } from "@/hooks/use-thread-git-mutations";
 import { ChatMarkdown } from "@/components/chat-markdown";
 import { GitWizardPanel } from "@/components/thread/git-wizard-panel";
 import { cleanBranchName, deriveGitHubURL } from "@/lib/git-display";
 import { openExternalURL } from "@/lib/open-external-url";
-import { InsertReviewDraftToMain, ReviewBranchDiff, SuggestCommitMessage } from "@wails/go/app/App";
+import { ReviewBranchDiff, SuggestCommitMessage } from "@wails/go/app/App";
 import type { store } from "@wails/go/models";
 
 export interface ReviewSidebarProps {
@@ -46,6 +46,8 @@ export interface ReviewSidebarProps {
     onCopySummary: () => void;
     onCopyPatch: () => void;
     onFileClick?: (path: string, status: string) => void;
+    /** Fills the main chat composer with this text (does not send). */
+    onInsertReviewIntoComposer: (text: string) => void;
 }
 
 export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
@@ -122,7 +124,6 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
     const [reviewLoading, setReviewLoading] = createSignal(false);
     const [reviewError, setReviewError] = createSignal("");
     const [reviewOpen, setReviewOpen] = createSignal(false);
-    const [insertingDraft, setInsertingDraft] = createSignal(false);
 
     async function runBranchReview() {
         setReviewLoading(true);
@@ -139,18 +140,12 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
         }
     }
 
-    async function sendReviewToMain() {
-        const text = reviewResult();
-        if (!text || insertingDraft()) return;
-        setInsertingDraft(true);
-        try {
-            await InsertReviewDraftToMain(props.threadId, text);
-            setReviewOpen(false);
-        } catch (e) {
-            setReviewError(e instanceof Error ? e.message : String(e));
-        } finally {
-            setInsertingDraft(false);
-        }
+    function insertReviewIntoComposer() {
+        const text = reviewResult().trim();
+        if (!text) return;
+        const body =
+            "Please address the following code review findings:\n\n" + text;
+        props.onInsertReviewIntoComposer(body);
     }
 
     const iconBtn =
@@ -691,17 +686,14 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                                 </div>
                                 <button
                                     type="button"
-                                    disabled={insertingDraft()}
-                                    onClick={() => void sendReviewToMain()}
-                                    class="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-emerald-600/45 bg-emerald-800/40 px-3 py-1.5 text-[11px] font-medium text-emerald-100 transition-colors hover:bg-emerald-700/45 disabled:opacity-40"
+                                    onClick={() => insertReviewIntoComposer()}
+                                    class="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-emerald-600/45 bg-emerald-800/40 px-3 py-1.5 text-[11px] font-medium text-emerald-100 transition-colors hover:bg-emerald-700/45"
                                 >
-                                    <Show
-                                        when={!insertingDraft()}
-                                        fallback={<Loader2 class="size-3 animate-spin" stroke-width={2} />}
-                                    >
-                                        <Send class="size-3" stroke-width={2} />
-                                    </Show>
-                                    Send to main chat
+                                    <MessageSquarePlus
+                                        class="size-3"
+                                        stroke-width={2}
+                                    />
+                                    Add to chat input
                                 </button>
                             </Show>
                             <Show when={reviewLoading() && !reviewResult()}>

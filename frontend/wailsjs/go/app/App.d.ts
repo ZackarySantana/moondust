@@ -86,8 +86,6 @@ export function GitUnstageAll(arg1:string):Promise<void>;
 
 export function GitUnstageFile(arg1:string,arg2:string):Promise<void>;
 
-export function InsertReviewDraftToMain(arg1:string,arg2:string):Promise<store.ChatMessage>;
-
 export function IsPushAvailable():Promise<boolean>;
 
 export function ListClaudeChatModels():Promise<Array<store.OpenRouterChatModel>>;

@@ -170,10 +170,6 @@ export function GitUnstageFile(arg1, arg2) {
   return window['go']['app']['App']['GitUnstageFile'](arg1, arg2);
 }
 
-export function InsertReviewDraftToMain(arg1, arg2) {
-  return window['go']['app']['App']['InsertReviewDraftToMain'](arg1, arg2);
-}
-
 export function IsPushAvailable() {
   return window['go']['app']['App']['IsPushAvailable']();
 }

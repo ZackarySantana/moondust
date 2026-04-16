@@ -68,13 +68,6 @@ func (a *App) ReviewBranchDiff(threadID string) (string, error) {
 	return a.service.ReviewBranchDiff(a.Ctx, threadID)
 }
 
-// InsertReviewDraftToMain saves the review findings as a draft user message
-// in the main lane so the user can send it to the main assistant with one click.
-func (a *App) InsertReviewDraftToMain(threadID, reviewText string) (*store.ChatMessage, error) {
-	prompt := "Please address the following code review findings:\n\n" + reviewText
-	return a.service.SendLaneMessage(a.Ctx, threadID, string(store.LaneMain), prompt)
-}
-
 // --- Git wizard operations ---
 
 // GitFetch runs `git fetch` in the thread's working directory.
