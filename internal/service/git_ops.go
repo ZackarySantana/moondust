@@ -337,6 +337,115 @@ func (s *Service) GitRenameBranch(ctx context.Context, threadID, newName string)
 	return err
 }
 
+// GitFetch runs git fetch in the thread's repo.
+func (s *Service) GitFetch(ctx context.Context, threadID string) error {
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return err
+	}
+	_, err = runGit(ctx, dir, "fetch", "--prune")
+	return err
+}
+
+// GitMerge merges the given branch into the current branch. Returns git output.
+func (s *Service) GitMerge(ctx context.Context, threadID, branch string) (string, error) {
+	if err := validateBranchName(branch); err != nil {
+		return "", err
+	}
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return "", err
+	}
+	return runGit(ctx, dir, "merge", strings.TrimSpace(branch))
+}
+
+// GitRebaseOnto rebases the current branch onto the specified branch. Returns git output.
+func (s *Service) GitRebaseOnto(ctx context.Context, threadID, onto string) (string, error) {
+	if err := validateBranchName(onto); err != nil {
+		return "", err
+	}
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return "", err
+	}
+	return runGit(ctx, dir, "rebase", strings.TrimSpace(onto))
+}
+
+// GitRebaseAbort aborts a rebase in progress.
+func (s *Service) GitRebaseAbort(ctx context.Context, threadID string) error {
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return err
+	}
+	_, err = runGit(ctx, dir, "rebase", "--abort")
+	return err
+}
+
+// GitRebaseContinue continues a paused rebase after conflict resolution. Returns git output.
+func (s *Service) GitRebaseContinue(ctx context.Context, threadID string) (string, error) {
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return "", err
+	}
+	return runGit(ctx, dir, "rebase", "--continue")
+}
+
+// GitConflictState detects merge/rebase state and lists conflicted files.
+func (s *Service) GitConflictState(ctx context.Context, threadID string) (*store.GitConflictState, error) {
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return nil, err
+	}
+	state := &store.GitConflictState{}
+
+	// Check for merge in progress
+	if _, mergeErr := os.Stat(filepath.Join(dir, ".git", "MERGE_HEAD")); mergeErr == nil {
+		state.InMerge = true
+	}
+
+	// Check for rebase in progress
+	rebasePaths := []string{
+		filepath.Join(dir, ".git", "rebase-merge"),
+		filepath.Join(dir, ".git", "rebase-apply"),
+	}
+	for _, rp := range rebasePaths {
+		if info, err := os.Stat(rp); err == nil && info.IsDir() {
+			state.InRebase = true
+			break
+		}
+	}
+
+	// List unmerged (conflict) files
+	out, err := runGit(ctx, dir, "diff", "--name-only", "--diff-filter=U")
+	if err == nil {
+		for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+			if line = strings.TrimSpace(line); line != "" {
+				state.ConflictFiles = append(state.ConflictFiles, line)
+			}
+		}
+	}
+	return state, nil
+}
+
+// GitListBranches returns local branch names.
+func (s *Service) GitListBranches(ctx context.Context, threadID string) ([]string, error) {
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return nil, err
+	}
+	out, err := runGit(ctx, dir, "branch", "--format=%(refname:short)")
+	if err != nil {
+		return nil, err
+	}
+	var branches []string
+	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			branches = append(branches, line)
+		}
+	}
+	return branches, nil
+}
+
 // GitCheckoutNewBranchAndCommit creates a new branch from HEAD and commits staged changes with the given message.
 func (s *Service) GitCheckoutNewBranchAndCommit(ctx context.Context, threadID, branch, message string) error {
 	message = strings.TrimSpace(message)

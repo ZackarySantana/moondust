@@ -1,4 +1,4 @@
-import { useQueryClient } from "@tanstack/solid-query";
+import { createQuery, useQueryClient } from "@tanstack/solid-query";
 import { useNavigate, useParams } from "@solidjs/router";
 import type { Component } from "solid-js";
 import {
@@ -9,9 +9,10 @@ import {
     onCleanup,
     Show,
 } from "solid-js";
-import { DeleteThread, RenameThread } from "@wails/go/app/App";
+import { DeleteThread, ListLaneMessages, RenameThread } from "@wails/go/app/App";
 import type { DiffNav } from "@/components/diff-viewer";
 import { ResizeHandle } from "@/components/resize-handle";
+import { QuickQuestionPanel } from "@/components/thread/quick-question-panel";
 import { ReviewSidebar } from "@/components/thread/review-sidebar";
 import { ThreadChatPane } from "@/components/thread/thread-chat-pane";
 import { ThreadDiffPane } from "@/components/thread/thread-diff-pane";
@@ -23,6 +24,11 @@ import { useThreadFileDiff } from "@/hooks/use-thread-file-diff";
 import { useThreadGitMutations } from "@/hooks/use-thread-git-mutations";
 import { useThreadPageQueries } from "@/hooks/use-thread-page-queries";
 import type { ChatProviderId } from "@/lib/chat-provider";
+import {
+    invalidateThreadList,
+    invalidateThreadScoped,
+    queryKeys,
+} from "@/lib/query-client";
 import { useThreadChatStream } from "@/lib/thread/use-thread-chat-stream";
 import {
     setSidebarOpen,
@@ -34,11 +40,6 @@ import {
     terminalHeight,
     terminalOpen,
 } from "@/lib/thread-workspace-layout";
-import {
-    invalidateThreadList,
-    invalidateThreadScoped,
-    queryKeys,
-} from "@/lib/query-client";
 import { useShortcuts } from "@/lib/shortcut-context";
 import type { store } from "@wails/go/models";
 
@@ -51,7 +52,16 @@ export const ThreadPage: Component = () => {
     const { onAction, formatKey } = useShortcuts();
     const [draft, setDraft] = createSignal("");
     const [sendError, setSendError] = createSignal("");
+    const [quickQuestionOpen, setQuickQuestionOpen] = createSignal(false);
     let chatTextareaRef!: HTMLTextAreaElement;
+
+    const quickLaneMsgsQuery = createQuery(() => ({
+        queryKey: queryKeys.threads.laneMessages(params.threadId, "quick"),
+        queryFn: () => ListLaneMessages(params.threadId, "quick"),
+        enabled: quickQuestionOpen(),
+        staleTime: 0,
+    }));
+    const quickLaneMessages = () => quickLaneMsgsQuery.data ?? [];
 
     const {
         streaming,
@@ -260,6 +270,8 @@ export const ThreadPage: Component = () => {
                     onToggleTerminal={() => setTerminalOpen((v) => !v)}
                     sidebarOpen={sidebarOpen}
                     onToggleSidebar={() => setSidebarOpen((v) => !v)}
+                    quickQuestionOpen={quickQuestionOpen}
+                    onToggleQuickQuestion={() => setQuickQuestionOpen((v) => !v)}
                     formatKey={formatKey}
                     hasWorktree={() => !!(thread()?.worktree_dir ?? "").trim()}
                     threadSettingsHref={`/project/${params.projectId}/thread/${params.threadId}/settings/general`}
@@ -344,6 +356,18 @@ export const ThreadPage: Component = () => {
                     />
                 </Show>
             </section>
+
+            <Show when={quickQuestionOpen()}>
+                <ResizeHandle direction="horizontal" onResize={() => {}} />
+                <div style={{ width: "320px" }}>
+                    <QuickQuestionPanel
+                        threadId={params.threadId}
+                        open={quickQuestionOpen()}
+                        onClose={() => setQuickQuestionOpen(false)}
+                        laneMessages={quickLaneMessages}
+                    />
+                </div>
+            </Show>
 
             <Show when={sidebarOpen()}>
                 <ResizeHandle

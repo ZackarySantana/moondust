@@ -1,4 +1,5 @@
 import ArrowDown from "lucide-solid/icons/arrow-down";
+import ChevronRight from "lucide-solid/icons/chevron-right";
 import ArrowUp from "lucide-solid/icons/arrow-up";
 import Archive from "lucide-solid/icons/archive";
 import ArchiveRestore from "lucide-solid/icons/archive-restore";
@@ -23,9 +24,15 @@ import {
 } from "@/components/review/git-review-dialogs";
 import { CollapsibleSection } from "@/components/review/collapsible-section";
 import { FileChangeRow } from "@/components/review/file-change-row";
+import Eye from "lucide-solid/icons/eye";
+import Send from "lucide-solid/icons/send";
+import Wand2 from "lucide-solid/icons/wand-2";
 import type { ThreadGitMutations } from "@/hooks/use-thread-git-mutations";
+import { ChatMarkdown } from "@/components/chat-markdown";
+import { GitWizardPanel } from "@/components/thread/git-wizard-panel";
 import { cleanBranchName, deriveGitHubURL } from "@/lib/git-display";
 import { openExternalURL } from "@/lib/open-external-url";
+import { InsertReviewDraftToMain, ReviewBranchDiff, SuggestCommitMessage } from "@wails/go/app/App";
 import type { store } from "@wails/go/models";
 
 export interface ReviewSidebarProps {
@@ -106,6 +113,45 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
     });
     const activeCommits = () =>
         commitTab() === "local" ? localCommits() : mainCommits();
+
+    // ── Git wizard ──
+    const [wizardOpen, setWizardOpen] = createSignal(false);
+
+    // ── Branch review ──
+    const [reviewResult, setReviewResult] = createSignal("");
+    const [reviewLoading, setReviewLoading] = createSignal(false);
+    const [reviewError, setReviewError] = createSignal("");
+    const [reviewOpen, setReviewOpen] = createSignal(false);
+    const [insertingDraft, setInsertingDraft] = createSignal(false);
+
+    async function runBranchReview() {
+        setReviewLoading(true);
+        setReviewError("");
+        setReviewResult("");
+        setReviewOpen(true);
+        try {
+            const review = await ReviewBranchDiff(props.threadId);
+            setReviewResult(review);
+        } catch (e) {
+            setReviewError(e instanceof Error ? e.message : String(e));
+        } finally {
+            setReviewLoading(false);
+        }
+    }
+
+    async function sendReviewToMain() {
+        const text = reviewResult();
+        if (!text || insertingDraft()) return;
+        setInsertingDraft(true);
+        try {
+            await InsertReviewDraftToMain(props.threadId, text);
+            setReviewOpen(false);
+        } catch (e) {
+            setReviewError(e instanceof Error ? e.message : String(e));
+        } finally {
+            setInsertingDraft(false);
+        }
+    }
 
     const iconBtn =
         "flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-800/60 hover:text-slate-100 disabled:cursor-not-allowed disabled:opacity-35";
@@ -590,6 +636,84 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                     </p>
                 </Show>
 
+                {/* ── Git Wizard ── */}
+                <div class="rounded-lg border border-slate-800/40 bg-slate-950/25 px-2.5 py-2">
+                    <button
+                        type="button"
+                        class="flex w-full items-center gap-1.5"
+                        onClick={() => setWizardOpen((v) => !v)}
+                    >
+                        <Wand2 class="size-3 text-violet-400/70" stroke-width={2} />
+                        <span class={sectionLabel}>Git Wizard</span>
+                        <ChevronRight
+                            class="ml-auto size-3 text-slate-600 transition-transform duration-150"
+                            classList={{ "rotate-90": wizardOpen() }}
+                            stroke-width={2}
+                        />
+                    </button>
+                    <Show when={wizardOpen()}>
+                        <div class="mt-2">
+                            <GitWizardPanel
+                                threadId={props.threadId}
+                                onRefresh={props.onRefresh}
+                            />
+                        </div>
+                    </Show>
+                </div>
+
+                {/* ── Branch Review ── */}
+                <div class="rounded-lg border border-slate-800/40 bg-slate-950/25 px-2.5 py-2">
+                    <div class="flex items-center justify-between">
+                        <span class={sectionLabel}>Branch Review</span>
+                        <button
+                            type="button"
+                            disabled={reviewLoading() || !props.threadId}
+                            onClick={() => void runBranchReview()}
+                            class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] text-slate-400 transition-colors hover:bg-slate-800/50 hover:text-emerald-400 disabled:opacity-40"
+                        >
+                            <Show
+                                when={!reviewLoading()}
+                                fallback={<Loader2 class="size-3 animate-spin" stroke-width={2} />}
+                            >
+                                <Eye class="size-3" stroke-width={2} />
+                            </Show>
+                            {reviewLoading() ? "Reviewing…" : "Review vs main"}
+                        </button>
+                    </div>
+                    <Show when={reviewOpen()}>
+                        <div class="mt-2 space-y-2">
+                            <Show when={reviewError()}>
+                                <p class="rounded bg-red-950/15 px-2 py-1 text-[10px] text-red-400">{reviewError()}</p>
+                            </Show>
+                            <Show when={reviewResult()}>
+                                <div class="max-h-64 overflow-y-auto rounded-lg border border-slate-800/30 bg-slate-900/30 px-3 py-2">
+                                    <ChatMarkdown source={reviewResult()} class="text-[11px] leading-relaxed text-slate-300" />
+                                </div>
+                                <button
+                                    type="button"
+                                    disabled={insertingDraft()}
+                                    onClick={() => void sendReviewToMain()}
+                                    class="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-emerald-600/45 bg-emerald-800/40 px-3 py-1.5 text-[11px] font-medium text-emerald-100 transition-colors hover:bg-emerald-700/45 disabled:opacity-40"
+                                >
+                                    <Show
+                                        when={!insertingDraft()}
+                                        fallback={<Loader2 class="size-3 animate-spin" stroke-width={2} />}
+                                    >
+                                        <Send class="size-3" stroke-width={2} />
+                                    </Show>
+                                    Send to main chat
+                                </button>
+                            </Show>
+                            <Show when={reviewLoading() && !reviewResult()}>
+                                <div class="flex items-center gap-2 py-2 text-[10px] text-slate-500">
+                                    <Loader2 class="size-3 animate-spin text-emerald-500/60" stroke-width={2} />
+                                    Analyzing branch diff…
+                                </div>
+                            </Show>
+                        </div>
+                    </Show>
+                </div>
+
                 <p class={`mb-1 px-0.5 ${sectionLabel}`}>
                     Files
                 </p>
@@ -973,6 +1097,7 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                 onMessage={setCommitMsg}
                 onClose={() => setCommitOpen(false)}
                 onConfirm={() => void runCommit()}
+                onGenerate={() => SuggestCommitMessage(props.threadId)}
             />
 
             <BranchCommitGitDialog
@@ -989,6 +1114,7 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                 onCommitMessage={setBranchCommitMsg}
                 onClose={() => setBranchCommitOpen(false)}
                 onConfirm={() => void runBranchCommit()}
+                onGenerate={() => SuggestCommitMessage(props.threadId)}
             />
         </aside>
     );

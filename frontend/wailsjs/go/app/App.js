@@ -94,6 +94,10 @@ export function GitCommit(arg1, arg2) {
   return window['go']['app']['App']['GitCommit'](arg1, arg2);
 }
 
+export function GitConflictState(arg1) {
+  return window['go']['app']['App']['GitConflictState'](arg1);
+}
+
 export function GitDiscardFile(arg1, arg2) {
   return window['go']['app']['App']['GitDiscardFile'](arg1, arg2);
 }
@@ -102,12 +106,36 @@ export function GitDiscardUnstaged(arg1) {
   return window['go']['app']['App']['GitDiscardUnstaged'](arg1);
 }
 
+export function GitFetch(arg1) {
+  return window['go']['app']['App']['GitFetch'](arg1);
+}
+
+export function GitListBranches(arg1) {
+  return window['go']['app']['App']['GitListBranches'](arg1);
+}
+
+export function GitMerge(arg1, arg2) {
+  return window['go']['app']['App']['GitMerge'](arg1, arg2);
+}
+
 export function GitPull(arg1) {
   return window['go']['app']['App']['GitPull'](arg1);
 }
 
 export function GitPush(arg1) {
   return window['go']['app']['App']['GitPush'](arg1);
+}
+
+export function GitRebaseAbort(arg1) {
+  return window['go']['app']['App']['GitRebaseAbort'](arg1);
+}
+
+export function GitRebaseContinue(arg1) {
+  return window['go']['app']['App']['GitRebaseContinue'](arg1);
+}
+
+export function GitRebaseOnto(arg1, arg2) {
+  return window['go']['app']['App']['GitRebaseOnto'](arg1, arg2);
 }
 
 export function GitRenameBranch(arg1, arg2) {
@@ -142,6 +170,10 @@ export function GitUnstageFile(arg1, arg2) {
   return window['go']['app']['App']['GitUnstageFile'](arg1, arg2);
 }
 
+export function InsertReviewDraftToMain(arg1, arg2) {
+  return window['go']['app']['App']['InsertReviewDraftToMain'](arg1, arg2);
+}
+
 export function IsPushAvailable() {
   return window['go']['app']['App']['IsPushAvailable']();
 }
@@ -152,6 +184,10 @@ export function ListClaudeChatModels() {
 
 export function ListCursorChatModels() {
   return window['go']['app']['App']['ListCursorChatModels']();
+}
+
+export function ListLaneMessages(arg1, arg2) {
+  return window['go']['app']['App']['ListLaneMessages'](arg1, arg2);
 }
 
 export function ListLogs() {
@@ -178,12 +214,20 @@ export function RenameThread(arg1, arg2) {
   return window['go']['app']['App']['RenameThread'](arg1, arg2);
 }
 
+export function ReviewBranchDiff(arg1) {
+  return window['go']['app']['App']['ReviewBranchDiff'](arg1);
+}
+
 export function SaveSettings(arg1) {
   return window['go']['app']['App']['SaveSettings'](arg1);
 }
 
 export function SelectProjectFolder() {
   return window['go']['app']['App']['SelectProjectFolder']();
+}
+
+export function SendLaneMessage(arg1, arg2, arg3) {
+  return window['go']['app']['App']['SendLaneMessage'](arg1, arg2, arg3);
 }
 
 export function SendThreadMessage(arg1, arg2) {
@@ -200,6 +244,14 @@ export function SetThreadChatModel(arg1, arg2) {
 
 export function SetThreadChatProvider(arg1, arg2) {
   return window['go']['app']['App']['SetThreadChatProvider'](arg1, arg2);
+}
+
+export function StreamReviewBranchDiff(arg1) {
+  return window['go']['app']['App']['StreamReviewBranchDiff'](arg1);
+}
+
+export function SuggestCommitMessage(arg1) {
+  return window['go']['app']['App']['SuggestCommitMessage'](arg1);
 }
 
 export function TerminalWebSocketURL() {

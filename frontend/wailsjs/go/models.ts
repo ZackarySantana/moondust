@@ -224,6 +224,7 @@ export namespace store {
 	    chat_provider: string;
 	    chat_model?: string;
 	    metadata?: ChatMessageMetadata;
+	    lane_id?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ChatMessage(source);
@@ -239,6 +240,7 @@ export namespace store {
 	        this.chat_provider = source["chat_provider"];
 	        this.chat_model = source["chat_model"];
 	        this.metadata = this.convertValues(source["metadata"], ChatMessageMetadata);
+	        this.lane_id = source["lane_id"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -468,6 +470,22 @@ export namespace store {
 	        this.author = source["author"];
 	        this.when = source["when"];
 	        this.exact_date = source["exact_date"];
+	    }
+	}
+	export class GitConflictState {
+	    in_merge: boolean;
+	    in_rebase: boolean;
+	    conflict_files: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new GitConflictState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.in_merge = source["in_merge"];
+	        this.in_rebase = source["in_rebase"];
+	        this.conflict_files = source["conflict_files"];
 	    }
 	}
 	export class GitFileChange {

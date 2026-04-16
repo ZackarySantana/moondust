@@ -115,6 +115,54 @@ type ChatMessage struct {
 	ChatProvider string               `json:"chat_provider"`
 	ChatModel    string               `json:"chat_model,omitempty"`
 	Metadata     *ChatMessageMetadata `json:"metadata,omitempty"`
+	// LaneID identifies which conversation lane within the thread this message belongs to.
+	// Empty string is treated as "main" for backward compatibility with existing data.
+	LaneID string `json:"lane_id,omitempty"`
+}
+
+// LaneKind describes the purpose of a conversation lane within a thread.
+type LaneKind string
+
+const (
+	LaneMain   LaneKind = "main"
+	LaneQuick  LaneKind = "quick"
+	LaneReview LaneKind = "review"
+)
+
+// ThreadLane is metadata for one conversation lane within a thread.
+type ThreadLane struct {
+	ID        string    `json:"id"`
+	Kind      LaneKind  `json:"kind"`
+	Title     string    `json:"title"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// LaneEffective returns the lane_id to use, defaulting to "main" when empty.
+func (m *ChatMessage) LaneEffective() string {
+	if m.LaneID == "" {
+		return string(LaneMain)
+	}
+	return m.LaneID
+}
+
+// FilterMessagesByLane returns messages belonging to the given lane (empty lane matches "main").
+func FilterMessagesByLane(messages []*ChatMessage, laneID string) []*ChatMessage {
+	if laneID == "" || laneID == string(LaneMain) {
+		var out []*ChatMessage
+		for _, m := range messages {
+			if m.LaneID == "" || m.LaneID == string(LaneMain) {
+				out = append(out, m)
+			}
+		}
+		return out
+	}
+	var out []*ChatMessage
+	for _, m := range messages {
+		if m.LaneID == laneID {
+			out = append(out, m)
+		}
+	}
+	return out
 }
 
 // OpenRouterChatModel is a selectable model from the OpenRouter /api/v1/models list (chat + tools).
@@ -232,6 +280,13 @@ func (s *TouchThreadStore) Update(ctx context.Context, thread *Thread) error {
 
 func (s *TouchThreadStore) Delete(ctx context.Context, id string) error {
 	return s.ThreadStore.Delete(ctx, id)
+}
+
+// GitConflictState reports whether the repo is mid-merge or mid-rebase and lists conflict files.
+type GitConflictState struct {
+	InMerge       bool     `json:"in_merge"`
+	InRebase      bool     `json:"in_rebase"`
+	ConflictFiles []string `json:"conflict_files"`
 }
 
 type MessageStore interface {

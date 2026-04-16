@@ -1,0 +1,213 @@
+package service
+
+import (
+	"context"
+	"fmt"
+	"moondust/internal/chat"
+	"moondust/internal/openrouter"
+	"moondust/internal/rand"
+	"moondust/internal/store"
+	"sort"
+	"strings"
+	"time"
+)
+
+const quickQuestionSystemPrompt = `You are a concise helper embedded in a developer workspace. The user is asking a quick question while their main agent is running. Answer briefly and precisely. You have read-only context from the main conversation and codebase—do not call tools or take actions.`
+
+// Cap how many main-lane messages are included as context for quick question.
+const quickContextMaxMessages = 30
+
+// SendLaneMessage saves a user message into a specific lane and returns it.
+// Does NOT start an assistant reply—the caller decides whether to stream.
+func (s *Service) SendLaneMessage(ctx context.Context, threadID, laneID, content string) (*store.ChatMessage, error) {
+	thread, err := s.threadStore.Get(ctx, threadID)
+	if err != nil {
+		return nil, fmt.Errorf("get thread: %w", err)
+	}
+	if thread == nil {
+		return nil, fmt.Errorf("thread not found")
+	}
+	trimmed := strings.TrimSpace(content)
+	if trimmed == "" {
+		return nil, fmt.Errorf("message cannot be empty")
+	}
+	if strings.TrimSpace(laneID) == "" {
+		laneID = string(store.LaneMain)
+	}
+
+	provider := strings.TrimSpace(thread.ChatProvider)
+	if provider == "" {
+		return nil, fmt.Errorf("thread has no chat_provider set")
+	}
+
+	msg := &store.ChatMessage{
+		ID:           rand.Text(),
+		ThreadID:     threadID,
+		Role:         "user",
+		Content:      trimmed,
+		CreatedAt:    time.Now().UTC(),
+		ChatProvider: provider,
+		ChatModel:    strings.TrimSpace(thread.ChatModel),
+		LaneID:       laneID,
+	}
+	if err := msg.Validate(); err != nil {
+		return nil, err
+	}
+	if err := s.messageStore.Append(ctx, threadID, msg); err != nil {
+		return nil, fmt.Errorf("append lane message: %w", err)
+	}
+	return msg, nil
+}
+
+// StreamQuickQuestion streams a quick-question reply using OpenRouter only.
+// It reads the main lane transcript as read-only context and streams with no tools.
+func (s *Service) StreamQuickQuestion(ctx context.Context, threadID, laneID string, onDelta func(string) error) error {
+	if _, _, err := s.resolveThreadProject(ctx, threadID); err != nil {
+		return err
+	}
+
+	st, err := s.settingsStore.Get(ctx)
+	if err != nil {
+		return fmt.Errorf("load settings: %w", err)
+	}
+	if st == nil {
+		st = &store.Settings{}
+	}
+
+	apiKey := strings.TrimSpace(st.OpenRouterAPIKey)
+	if apiKey == "" {
+		return fmt.Errorf("quick question requires an OpenRouter API key (Settings → Providers)")
+	}
+
+	model := "openai/gpt-4o-mini"
+
+	allMessages, err := s.messageStore.ListByThread(ctx, threadID)
+	if err != nil {
+		return fmt.Errorf("list messages: %w", err)
+	}
+	sort.Slice(allMessages, func(i, j int) bool {
+		return allMessages[i].CreatedAt.Before(allMessages[j].CreatedAt)
+	})
+
+	mainMessages := store.FilterMessagesByLane(allMessages, string(store.LaneMain))
+	if len(mainMessages) > quickContextMaxMessages {
+		mainMessages = mainMessages[len(mainMessages)-quickContextMaxMessages:]
+	}
+
+	laneMessages := store.FilterMessagesByLane(allMessages, laneID)
+
+	var contextSummary strings.Builder
+	contextSummary.WriteString("## Main conversation context (read-only)\n\n")
+	for _, m := range mainMessages {
+		role := "User"
+		if m.Role == "assistant" {
+			role = "Assistant"
+		}
+		text := m.Content
+		if len(text) > 2000 {
+			text = text[:2000] + "…"
+		}
+		contextSummary.WriteString(role)
+		contextSummary.WriteString(": ")
+		contextSummary.WriteString(text)
+		contextSummary.WriteString("\n\n")
+	}
+
+	system := quickQuestionSystemPrompt + "\n\n" + contextSummary.String()
+
+	apiMessages := make([]openrouter.APIMessage, 0, 1+len(laneMessages))
+	apiMessages = append(apiMessages, openrouter.APIMessage{Role: "system", Content: ptrString(system)})
+	for _, m := range laneMessages {
+		c := m.Content
+		apiMessages = append(apiMessages, openrouter.APIMessage{Role: m.Role, Content: &c})
+	}
+
+	var full strings.Builder
+	_, _, _, err = openrouter.StreamCompletionRound(ctx, apiKey, model, apiMessages, nil, func(delta string) error {
+		full.WriteString(delta)
+		return onDelta(delta)
+	}, nil)
+	if err != nil {
+		return err
+	}
+
+	replyText := strings.TrimSpace(full.String())
+	if replyText == "" {
+		return fmt.Errorf("empty quick question reply")
+	}
+
+	replyMsg := &store.ChatMessage{
+		ID:           rand.Text(),
+		ThreadID:     threadID,
+		Role:         "assistant",
+		Content:      replyText,
+		CreatedAt:    time.Now().UTC(),
+		ChatProvider: "openrouter",
+		ChatModel:    model,
+		LaneID:       laneID,
+	}
+	if err := replyMsg.Validate(); err != nil {
+		return err
+	}
+	return s.messageStore.Append(ctx, threadID, replyMsg)
+}
+
+// SuggestCommitMessage generates a commit message from the staged diff.
+func (s *Service) SuggestCommitMessage(ctx context.Context, threadID string) (string, error) {
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return "", err
+	}
+
+	diff, err := chat.StagedDiff(dir)
+	if err != nil {
+		return "", fmt.Errorf("staged diff: %w", err)
+	}
+	if strings.TrimSpace(diff) == "" {
+		return "", fmt.Errorf("no staged changes to describe")
+	}
+
+	st, err := s.settingsStore.Get(ctx)
+	if err != nil {
+		return "", fmt.Errorf("load settings: %w", err)
+	}
+	if st == nil {
+		st = &store.Settings{}
+	}
+	apiKey := strings.TrimSpace(st.OpenRouterAPIKey)
+	if apiKey == "" {
+		return "", fmt.Errorf("commit message generation requires an OpenRouter API key (Settings → Providers)")
+	}
+
+	return chat.GenerateCommitMessage(ctx, apiKey, diff)
+}
+
+// ReviewBranchDiff generates a code review of the current branch vs the default branch.
+func (s *Service) ReviewBranchDiff(ctx context.Context, threadID string) (string, error) {
+	dir, err := s.gitDirForThread(ctx, threadID)
+	if err != nil {
+		return "", err
+	}
+
+	diff, err := chat.BranchDiff(dir)
+	if err != nil {
+		return "", fmt.Errorf("branch diff: %w", err)
+	}
+	if strings.TrimSpace(diff) == "" {
+		return "", fmt.Errorf("no changes to review (branch matches default)")
+	}
+
+	st, err := s.settingsStore.Get(ctx)
+	if err != nil {
+		return "", fmt.Errorf("load settings: %w", err)
+	}
+	if st == nil {
+		st = &store.Settings{}
+	}
+	apiKey := strings.TrimSpace(st.OpenRouterAPIKey)
+	if apiKey == "" {
+		return "", fmt.Errorf("branch review requires an OpenRouter API key (Settings → Providers)")
+	}
+
+	return chat.ReviewDiff(ctx, apiKey, diff)
+}

@@ -1,4 +1,5 @@
 import FolderOpen from "lucide-solid/icons/folder-open";
+import MessageCircleQuestion from "lucide-solid/icons/message-circle-question";
 import PanelBottom from "lucide-solid/icons/panel-bottom";
 import PanelBottomDashed from "lucide-solid/icons/panel-bottom-dashed";
 import PanelRight from "lucide-solid/icons/panel-right";
@@ -32,6 +33,8 @@ export const ThreadHeader: Component<{
     onToggleTerminal: () => void;
     sidebarOpen: () => boolean;
     onToggleSidebar: () => void;
+    quickQuestionOpen?: () => boolean;
+    onToggleQuickQuestion?: () => void;
     formatKey: (id: string) => string;
     hasWorktree: () => boolean;
     /** Route to thread settings (read-only details). */
@@ -200,6 +203,18 @@ export const ThreadHeader: Component<{
                         Git
                         <Kbd combo={props.formatKey("toggle_sidebar")} />
                     </button>
+                    <Show when={props.onToggleQuickQuestion}>
+                        <button
+                            type="button"
+                            class="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-slate-500 transition-colors hover:bg-slate-800/40 hover:text-slate-300"
+                            classList={{ "!text-emerald-400": props.quickQuestionOpen?.() }}
+                            onClick={() => props.onToggleQuickQuestion?.()}
+                            title="Quick Question"
+                        >
+                            <MessageCircleQuestion class="size-3.5" stroke-width={1.5} aria-hidden />
+                            Ask
+                        </button>
+                    </Show>
                     <A
                         href={props.threadSettingsHref}
                         class="inline-flex cursor-pointer items-center rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-800/40 hover:text-slate-300"

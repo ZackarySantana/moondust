@@ -1,5 +1,6 @@
 import { onCleanup, onMount } from "solid-js";
 import { attachChatStreamGlobalListeners } from "@/lib/chat-stream-global-listeners";
+import { attachQuickStreamListeners } from "@/lib/quick-stream-store";
 
 /**
  * Subscribes to assistant stream events for the whole app lifetime: message cache
@@ -7,8 +8,9 @@ import { attachChatStreamGlobalListeners } from "@/lib/chat-stream-global-listen
  */
 export function ChatStreamQuerySync() {
     onMount(() => {
-        const off = attachChatStreamGlobalListeners();
-        onCleanup(off);
+        const offChat = attachChatStreamGlobalListeners();
+        const offQuick = attachQuickStreamListeners();
+        onCleanup(() => { offChat(); offQuick(); });
     });
 
     return null;

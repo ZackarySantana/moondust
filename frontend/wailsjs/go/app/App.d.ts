@@ -48,13 +48,27 @@ export function GitCheckoutNewBranchAndCommit(arg1:string,arg2:string,arg3:strin
 
 export function GitCommit(arg1:string,arg2:string):Promise<void>;
 
+export function GitConflictState(arg1:string):Promise<store.GitConflictState>;
+
 export function GitDiscardFile(arg1:string,arg2:string):Promise<void>;
 
 export function GitDiscardUnstaged(arg1:string):Promise<void>;
 
+export function GitFetch(arg1:string):Promise<void>;
+
+export function GitListBranches(arg1:string):Promise<Array<string>>;
+
+export function GitMerge(arg1:string,arg2:string):Promise<string>;
+
 export function GitPull(arg1:string):Promise<void>;
 
 export function GitPush(arg1:string):Promise<void>;
+
+export function GitRebaseAbort(arg1:string):Promise<void>;
+
+export function GitRebaseContinue(arg1:string):Promise<string>;
+
+export function GitRebaseOnto(arg1:string,arg2:string):Promise<string>;
 
 export function GitRenameBranch(arg1:string,arg2:string):Promise<void>;
 
@@ -72,11 +86,15 @@ export function GitUnstageAll(arg1:string):Promise<void>;
 
 export function GitUnstageFile(arg1:string,arg2:string):Promise<void>;
 
+export function InsertReviewDraftToMain(arg1:string,arg2:string):Promise<store.ChatMessage>;
+
 export function IsPushAvailable():Promise<boolean>;
 
 export function ListClaudeChatModels():Promise<Array<store.OpenRouterChatModel>>;
 
 export function ListCursorChatModels():Promise<Array<store.OpenRouterChatModel>>;
+
+export function ListLaneMessages(arg1:string,arg2:string):Promise<Array<store.ChatMessage>>;
 
 export function ListLogs():Promise<Array<store.LogLine>>;
 
@@ -90,9 +108,13 @@ export function ListThreads():Promise<Array<store.Thread>>;
 
 export function RenameThread(arg1:string,arg2:string):Promise<void>;
 
+export function ReviewBranchDiff(arg1:string):Promise<string>;
+
 export function SaveSettings(arg1:store.Settings):Promise<void>;
 
 export function SelectProjectFolder():Promise<string>;
+
+export function SendLaneMessage(arg1:string,arg2:string,arg3:string):Promise<store.ChatMessage>;
 
 export function SendThreadMessage(arg1:string,arg2:string):Promise<Array<store.ChatMessage>>;
 
@@ -101,6 +123,10 @@ export function SetLogStreaming(arg1:boolean):Promise<void>;
 export function SetThreadChatModel(arg1:string,arg2:string):Promise<void>;
 
 export function SetThreadChatProvider(arg1:string,arg2:string):Promise<void>;
+
+export function StreamReviewBranchDiff(arg1:string):Promise<void>;
+
+export function SuggestCommitMessage(arg1:string):Promise<string>;
 
 export function TerminalWebSocketURL():Promise<string>;
 

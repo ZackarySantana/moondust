@@ -1,6 +1,8 @@
 import Loader2 from "lucide-solid/icons/loader-2";
+import Sparkles from "lucide-solid/icons/sparkles";
 import {
     createEffect,
+    createSignal,
     onCleanup,
     Show,
     type Component,
@@ -181,27 +183,66 @@ export const CommitStagedGitDialog: Component<{
     onMessage: (v: string) => void;
     onClose: () => void;
     onConfirm: () => void;
-}> = (props) => (
-    <GitActionDialog
-        open={props.open}
-        title="Commit staged changes"
-        pending={props.pending}
-        error={props.error}
-        confirmLabel="Commit"
-        hasTextarea
-        onClose={props.onClose}
-        onConfirm={props.onConfirm}
-    >
-        <textarea
-            class="mb-4 min-h-24 w-full resize-y rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:border-slate-600 focus:outline-none"
-            placeholder="Commit message"
-            rows={4}
-            value={props.message}
-            disabled={props.pending}
-            onInput={(e) => props.onMessage(e.currentTarget.value)}
-        />
-    </GitActionDialog>
-);
+    onGenerate?: () => Promise<string>;
+}> = (props) => {
+    const [generating, setGenerating] = createSignal(false);
+    const [genError, setGenError] = createSignal("");
+
+    async function generate() {
+        if (!props.onGenerate || generating()) return;
+        setGenerating(true);
+        setGenError("");
+        try {
+            const msg = await props.onGenerate();
+            props.onMessage(msg);
+        } catch (e) {
+            setGenError(e instanceof Error ? e.message : String(e));
+        } finally {
+            setGenerating(false);
+        }
+    }
+
+    return (
+        <GitActionDialog
+            open={props.open}
+            title="Commit staged changes"
+            pending={props.pending}
+            error={props.error || genError()}
+            confirmLabel="Commit"
+            hasTextarea
+            onClose={props.onClose}
+            onConfirm={props.onConfirm}
+        >
+            <div class="mb-1.5 flex items-center justify-between">
+                <label class="text-xs text-slate-500">Message</label>
+                <Show when={props.onGenerate}>
+                    <button
+                        type="button"
+                        disabled={generating() || props.pending}
+                        onClick={() => void generate()}
+                        class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] text-slate-400 transition-colors hover:bg-slate-800/50 hover:text-emerald-400 disabled:opacity-40"
+                    >
+                        <Show
+                            when={!generating()}
+                            fallback={<Loader2 class="size-3 animate-spin" stroke-width={2} />}
+                        >
+                            <Sparkles class="size-3" stroke-width={2} />
+                        </Show>
+                        {generating() ? "Generating…" : "Generate"}
+                    </button>
+                </Show>
+            </div>
+            <textarea
+                class="mb-4 min-h-24 w-full resize-y rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:border-slate-600 focus:outline-none"
+                placeholder="Commit message"
+                rows={4}
+                value={props.message}
+                disabled={props.pending || generating()}
+                onInput={(e) => props.onMessage(e.currentTarget.value)}
+            />
+        </GitActionDialog>
+    );
+};
 
 export const BranchCommitGitDialog: Component<{
     open: boolean;
@@ -213,42 +254,81 @@ export const BranchCommitGitDialog: Component<{
     onCommitMessage: (v: string) => void;
     onClose: () => void;
     onConfirm: () => void;
-}> = (props) => (
-    <GitActionDialog
-        open={props.open}
-        title="New branch and commit"
-        pending={props.pending}
-        error={props.error}
-        confirmLabel="Create branch & commit"
-        confirmMinWidth="min-w-36"
-        hasTextarea
-        onClose={props.onClose}
-        onConfirm={props.onConfirm}
-    >
-        <div class="mb-3 space-y-1.5">
-            <label
-                for="review-branch-name"
-                class="text-xs text-slate-500"
-            >
-                Branch name
-            </label>
-            <input
-                id="review-branch-name"
-                type="text"
-                class="w-full rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 font-mono text-sm text-slate-200 placeholder:text-slate-600 focus:border-slate-600 focus:outline-none"
-                placeholder="feature/my-change"
-                value={props.branchName}
-                disabled={props.pending}
-                onInput={(e) => props.onBranchName(e.currentTarget.value)}
+    onGenerate?: () => Promise<string>;
+}> = (props) => {
+    const [generating, setGenerating] = createSignal(false);
+    const [genError, setGenError] = createSignal("");
+
+    async function generate() {
+        if (!props.onGenerate || generating()) return;
+        setGenerating(true);
+        setGenError("");
+        try {
+            const msg = await props.onGenerate();
+            props.onCommitMessage(msg);
+        } catch (e) {
+            setGenError(e instanceof Error ? e.message : String(e));
+        } finally {
+            setGenerating(false);
+        }
+    }
+
+    return (
+        <GitActionDialog
+            open={props.open}
+            title="New branch and commit"
+            pending={props.pending}
+            error={props.error || genError()}
+            confirmLabel="Create branch & commit"
+            confirmMinWidth="min-w-36"
+            hasTextarea
+            onClose={props.onClose}
+            onConfirm={props.onConfirm}
+        >
+            <div class="mb-3 space-y-1.5">
+                <label
+                    for="review-branch-name"
+                    class="text-xs text-slate-500"
+                >
+                    Branch name
+                </label>
+                <input
+                    id="review-branch-name"
+                    type="text"
+                    class="w-full rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 font-mono text-sm text-slate-200 placeholder:text-slate-600 focus:border-slate-600 focus:outline-none"
+                    placeholder="feature/my-change"
+                    value={props.branchName}
+                    disabled={props.pending}
+                    onInput={(e) => props.onBranchName(e.currentTarget.value)}
+                />
+            </div>
+            <div class="mb-1.5 flex items-center justify-between">
+                <label class="text-xs text-slate-500">Commit message</label>
+                <Show when={props.onGenerate}>
+                    <button
+                        type="button"
+                        disabled={generating() || props.pending}
+                        onClick={() => void generate()}
+                        class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] text-slate-400 transition-colors hover:bg-slate-800/50 hover:text-emerald-400 disabled:opacity-40"
+                    >
+                        <Show
+                            when={!generating()}
+                            fallback={<Loader2 class="size-3 animate-spin" stroke-width={2} />}
+                        >
+                            <Sparkles class="size-3" stroke-width={2} />
+                        </Show>
+                        {generating() ? "Generating…" : "Generate"}
+                    </button>
+                </Show>
+            </div>
+            <textarea
+                class="mb-4 min-h-24 w-full resize-y rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:border-slate-600 focus:outline-none"
+                placeholder="Commit message"
+                rows={4}
+                value={props.commitMessage}
+                disabled={props.pending || generating()}
+                onInput={(e) => props.onCommitMessage(e.currentTarget.value)}
             />
-        </div>
-        <textarea
-            class="mb-4 min-h-24 w-full resize-y rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:border-slate-600 focus:outline-none"
-            placeholder="Commit message"
-            rows={4}
-            value={props.commitMessage}
-            disabled={props.pending}
-            onInput={(e) => props.onCommitMessage(e.currentTarget.value)}
-        />
-    </GitActionDialog>
-);
+        </GitActionDialog>
+    );
+};

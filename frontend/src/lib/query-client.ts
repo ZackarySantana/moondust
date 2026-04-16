@@ -30,6 +30,8 @@ export const queryKeys = {
         gitStatus: (id: string) => ["threads", id, "git-status"] as const,
         fileDiff: (threadId: string, path: string, status: string) =>
             ["threads", threadId, "file-diff", path, status] as const,
+        laneMessages: (threadId: string, laneId: string) =>
+            ["threads", threadId, "lane-messages", laneId] as const,
     },
     /** OpenRouter GET /api/v1/models (filtered); safe to cache longer. */
     openRouterModels: ["openrouter", "chat-models"] as const,
