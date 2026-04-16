@@ -101,18 +101,3 @@ func configureClonedRepo(ctx context.Context, dir string) {
 	}
 }
 
-func detectDefaultBranch(ctx context.Context, dir string) string {
-	out, err := runGit(ctx, dir, "symbolic-ref", "refs/remotes/origin/HEAD")
-	if err == nil {
-		ref := strings.TrimSpace(out)
-		if i := strings.LastIndex(ref, "/"); i >= 0 {
-			return ref[i+1:]
-		}
-	}
-	for _, candidate := range []string{"main", "master"} {
-		if _, err := runGit(ctx, dir, "rev-parse", "--verify", candidate); err == nil {
-			return candidate
-		}
-	}
-	return "main"
-}

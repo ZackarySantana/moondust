@@ -28,19 +28,21 @@ func StagedDiff(dir string) (string, error) {
 }
 
 // BranchDiff returns the diff of the current branch vs its merge-base with the default branch.
-func BranchDiff(dir string) (string, error) {
-	base, err := defaultBranch(dir)
-	if err != nil {
-		return "", err
-	}
-	mb, err := mergeBase(dir, base)
-	if err != nil {
-		return "", fmt.Errorf("merge-base: %w", err)
-	}
-	cmd := exec.Command("git", "diff", "--no-color", mb+"...HEAD")
+// defaultBranch should be the full remote ref (e.g. "origin/main").
+func BranchDiff(dir, defaultBranch string) (string, error) {
+	cmd := exec.Command("git", "merge-base", defaultBranch, "HEAD")
 	cmd.Dir = dir
 	oschild.HideConsole(cmd)
-	out, err := cmd.Output()
+	mbOut, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("merge-base %s HEAD: %w", defaultBranch, err)
+	}
+	mb := strings.TrimSpace(string(mbOut))
+
+	diffCmd := exec.Command("git", "diff", "--no-color", mb+"...HEAD")
+	diffCmd.Dir = dir
+	oschild.HideConsole(diffCmd)
+	out, err := diffCmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("git diff merge-base: %w", err)
 	}
@@ -49,29 +51,6 @@ func BranchDiff(dir string) (string, error) {
 		s = s[:maxDiffBytes] + "\n… (diff truncated)"
 	}
 	return s, nil
-}
-
-func defaultBranch(dir string) (string, error) {
-	for _, ref := range []string{"refs/remotes/origin/main", "refs/remotes/origin/master"} {
-		cmd := exec.Command("git", "rev-parse", "--verify", ref)
-		cmd.Dir = dir
-		oschild.HideConsole(cmd)
-		if err := cmd.Run(); err == nil {
-			return strings.TrimPrefix(ref, "refs/remotes/origin/"), nil
-		}
-	}
-	return "main", nil
-}
-
-func mergeBase(dir, branch string) (string, error) {
-	cmd := exec.Command("git", "merge-base", "origin/"+branch, "HEAD")
-	cmd.Dir = dir
-	oschild.HideConsole(cmd)
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(out)), nil
 }
 
 // CommitMsgSystemPrompt is the system prompt for commit message generation.

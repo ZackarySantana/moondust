@@ -45,7 +45,7 @@ func (s *Service) CreateProjectFromRemote(ctx context.Context, name, remoteURL s
 
 	configureClonedRepo(ctx, project.Directory)
 
-	project.DefaultBranch = detectDefaultBranchAfterClone(ctx, project.Directory)
+	project.DefaultBranch = "origin/" + detectDefaultBranchAfterClone(ctx, project.Directory)
 	project.AutoFetch = "both"
 
 	err = s.projectStore.Update(ctx, project)
@@ -64,7 +64,10 @@ func (s *Service) CreateProjectFromRemote(ctx context.Context, name, remoteURL s
 func (s *Service) CreateProjectFromFolder(ctx context.Context, name, directory, defaultBranch string) (*store.Project, error) {
 	defaultBranch = strings.TrimSpace(defaultBranch)
 	if defaultBranch == "" {
-		defaultBranch = "main"
+		defaultBranch = "origin/main"
+	}
+	if !strings.Contains(defaultBranch, "/") {
+		defaultBranch = "origin/" + defaultBranch
 	}
 	project := &store.Project{
 		ID:            rand.Text(),

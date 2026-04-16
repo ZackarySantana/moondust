@@ -288,12 +288,22 @@ func (s *Service) SuggestCommitMessage(ctx context.Context, threadID string) (st
 
 // ReviewBranchDiff generates a code review of the current branch vs the default branch.
 func (s *Service) ReviewBranchDiff(ctx context.Context, threadID string) (string, error) {
-	dir, err := s.gitDirForThread(ctx, threadID)
+	thread, project, err := s.resolveThreadProject(ctx, threadID)
 	if err != nil {
 		return "", err
 	}
 
-	diff, err := chat.BranchDiff(dir)
+	dir := project.Directory
+	if thread.WorktreeDir != "" {
+		dir = thread.WorktreeDir
+	}
+
+	defaultBranch := strings.TrimSpace(project.DefaultBranch)
+	if defaultBranch == "" {
+		defaultBranch = "origin/main"
+	}
+
+	diff, err := chat.BranchDiff(dir, defaultBranch)
 	if err != nil {
 		return "", fmt.Errorf("branch diff: %w", err)
 	}

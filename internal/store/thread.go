@@ -224,19 +224,20 @@ type GitCommitSummary struct {
 }
 
 type GitReview struct {
-	Branch       string             `json:"branch"`
-	Ahead        int                `json:"ahead"`
-	Behind       int                `json:"behind"`
-	RemoteURL    string             `json:"remote_url"`
-	Staged       []GitFileChange    `json:"staged"`
-	Unstaged     []GitFileChange    `json:"unstaged"`
-	Untracked    []GitFileChange    `json:"untracked"`
-	LocalCommits []GitCommitSummary `json:"local_commits"`
-	MainCommits  []GitCommitSummary `json:"main_commits"`
-	DiffStat     string             `json:"diff_stat"`
-	PatchPreview string             `json:"patch_preview"`
-	StashCount   int                `json:"stash_count"`
-	HasRemote    bool               `json:"has_remote"`
+	Branch        string             `json:"branch"`
+	DefaultBranch string             `json:"default_branch"`
+	Ahead         int                `json:"ahead"`
+	Behind        int                `json:"behind"`
+	RemoteURL     string             `json:"remote_url"`
+	Staged        []GitFileChange    `json:"staged"`
+	Unstaged      []GitFileChange    `json:"unstaged"`
+	Untracked     []GitFileChange    `json:"untracked"`
+	LocalCommits  []GitCommitSummary `json:"local_commits"`
+	MainCommits   []GitCommitSummary `json:"main_commits"`
+	DiffStat      string             `json:"diff_stat"`
+	PatchPreview  string             `json:"patch_preview"`
+	StashCount    int                `json:"stash_count"`
+	HasRemote     bool               `json:"has_remote"`
 }
 
 type FileDiff struct {

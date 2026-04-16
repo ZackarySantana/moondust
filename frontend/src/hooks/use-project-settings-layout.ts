@@ -39,7 +39,10 @@ export function useProjectSettingsLayoutState(projectId: string) {
     const [defaultBranch, setDefaultBranch] = createSignal("");
     const [autoFetch, setAutoFetch] = createSignal("both");
 
-    const canSaveProject = createMemo(() => defaultBranch().trim().length > 0);
+    const canSaveProject = createMemo(() => {
+        const db = defaultBranch().trim();
+        return db.length > 0 && db.includes("/");
+    });
 
     const projectQuery = useQuery(() => ({
         queryKey: queryKeys.projects.detail(projectId),
@@ -79,8 +82,13 @@ export function useProjectSettingsLayoutState(projectId: string) {
         setError("");
         const p = projectQuery.data;
         if (!p) return;
-        if (!defaultBranch().trim()) {
+        const db = defaultBranch().trim();
+        if (!db) {
             setError("Default branch is required (see Git settings).");
+            return;
+        }
+        if (!db.includes("/")) {
+            setError("Default branch must be a remote ref (e.g. origin/main).");
             return;
         }
         try {

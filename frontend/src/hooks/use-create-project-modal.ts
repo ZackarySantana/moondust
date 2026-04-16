@@ -36,7 +36,7 @@ export function useCreateProjectModal(opts: UseCreateProjectModalOptions) {
     const [createTab, setCreateTab] = createSignal<CreateProjectTab>("url");
     const [urlDraft, setUrlDraft] = createSignal("");
     const [folderPath, setFolderPath] = createSignal("");
-    const [folderDefaultBranch, setFolderDefaultBranch] = createSignal("main");
+    const [folderDefaultBranch, setFolderDefaultBranch] = createSignal("origin/main");
     const [nameOverride, setNameOverride] = createSignal<string | null>(null);
     const [submitting, setSubmitting] = createSignal(false);
 
@@ -54,7 +54,7 @@ export function useCreateProjectModal(opts: UseCreateProjectModalOptions) {
     function resetForm() {
         setUrlDraft("");
         setFolderPath("");
-        setFolderDefaultBranch("main");
+        setFolderDefaultBranch("origin/main");
         setNameOverride(null);
         setCreateTab("url");
         setSubmitting(false);
@@ -111,7 +111,13 @@ export function useCreateProjectModal(opts: UseCreateProjectModalOptions) {
         const branch = folderDefaultBranch().trim();
         if (!branch) {
             alert(
-                "Enter the default branch name for this repository (e.g. main).",
+                "Enter the remote default branch ref (e.g. origin/main).",
+            );
+            return;
+        }
+        if (!branch.includes("/")) {
+            alert(
+                "Default branch must be a remote ref containing '/' (e.g. origin/main).",
             );
             return;
         }

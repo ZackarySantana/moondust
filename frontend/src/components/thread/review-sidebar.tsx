@@ -14,8 +14,8 @@ import Plus from "lucide-solid/icons/plus";
 import RefreshCw from "lucide-solid/icons/refresh-cw";
 import X from "lucide-solid/icons/x";
 import type { Component } from "solid-js";
-import { createMemo, createSignal, For, Show } from "solid-js";
-import { CommitRow } from "@/components/review/commit-row";
+import { createEffect, createMemo, createSignal, For, on, Show } from "solid-js";
+import { CommitGraph } from "@/components/review/commit-graph";
 import {
     BranchCommitGitDialog,
     CommitStagedGitDialog,
@@ -51,7 +51,6 @@ export interface ReviewSidebarProps {
 }
 
 export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
-    const [commitTab, setCommitTab] = createSignal<"local" | "main">("local");
     const [discardOpen, setDiscardOpen] = createSignal(false);
     const [commitOpen, setCommitOpen] = createSignal(false);
     const [branchCommitOpen, setBranchCommitOpen] = createSignal(false);
@@ -113,11 +112,8 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
         if (!base || !b || DEFAULT_BRANCHES.has(b)) return null;
         return `${base}/compare/${encodeURIComponent(b)}?expand=1`;
     });
-    const activeCommits = () =>
-        commitTab() === "local" ? localCommits() : mainCommits();
-
     // ── Git wizard ──
-    const [wizardOpen, setWizardOpen] = createSignal(false);
+    const [wizardOpen, setWizardOpen] = createSignal(true);
 
     // ── Branch review ──
     const [reviewResult, setReviewResult] = createSignal("");
@@ -125,18 +121,39 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
     const [reviewError, setReviewError] = createSignal("");
     const [reviewOpen, setReviewOpen] = createSignal(false);
 
+    function resetBranchReviewTab() {
+        setReviewOpen(false);
+        setReviewResult("");
+        setReviewError("");
+        setReviewLoading(false);
+    }
+
+    createEffect(
+        on(
+            () => props.threadId,
+            () => {
+                resetBranchReviewTab();
+            },
+        ),
+    );
+
     async function runBranchReview() {
+        const threadId = props.threadId;
         setReviewLoading(true);
         setReviewError("");
         setReviewResult("");
         setReviewOpen(true);
         try {
-            const review = await ReviewBranchDiff(props.threadId);
+            const review = await ReviewBranchDiff(threadId);
+            if (props.threadId !== threadId) return;
             setReviewResult(review);
         } catch (e) {
+            if (props.threadId !== threadId) return;
             setReviewError(e instanceof Error ? e.message : String(e));
         } finally {
-            setReviewLoading(false);
+            if (props.threadId === threadId) {
+                setReviewLoading(false);
+            }
         }
     }
 
@@ -146,6 +163,7 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
         const body =
             "Please address the following code review findings:\n\n" + text;
         props.onInsertReviewIntoComposer(body);
+        resetBranchReviewTab();
     }
 
     const iconBtn =
@@ -971,58 +989,20 @@ export const ReviewSidebar: Component<ReviewSidebarProps> = (props) => {
                     </Show>
                 </CollapsibleSection>
 
-                {/* ── Commits ── */}
+                {/* ── Commit Graph ── */}
                 <CollapsibleSection
                     title="Commits"
-                    count={activeCommits().length}
+                    count={localCommits().length + mainCommits().length}
                     tone="violet"
                     defaultOpen
-                    trailing={
-                        <div class="flex overflow-hidden rounded border border-slate-700/60 text-[10px] leading-none">
-                            <button
-                                type="button"
-                                class={`cursor-pointer px-2 py-1 transition-colors ${commitTab() === "local" ? "bg-violet-900/40 text-violet-200" : "text-slate-500 hover:text-slate-300"}`}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setCommitTab("local");
-                                }}
-                            >
-                                Branch
-                            </button>
-                            <button
-                                type="button"
-                                class={`cursor-pointer border-l border-slate-700/60 px-2 py-1 transition-colors ${commitTab() === "main" ? "bg-violet-900/40 text-violet-200" : "text-slate-500 hover:text-slate-300"}`}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setCommitTab("main");
-                                }}
-                            >
-                                Main
-                            </button>
-                        </div>
-                    }
                 >
-                    <Show
-                        when={activeCommits().length > 0}
-                        fallback={
-                            <p class="py-1 text-[11px] text-slate-600">
-                                {commitTab() === "local"
-                                    ? "No commits ahead of main"
-                                    : "No commits"}
-                            </p>
-                        }
-                    >
-                        <div class="space-y-0.5">
-                            <For each={activeCommits()}>
-                                {(c) => (
-                                    <CommitRow
-                                        commit={c}
-                                        githubURL={githubURL()}
-                                    />
-                                )}
-                            </For>
-                        </div>
-                    </Show>
+                    <CommitGraph
+                        localCommits={localCommits()}
+                        mainCommits={mainCommits()}
+                        baseBranch={props.git?.default_branch ?? "origin/main"}
+                        branchName={branch()}
+                        githubURL={githubURL()}
+                    />
                 </CollapsibleSection>
 
                 {/* ── Diff ── */}

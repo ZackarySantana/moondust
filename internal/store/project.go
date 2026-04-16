@@ -32,8 +32,12 @@ func (p *Project) Validate() error {
 	if p.Directory == "" {
 		return errors.New("directory is required")
 	}
-	if strings.TrimSpace(p.DefaultBranch) == "" {
+	db := strings.TrimSpace(p.DefaultBranch)
+	if db == "" {
 		return errors.New("default branch is required")
+	}
+	if !strings.Contains(db, "/") {
+		return errors.New("default branch must be a remote ref (e.g. origin/main)")
 	}
 	return nil
 }

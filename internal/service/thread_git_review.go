@@ -3,10 +3,12 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"moondust/internal/store"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 func (s *Service) GetThreadGitStatus(ctx context.Context, threadID string) (*store.GitStatus, error) {
@@ -52,8 +54,16 @@ func (s *Service) GetThreadGitReview(ctx context.Context, threadID string) (*sto
 		dir = thread.WorktreeDir
 	}
 
+	s.maybeBackgroundFetch(ctx, dir)
+
+	defaultBranch := strings.TrimSpace(project.DefaultBranch)
+	if defaultBranch == "" {
+		defaultBranch = "origin/main"
+	}
+
 	review := &store.GitReview{
-		RemoteURL: project.RemoteURL,
+		RemoteURL:     project.RemoteURL,
+		DefaultBranch: defaultBranch,
 	}
 
 	statusOut, err := runGit(ctx, dir, "status", "--porcelain=v1", "--branch")
@@ -61,8 +71,6 @@ func (s *Service) GetThreadGitReview(ctx context.Context, threadID string) (*sto
 		return nil, err
 	}
 	parseGitStatus(review, statusOut)
-
-	defaultBranch := detectDefaultBranch(ctx, dir)
 
 	localOut, err := runGit(ctx, dir, "log", "--no-color",
 		"--pretty=format:%h\t%s\t%an\t%ar\t%aI", defaultBranch+"..HEAD", "-n", "20")
@@ -240,5 +248,22 @@ func langFromExt(path string) string {
 			return "makefile"
 		}
 		return "plaintext"
+	}
+}
+
+const fetchThrottle = 60 * time.Second
+
+func (s *Service) maybeBackgroundFetch(ctx context.Context, dir string) {
+	s.lastFetchMu.Lock()
+	last, ok := s.lastFetchByDir[dir]
+	if ok && time.Since(last) < fetchThrottle {
+		s.lastFetchMu.Unlock()
+		return
+	}
+	s.lastFetchByDir[dir] = time.Now()
+	s.lastFetchMu.Unlock()
+
+	if _, err := runGit(ctx, dir, "fetch", "origin", "--quiet"); err != nil {
+		slog.WarnContext(ctx, "background git fetch failed", "dir", dir, "error", err)
 	}
 }

@@ -23,8 +23,8 @@ export const ProjectGitPage: Component = () => {
                 id="proj-git-default-branch"
                 label="Default branch"
                 value={fields.defaultBranch()}
-                placeholder="main"
-                description="Required. The branch you treat as the main line of development (e.g. main or master). Save is disabled until this is set."
+                placeholder="origin/main"
+                description="Required. The remote ref for the main line of development (e.g. origin/main or origin/master). Must contain a '/'."
                 onInput={handleInput(fields.setDefaultBranch)}
             />
             <div class="grid grid-cols-[11rem_1fr] items-start gap-4">

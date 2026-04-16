@@ -504,6 +504,7 @@ export namespace store {
 	}
 	export class GitReview {
 	    branch: string;
+	    default_branch: string;
 	    ahead: number;
 	    behind: number;
 	    remote_url: string;
@@ -524,6 +525,7 @@ export namespace store {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.branch = source["branch"];
+	        this.default_branch = source["default_branch"];
 	        this.ahead = source["ahead"];
 	        this.behind = source["behind"];
 	        this.remote_url = source["remote_url"];

@@ -133,13 +133,13 @@ export const CreateProjectFormView: Component<CreateProjectFormViewProps> = (
                             </div>
                             <div class="space-y-1.5">
                                 <Label for="create-project-default-branch">
-                                    Default branch
+                                    Default branch (remote ref)
                                 </Label>
                                 <Input
                                     id="create-project-default-branch"
                                     type="text"
                                     autocomplete="off"
-                                    placeholder="main"
+                                    placeholder="origin/main"
                                     value={props.folderDefaultBranch}
                                     disabled={props.submitting}
                                     onInput={(e) =>

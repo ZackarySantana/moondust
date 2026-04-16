@@ -1,12 +1,20 @@
 package service
 
-import "moondust/internal/store"
+import (
+	"sync"
+	"time"
+
+	"moondust/internal/store"
+)
 
 type Service struct {
 	projectStore  store.ProjectStore
 	threadStore   store.ThreadStore
 	messageStore  store.MessageStore
 	settingsStore store.SettingsStore
+
+	lastFetchMu    sync.Mutex
+	lastFetchByDir map[string]time.Time
 }
 
 func New(projectStore store.ProjectStore, threadStore store.ThreadStore, messageStore store.MessageStore, settingsStore store.SettingsStore) *Service {
@@ -17,7 +25,8 @@ func New(projectStore store.ProjectStore, threadStore store.ThreadStore, message
 		threadStore: &store.TouchThreadStore{
 			ThreadStore: threadStore,
 		},
-		messageStore:  messageStore,
-		settingsStore: settingsStore,
+		messageStore:   messageStore,
+		settingsStore:  settingsStore,
+		lastFetchByDir: make(map[string]time.Time),
 	}
 }
