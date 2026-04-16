@@ -115,6 +115,47 @@ export const StreamingToolCall: Story = {
     ),
 };
 
+export const CollapsedToolCalls: Story = {
+    render: () => (
+        <div class="max-w-2xl rounded-lg border border-slate-800/40 bg-slate-950/30 p-3">
+            <AssistantTurnView
+                parts={() => [
+                    {
+                        kind: "tool",
+                        tool: {
+                            name: "read",
+                            arguments: '{"path": "src/main.go"}',
+                            output: "package main...",
+                        },
+                    },
+                    ...Array.from({ length: 14 }, (_, i) => ({
+                        kind: "tool" as const,
+                        tool: {
+                            name: "edit",
+                            arguments: `{"path": "src/file${i + 1}.go"}`,
+                            output: "ok",
+                        },
+                    })),
+                    {
+                        kind: "tool",
+                        tool: {
+                            name: "shell",
+                            arguments: '{"command": "go test ./..."}',
+                            output: "PASS",
+                        },
+                    },
+                    {
+                        kind: "text",
+                        text: "I've finished editing all the files and the tests pass.",
+                    },
+                ]}
+                streaming={false}
+                headerLine={() => "Claude Sonnet · OpenRouter"}
+            />
+        </div>
+    ),
+};
+
 export const WithMetadataChrome: Story = {
     render: () => (
         <div class="max-w-2xl rounded-lg border border-slate-800/40 bg-slate-950/30 p-3">
