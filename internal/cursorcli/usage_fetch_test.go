@@ -1,10 +1,8 @@
-package cursorcli_test
+package cursorcli
 
 import (
 	"encoding/json"
 	"testing"
-
-	"moondust/internal/cursorcli"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,7 +21,7 @@ func TestDashboardUsageJSONUnmarshal(t *testing.T) {
   "autoModelSelectedDisplayMessage": "Auto line",
   "namedModelSelectedDisplayMessage": "API line"
 }`
-	var d cursorcli.DashboardUsageJSON
+	var d dashboardUsageJSON
 	require.NoError(t, json.Unmarshal([]byte(sample), &d))
 	assert.Equal(t, 21.5, *d.PlanUsage.AutoPercentUsed)
 	assert.Equal(t, 100.0, *d.PlanUsage.APIPercentUsed)

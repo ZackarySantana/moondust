@@ -17,8 +17,7 @@ const usageFetchTimeout = 15 * time.Second
 // Undocumented Connect-RPC endpoint; aligns with Auto vs API buckets in the Cursor app.
 const cursorUsageEndpoint = "https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage"
 
-// DashboardUsageJSON matches the JSON shape from GetCurrentPeriodUsage (for tests and decoding).
-type DashboardUsageJSON struct {
+type dashboardUsageJSON struct {
 	PlanUsage struct {
 		AutoPercentUsed  *float64 `json:"autoPercentUsed"`
 		APIPercentUsed   *float64 `json:"apiPercentUsed"`
@@ -74,7 +73,7 @@ func fetchCurrentPeriodUsage(ctx context.Context, accessToken string) (*store.Cu
 		return nil, fmt.Errorf("usage HTTP %d: %s", resp.StatusCode, msg)
 	}
 
-	var d DashboardUsageJSON
+	var d dashboardUsageJSON
 	if err := json.Unmarshal(raw, &d); err != nil {
 		return nil, err
 	}

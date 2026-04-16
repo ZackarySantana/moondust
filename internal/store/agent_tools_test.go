@@ -1,20 +1,18 @@
-package store_test
+package store
 
 import (
 	"testing"
-
-	"moondust/internal/store"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNormalizeAgentToolsEnabled(t *testing.T) {
-	nilMap := store.NormalizeAgentToolsEnabled(nil)
-	assert.True(t, nilMap[store.AgentToolReadWorkspaceFile])
-	assert.True(t, nilMap[store.AgentToolWebSearch])
+	nilMap := NormalizeAgentToolsEnabled(nil)
+	assert.True(t, nilMap[AgentToolReadWorkspaceFile])
+	assert.True(t, nilMap[AgentToolWebSearch])
 
-	partial := map[string]bool{store.AgentToolWebSearch: false}
-	out := store.NormalizeAgentToolsEnabled(partial)
-	assert.False(t, out[store.AgentToolWebSearch])
-	assert.True(t, out[store.AgentToolReadWorkspaceFile])
+	partial := map[string]bool{AgentToolWebSearch: false}
+	out := NormalizeAgentToolsEnabled(partial)
+	assert.False(t, out[AgentToolWebSearch])
+	assert.True(t, out[AgentToolReadWorkspaceFile])
 }

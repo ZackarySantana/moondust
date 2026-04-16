@@ -1,5 +1,5 @@
-package cursorcli
+//go:build ignore
 
-func SanitizeCursorModelDisplayNameForTest(s string) string {
-	return sanitizeCursorModelDisplayName(s)
-}
+// Removed: tests use package cursorcli directly; delete this file if present.
+
+package cursorcli

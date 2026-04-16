@@ -1,11 +1,10 @@
-package service_test
+package service
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"moondust/internal/service"
 	"moondust/internal/store"
 
 	"github.com/stretchr/testify/assert"
@@ -129,7 +128,7 @@ func TestForkThreadAtMessage(t *testing.T) {
 			CreatedAt:    now,
 			ChatProvider: "",
 		}
-		svc := service.New(
+		svc := New(
 			&forkTestProjectStore{projects: map[string]*store.Project{pid: project}},
 			&forkTestThreadStore{threads: map[string]*store.Thread{srcTid: source}},
 			&forkTestMessageStore{byThread: map[string][]*store.ChatMessage{srcTid: {bad}}},
@@ -180,7 +179,7 @@ func TestForkThreadAtMessage(t *testing.T) {
 		}
 		threads := &forkTestThreadStore{threads: map[string]*store.Thread{srcTid: source}}
 		msgs := &forkTestMessageStore{byThread: map[string][]*store.ChatMessage{srcTid: {m1, m2}}}
-		svc := service.New(
+		svc := New(
 			&forkTestProjectStore{projects: map[string]*store.Project{pid: project}},
 			threads,
 			msgs,

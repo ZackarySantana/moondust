@@ -1,10 +1,8 @@
-package store_test
+package store
 
 import (
 	"testing"
 	"time"
-
-	"moondust/internal/store"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,13 +19,13 @@ func TestAggregateOpenRouterUsageMetrics(t *testing.T) {
 	pt := 10
 	ct := 20
 
-	messages := []*store.ChatMessage{
+	messages := []*ChatMessage{
 		{Role: "user", Content: "hi", CreatedAt: t1, ChatProvider: "openrouter"},
 		{
 			Role: "assistant", Content: "a", CreatedAt: t1,
 			ChatProvider: "openrouter", ChatModel: "openai/gpt-4o-mini",
-			Metadata: &store.ChatMessageMetadata{
-				OpenRouter: &store.OpenRouterChatMessageMetadata{
+			Metadata: &ChatMessageMetadata{
+				OpenRouter: &OpenRouterChatMessageMetadata{
 					CostUSD: &c1, PromptTokens: &pt, CompletionTokens: &ct,
 				},
 			},
@@ -35,17 +33,17 @@ func TestAggregateOpenRouterUsageMetrics(t *testing.T) {
 		{
 			Role: "assistant", Content: "b", CreatedAt: t2,
 			ChatProvider: "", ChatModel: "anthropic/claude-3-haiku",
-			Metadata: &store.ChatMessageMetadata{OpenRouter: &store.OpenRouterChatMessageMetadata{CostUSD: &c2}},
+			Metadata: &ChatMessageMetadata{OpenRouter: &OpenRouterChatMessageMetadata{CostUSD: &c2}},
 		},
 		{
 			Role: "assistant", Content: "c", CreatedAt: t3,
 			ChatProvider: "openrouter", ChatModel: "openai/gpt-4o-mini",
-			Metadata: &store.ChatMessageMetadata{OpenRouter: &store.OpenRouterChatMessageMetadata{CostUSD: &c3}},
+			Metadata: &ChatMessageMetadata{OpenRouter: &OpenRouterChatMessageMetadata{CostUSD: &c3}},
 		},
 		{Role: "assistant", Content: "other", CreatedAt: t3, ChatProvider: "other", ChatModel: "x"},
 	}
 
-	out := store.AggregateOpenRouterUsageMetrics(messages)
+	out := AggregateOpenRouterUsageMetrics(messages)
 	require.NotNil(t, out)
 	// Non-openrouter providers are excluded.
 	assert.Equal(t, 2, out.TotalAssistantMessages)
@@ -69,7 +67,7 @@ func TestAggregateOpenRouterUsageMetrics(t *testing.T) {
 }
 
 func TestAggregateOpenRouterUsageMetrics_Empty(t *testing.T) {
-	out := store.AggregateOpenRouterUsageMetrics(nil)
+	out := AggregateOpenRouterUsageMetrics(nil)
 	require.NotNil(t, out)
 	assert.Equal(t, 0, out.TotalAssistantMessages)
 	assert.Len(t, out.RecentlyUsed, 0)

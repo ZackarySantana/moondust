@@ -1,5 +1,5 @@
-package workspace
+//go:build ignore
 
-func EditFileUnderRootForTest(root, rel, oldString, newString string) (string, error) {
-	return editFileUnderRoot(root, rel, oldString, newString)
-}
+// Removed: tests use package workspace directly; delete this file if present.
+
+package workspace
