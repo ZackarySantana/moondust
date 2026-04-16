@@ -787,6 +787,8 @@ export namespace store {
 	    openrouter_clear?: boolean;
 	    has_openrouter_api_key?: boolean;
 	    agent_tools_enabled?: Record<string, boolean>;
+	    utility_provider?: string;
+	    utility_model?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Settings(source);
@@ -802,6 +804,8 @@ export namespace store {
 	        this.openrouter_clear = source["openrouter_clear"];
 	        this.has_openrouter_api_key = source["has_openrouter_api_key"];
 	        this.agent_tools_enabled = source["agent_tools_enabled"];
+	        this.utility_provider = source["utility_provider"];
+	        this.utility_model = source["utility_model"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

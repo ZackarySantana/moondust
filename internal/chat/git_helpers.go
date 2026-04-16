@@ -3,7 +3,6 @@ package chat
 import (
 	"context"
 	"fmt"
-	"moondust/internal/openrouter"
 	"os/exec"
 	"strings"
 )
@@ -69,7 +68,8 @@ func mergeBase(dir, branch string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-const commitMsgSystemPrompt = `You generate concise git commit messages. Given a diff, produce a conventional commit message with:
+// CommitMsgSystemPrompt is the system prompt for commit message generation.
+const CommitMsgSystemPrompt = `You generate concise git commit messages. Given a diff, produce a conventional commit message with:
 - Line 1: type(scope): short description (max 72 chars)
 - Line 2: blank
 - Lines 3+: bullet-point summary of changes (2-5 lines)
@@ -77,24 +77,13 @@ const commitMsgSystemPrompt = `You generate concise git commit messages. Given a
 Use types: feat, fix, refactor, docs, style, test, chore, perf, ci, build.
 Be specific about what changed and why. Output ONLY the commit message, no markdown fences or explanation.`
 
-// GenerateCommitMessage calls OpenRouter to produce a commit message from a diff.
-func GenerateCommitMessage(ctx context.Context, apiKey, diff string) (string, error) {
-	messages := []openrouter.APIMessage{
-		{Role: "system", Content: ptrStr(commitMsgSystemPrompt)},
-		{Role: "user", Content: ptrStr("Generate a commit message for this diff:\n\n" + diff)},
-	}
-	var buf strings.Builder
-	_, _, _, err := openrouter.StreamCompletionRound(ctx, apiKey, "openai/gpt-4o-mini", messages, nil, func(delta string) error {
-		buf.WriteString(delta)
-		return nil
-	}, nil)
-	if err != nil {
-		return "", fmt.Errorf("generate commit message: %w", err)
-	}
-	return strings.TrimSpace(buf.String()), nil
+// CommitMsgUserPrompt builds the user message for commit message generation.
+func CommitMsgUserPrompt(diff string) string {
+	return "Generate a commit message for this diff:\n\n" + diff
 }
 
-const reviewSystemPrompt = `You are a senior code reviewer. Review the following diff and provide structured feedback.
+// ReviewSystemPrompt is the system prompt for code review.
+const ReviewSystemPrompt = `You are a senior code reviewer. Review the following diff and provide structured feedback.
 
 Format your review as:
 ## Summary
@@ -111,21 +100,11 @@ One line: APPROVE, REQUEST_CHANGES, or COMMENT with brief justification.
 
 Be constructive, specific, and concise. Focus on bugs, security, performance, and maintainability. Skip trivial style nits unless they affect readability significantly.`
 
-// ReviewDiff calls OpenRouter to produce a structured code review.
-func ReviewDiff(ctx context.Context, apiKey, diff string) (string, error) {
-	messages := []openrouter.APIMessage{
-		{Role: "system", Content: ptrStr(reviewSystemPrompt)},
-		{Role: "user", Content: ptrStr("Review this diff:\n\n" + diff)},
-	}
-	var buf strings.Builder
-	_, _, _, err := openrouter.StreamCompletionRound(ctx, apiKey, "openai/gpt-4o-mini", messages, nil, func(delta string) error {
-		buf.WriteString(delta)
-		return nil
-	}, nil)
-	if err != nil {
-		return "", fmt.Errorf("review diff: %w", err)
-	}
-	return strings.TrimSpace(buf.String()), nil
+// ReviewUserPrompt builds the user message for code review.
+func ReviewUserPrompt(diff string) string {
+	return "Review this diff:\n\n" + diff
 }
 
-func ptrStr(s string) *string { return &s }
+// UtilityGenerate is a function that takes a system prompt and user message and returns the generated text.
+// It abstracts away the LLM provider.
+type UtilityGenerate func(ctx context.Context, system, user string) (string, error)

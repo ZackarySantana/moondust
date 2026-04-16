@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"moondust/internal/chat"
+	"moondust/internal/claudecli"
+	"moondust/internal/cursorcli"
 	"moondust/internal/openrouter"
 	"moondust/internal/rand"
 	"moondust/internal/store"
@@ -14,11 +16,9 @@ import (
 
 const quickQuestionSystemPrompt = `You are a concise helper embedded in a developer workspace. The user is asking a quick question while their main agent is running. Answer briefly and precisely. You have read-only context from the main conversation and codebase—do not call tools or take actions.`
 
-// Cap how many main-lane messages are included as context for quick question.
 const quickContextMaxMessages = 30
 
 // SendLaneMessage saves a user message into a specific lane and returns it.
-// Does NOT start an assistant reply—the caller decides whether to stream.
 func (s *Service) SendLaneMessage(ctx context.Context, threadID, laneID, content string) (*store.ChatMessage, error) {
 	thread, err := s.threadStore.Get(ctx, threadID)
 	if err != nil {
@@ -59,10 +59,126 @@ func (s *Service) SendLaneMessage(ctx context.Context, threadID, laneID, content
 	return msg, nil
 }
 
-// StreamQuickQuestion streams a quick-question reply using OpenRouter only.
-// It reads the main lane transcript as read-only context and streams with no tools.
+// utilityGenerate creates a one-shot LLM text generation using the configured utility provider.
+func (s *Service) utilityGenerate(ctx context.Context, st *store.Settings, workDir, system, user string) (string, error) {
+	provider := st.UtilityProviderOrDefault()
+	model := st.UtilityModelOrDefault()
+
+	switch provider {
+	case "openrouter":
+		apiKey := strings.TrimSpace(st.OpenRouterAPIKey)
+		if apiKey == "" {
+			return "", fmt.Errorf("utility provider is OpenRouter but no API key is set (Settings → Providers)")
+		}
+		messages := []openrouter.APIMessage{
+			{Role: "system", Content: ptrString(system)},
+			{Role: "user", Content: ptrString(user)},
+		}
+		var buf strings.Builder
+		_, _, _, err := openrouter.StreamCompletionRound(ctx, apiKey, model, messages, nil, func(delta string) error {
+			buf.WriteString(delta)
+			return nil
+		}, nil)
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(buf.String()), nil
+
+	case "cursor":
+		agentPath, err := cursorcli.LookAgent()
+		if err != nil {
+			return "", fmt.Errorf("utility provider is Cursor but `agent` CLI not found on PATH")
+		}
+		prompt := system + "\n\n" + user
+		final, _, err := cursorcli.StreamPrintHeadless(ctx, agentPath, workDir, model, prompt, func(string) error { return nil }, nil)
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(final), nil
+
+	case "claude":
+		claudePath, err := claudecli.LookClaude()
+		if err != nil {
+			return "", fmt.Errorf("utility provider is Claude but `claude` CLI not found on PATH")
+		}
+		prompt := system + "\n\n" + user
+		final, _, err := claudecli.StreamPrintHeadless(ctx, claudePath, workDir, model, prompt, func(string) error { return nil }, nil)
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(final), nil
+
+	default:
+		return "", fmt.Errorf("unsupported utility provider %q", provider)
+	}
+}
+
+// utilityStream streams a utility LLM call, calling onDelta for each text chunk.
+func (s *Service) utilityStream(ctx context.Context, st *store.Settings, workDir, system string, apiMessages []openrouter.APIMessage, onDelta func(string) error) (string, error) {
+	provider := st.UtilityProviderOrDefault()
+	model := st.UtilityModelOrDefault()
+
+	switch provider {
+	case "openrouter":
+		apiKey := strings.TrimSpace(st.OpenRouterAPIKey)
+		if apiKey == "" {
+			return "", fmt.Errorf("utility provider is OpenRouter but no API key is set (Settings → Providers)")
+		}
+		var full strings.Builder
+		_, _, _, err := openrouter.StreamCompletionRound(ctx, apiKey, model, apiMessages, nil, func(delta string) error {
+			full.WriteString(delta)
+			return onDelta(delta)
+		}, nil)
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(full.String()), nil
+
+	case "cursor":
+		agentPath, err := cursorcli.LookAgent()
+		if err != nil {
+			return "", fmt.Errorf("utility provider is Cursor but `agent` CLI not found on PATH")
+		}
+		var prompt strings.Builder
+		for _, m := range apiMessages {
+			if m.Content != nil {
+				prompt.WriteString(*m.Content)
+				prompt.WriteString("\n\n")
+			}
+		}
+		final, _, err := cursorcli.StreamPrintHeadless(ctx, agentPath, workDir, model, prompt.String(), onDelta, nil)
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(final), nil
+
+	case "claude":
+		claudePath, err := claudecli.LookClaude()
+		if err != nil {
+			return "", fmt.Errorf("utility provider is Claude but `claude` CLI not found on PATH")
+		}
+		var prompt strings.Builder
+		for _, m := range apiMessages {
+			if m.Content != nil {
+				prompt.WriteString(*m.Content)
+				prompt.WriteString("\n\n")
+			}
+		}
+		final, _, err := claudecli.StreamPrintHeadless(ctx, claudePath, workDir, model, prompt.String(), onDelta, nil)
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(final), nil
+
+	default:
+		return "", fmt.Errorf("unsupported utility provider %q", provider)
+	}
+}
+
+// StreamQuickQuestion streams a quick-question reply using the configured utility provider.
 func (s *Service) StreamQuickQuestion(ctx context.Context, threadID, laneID string, onDelta func(string) error) error {
-	if _, _, err := s.resolveThreadProject(ctx, threadID); err != nil {
+	_, project, err := s.resolveThreadProject(ctx, threadID)
+	if err != nil {
 		return err
 	}
 
@@ -74,12 +190,8 @@ func (s *Service) StreamQuickQuestion(ctx context.Context, threadID, laneID stri
 		st = &store.Settings{}
 	}
 
-	apiKey := strings.TrimSpace(st.OpenRouterAPIKey)
-	if apiKey == "" {
-		return fmt.Errorf("quick question requires an OpenRouter API key (Settings → Providers)")
-	}
-
-	model := "openai/gpt-4o-mini"
+	provider := st.UtilityProviderOrDefault()
+	model := st.UtilityModelOrDefault()
 
 	allMessages, err := s.messageStore.ListByThread(ctx, threadID)
 	if err != nil {
@@ -122,16 +234,12 @@ func (s *Service) StreamQuickQuestion(ctx context.Context, threadID, laneID stri
 		apiMessages = append(apiMessages, openrouter.APIMessage{Role: m.Role, Content: &c})
 	}
 
-	var full strings.Builder
-	_, _, _, err = openrouter.StreamCompletionRound(ctx, apiKey, model, apiMessages, nil, func(delta string) error {
-		full.WriteString(delta)
-		return onDelta(delta)
-	}, nil)
+	workDir := project.Directory
+	replyText, err := s.utilityStream(ctx, st, workDir, system, apiMessages, onDelta)
 	if err != nil {
 		return err
 	}
 
-	replyText := strings.TrimSpace(full.String())
 	if replyText == "" {
 		return fmt.Errorf("empty quick question reply")
 	}
@@ -142,7 +250,7 @@ func (s *Service) StreamQuickQuestion(ctx context.Context, threadID, laneID stri
 		Role:         "assistant",
 		Content:      replyText,
 		CreatedAt:    time.Now().UTC(),
-		ChatProvider: "openrouter",
+		ChatProvider: provider,
 		ChatModel:    model,
 		LaneID:       laneID,
 	}
@@ -174,12 +282,8 @@ func (s *Service) SuggestCommitMessage(ctx context.Context, threadID string) (st
 	if st == nil {
 		st = &store.Settings{}
 	}
-	apiKey := strings.TrimSpace(st.OpenRouterAPIKey)
-	if apiKey == "" {
-		return "", fmt.Errorf("commit message generation requires an OpenRouter API key (Settings → Providers)")
-	}
 
-	return chat.GenerateCommitMessage(ctx, apiKey, diff)
+	return s.utilityGenerate(ctx, st, dir, chat.CommitMsgSystemPrompt, chat.CommitMsgUserPrompt(diff))
 }
 
 // ReviewBranchDiff generates a code review of the current branch vs the default branch.
@@ -204,10 +308,6 @@ func (s *Service) ReviewBranchDiff(ctx context.Context, threadID string) (string
 	if st == nil {
 		st = &store.Settings{}
 	}
-	apiKey := strings.TrimSpace(st.OpenRouterAPIKey)
-	if apiKey == "" {
-		return "", fmt.Errorf("branch review requires an OpenRouter API key (Settings → Providers)")
-	}
 
-	return chat.ReviewDiff(ctx, apiKey, diff)
+	return s.utilityGenerate(ctx, st, dir, chat.ReviewSystemPrompt, chat.ReviewUserPrompt(diff))
 }
