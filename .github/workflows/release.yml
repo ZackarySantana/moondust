@@ -31,7 +31,7 @@ jobs:
               run: |
                   export PATH="$PATH:$(go env GOPATH)/bin"
                   wails build -tags webkit2_41 -o moondust \
-                    -ldflags "-X moondust/internal/buildinfo.DisplayLabel=${RELEASE_TAG}"
+                    -ldflags "-X moondust/internal/v1/buildinfo.DisplayLabel=${RELEASE_TAG}"
             - name: Pack
               run: |
                   VERSION="${GITHUB_REF_NAME#v}"
@@ -64,7 +64,7 @@ jobs:
               run: |
                   export PATH="$PATH:$(go env GOPATH)/bin"
                   wails build -tags webkit2_41 -o moondust \
-                    -ldflags "-X moondust/internal/buildinfo.DisplayLabel=${RELEASE_TAG}"
+                    -ldflags "-X moondust/internal/v1/buildinfo.DisplayLabel=${RELEASE_TAG}"
             - name: Pack
               run: |
                   VERSION="${GITHUB_REF_NAME#v}"
@@ -92,7 +92,7 @@ jobs:
                   RELEASE_TAG: ${{ github.ref_name }}
               run: |
                   $env:PATH += ";" + (go env GOPATH) + "\bin"
-                  wails build -o moondust.exe -ldflags "-X moondust/internal/buildinfo.DisplayLabel=$env:RELEASE_TAG"
+                  wails build -o moondust.exe -ldflags "-X moondust/internal/v1/buildinfo.DisplayLabel=$env:RELEASE_TAG"
             - name: Pack
               shell: pwsh
               run: |
@@ -121,7 +121,7 @@ jobs:
                   RELEASE_TAG: ${{ github.ref_name }}
               run: |
                   $env:PATH += ";" + (go env GOPATH) + "\bin"
-                  wails build -o moondust.exe -ldflags "-X moondust/internal/buildinfo.DisplayLabel=$env:RELEASE_TAG"
+                  wails build -o moondust.exe -ldflags "-X moondust/internal/v1/buildinfo.DisplayLabel=$env:RELEASE_TAG"
             - name: Pack
               shell: pwsh
               run: |
@@ -150,7 +150,7 @@ jobs:
               run: |
                   export PATH="$PATH:$(go env GOPATH)/bin"
                   wails build -o moondust \
-                    -ldflags "-X moondust/internal/buildinfo.DisplayLabel=${RELEASE_TAG}"
+                    -ldflags "-X moondust/internal/v1/buildinfo.DisplayLabel=${RELEASE_TAG}"
             - name: Pack
               run: |
                   VERSION="${GITHUB_REF_NAME#v}"

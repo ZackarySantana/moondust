@@ -5,7 +5,7 @@
 
 WAILS_LDFLAGS :=
 ifneq ($(strip $(RELEASE_LABEL)),)
-WAILS_LDFLAGS := -ldflags "-X moondust/internal/buildinfo.DisplayLabel=$(RELEASE_LABEL)"
+WAILS_LDFLAGS := -ldflags "-X moondust/internal/v1/buildinfo.DisplayLabel=$(RELEASE_LABEL)"
 endif
 
 dev:
