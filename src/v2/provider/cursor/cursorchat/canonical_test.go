@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFromCanonical(t *testing.T) {
+func TestToCanonical(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Small", func(t *testing.T) {
@@ -28,6 +28,7 @@ func TestFromCanonical(t *testing.T) {
 		thinkingEvents := 0
 		assistantEvents := 0
 		toolCallEvents := 0
+		otherEvents := 0
 
 		for _, eventData := range eventsData {
 			var rawEvent cursorchat.RawEvent
@@ -53,6 +54,8 @@ func TestFromCanonical(t *testing.T) {
 				toolCallEvents++
 			case *chat.ToolCallCompletedEvent:
 				toolCallEvents++
+			case *chat.OtherEvent:
+				otherEvents++
 			}
 		}
 
@@ -61,6 +64,7 @@ func TestFromCanonical(t *testing.T) {
 		require.Equal(t, 11, thinkingEvents)
 		require.Equal(t, 1, assistantEvents)
 		require.Equal(t, 0, toolCallEvents)
+		require.Equal(t, 1, otherEvents) // The result event.
 	})
 
 	t.Run("Large", func(t *testing.T) {
@@ -77,6 +81,7 @@ func TestFromCanonical(t *testing.T) {
 		thinkingEvents := 0
 		assistantEvents := 0
 		toolCallEvents := 0
+		otherEvents := 0
 
 		for _, eventData := range events {
 			var rawEvent cursorchat.RawEvent
@@ -102,6 +107,8 @@ func TestFromCanonical(t *testing.T) {
 				toolCallEvents++
 			case *chat.ToolCallCompletedEvent:
 				toolCallEvents++
+			case *chat.OtherEvent:
+				otherEvents++
 			}
 		}
 
@@ -110,5 +117,6 @@ func TestFromCanonical(t *testing.T) {
 		require.Equal(t, 0, thinkingEvents)
 		require.Equal(t, 106, assistantEvents)
 		require.Equal(t, 16, toolCallEvents)
+		require.Equal(t, 1, otherEvents) // The result event.
 	})
 }
