@@ -1,5 +1,3 @@
-cursor-agent -p --output-format stream-json --trust --force "how many questions have I asked you" --resume 215b0bf0-73d6-4e50-98b8-cc3589ec4a58
-
 {"type":"system","subtype":"init","apiKeySource":"login","cwd":"/home/lidtop/moondust","session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58","model":"Composer 2 Fast","permissionMode":"default"}
 {"type":"user","message":{"role":"user","content":[{"type":"text","text":"how many questions have I asked you"}]},"session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58"}
 {"type":"thinking","subtype":"delta","text":"You have asked one question","session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58","timestamp_ms":1776516846362}

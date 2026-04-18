@@ -1,5 +1,3 @@
-agent -p --output-format stream-json --trust --force "what is this codebase about" --stream-partial-output
-
 {"type":"system","subtype":"init","apiKeySource":"login","cwd":"/home/lidtop/moondust","session_id":"ea28db22-9da5-40ec-9189-3d40eaafec95","model":"Composer 2 Fast","permissionMode":"default"}
 {"type":"user","message":{"role":"user","content":[{"type":"text","text":"what is this codebase about"}]},"session_id":"ea28db22-9da5-40ec-9189-3d40eaafec95"}
 {"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"\nExploring the repository structure and key files to summarize what the project does.\n\n"}]},"session_id":"ea28db22-9da5-40ec-9189-3d40eaafec95","timestamp_ms":1776533728074}

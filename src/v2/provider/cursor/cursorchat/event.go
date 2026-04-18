@@ -51,6 +51,9 @@ func (e *EventWrapper) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		e.Event = &toolCallEvent
+	case "result":
+		// Ignore result events.
+		return nil
 	default:
 		return fmt.Errorf("unknown event type '%s': %s", raw.Type, string(raw.Raw))
 	}
