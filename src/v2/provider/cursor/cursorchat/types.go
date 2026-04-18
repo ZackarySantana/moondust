@@ -6,61 +6,6 @@ import (
 	"moondust/src/v2/chat"
 )
 
-type EventWrapper struct {
-	Event Event
-}
-
-func (e *EventWrapper) UnmarshalJSON(data []byte) error {
-	var raw RawEvent
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return err
-	}
-	switch raw.Type {
-	case "system":
-		switch raw.SubType {
-		case "init":
-			var initEvent InitSystemEvent
-			if err := json.Unmarshal(raw.Raw, &initEvent); err != nil {
-				return err
-			}
-			e.Event = &initEvent
-		default:
-			return fmt.Errorf("unknown system event subtype '%s': %s", raw.SubType, string(raw.Raw))
-		}
-	case "user":
-		var userEvent UserEvent
-		if err := json.Unmarshal(raw.Raw, &userEvent); err != nil {
-			return err
-		}
-		e.Event = &userEvent
-	case "thinking":
-		var thinkingEvent ThinkingEvent
-		if err := json.Unmarshal(raw.Raw, &thinkingEvent); err != nil {
-			return err
-		}
-		e.Event = &thinkingEvent
-	case "assistant":
-		var assistantEvent AssistantEvent
-		if err := json.Unmarshal(raw.Raw, &assistantEvent); err != nil {
-			return err
-		}
-		e.Event = &assistantEvent
-	case "tool_call":
-		var toolCallEvent ToolCallEvent
-		if err := json.Unmarshal(raw.Raw, &toolCallEvent); err != nil {
-			return err
-		}
-		e.Event = &toolCallEvent
-	case "result":
-		// Ignore result events.
-		return nil
-	default:
-		return fmt.Errorf("unknown event type '%s': %s", raw.Type, string(raw.Raw))
-	}
-
-	return nil
-}
-
 type Event interface {
 	ToCanonical() (chat.Event, error)
 
@@ -160,8 +105,8 @@ func (e *InitSystemEvent) systemEvent() {}
 func (e *InitSystemEvent) event()       {}
 
 type EventMessage struct {
-	Role    string `json:"role"`
-	Content []EventContent
+	Role    string         `json:"role"`
+	Content []EventContent `json:"content"`
 }
 
 func (e *EventMessage) UnmarshalJSON(data []byte) error {
@@ -346,6 +291,17 @@ func (e *RawEventContent) UnmarshalJSON(data []byte) error {
 
 type EventContentText struct {
 	Text string `json:"text"`
+}
+
+func (e *EventContentText) MarshalJSON() ([]byte, error) {
+	type Alias EventContentText
+	return json.Marshal(&struct {
+		Type string `json:"type"`
+		*Alias
+	}{
+		Type:  "text",
+		Alias: (*Alias)(e),
+	})
 }
 
 func (e *EventContentText) content() {}

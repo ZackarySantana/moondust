@@ -70,7 +70,7 @@ func (e *RawEvent) Get() (Event, error) {
 }
 
 type SystemEvent struct {
-	SubType string
+	SubType string `json:"subtype"`
 }
 
 func (e *SystemEvent) MarshalJSON() ([]byte, error) {
@@ -87,7 +87,7 @@ func (e *SystemEvent) MarshalJSON() ([]byte, error) {
 func (e *SystemEvent) event() {}
 
 type UserEvent struct {
-	Message []Message
+	Message []Message `json:"message"`
 }
 
 func (e *UserEvent) UnmarshalJSON(data []byte) error {
@@ -122,8 +122,8 @@ func (e *UserEvent) MarshalJSON() ([]byte, error) {
 func (e *UserEvent) event() {}
 
 type ThinkingEvent struct {
-	Text     string
-	Finished bool
+	Text     string `json:"text"`
+	Finished bool   `json:"finished"`
 }
 
 func (e *ThinkingEvent) MarshalJSON() ([]byte, error) {
@@ -140,7 +140,7 @@ func (e *ThinkingEvent) MarshalJSON() ([]byte, error) {
 func (e *ThinkingEvent) event() {}
 
 type AssistantEvent struct {
-	Content []Message
+	Content []Message `json:"content"`
 	// TODO-v2: Should we add metadata here?
 }
 
@@ -176,7 +176,7 @@ func (e *AssistantEvent) MarshalJSON() ([]byte, error) {
 func (e *AssistantEvent) event() {}
 
 type ToolCallStartEvent struct {
-	ID string
+	ID string `json:"id"`
 }
 
 func (e *ToolCallStartEvent) MarshalJSON() ([]byte, error) {
@@ -193,10 +193,10 @@ func (e *ToolCallStartEvent) MarshalJSON() ([]byte, error) {
 func (e *ToolCallStartEvent) event() {}
 
 type ToolCallCompletedEvent struct {
-	ID string
+	ID string `json:"id"`
 	// TODO-v2: We should type this and have many tool call responses, make a uniform UI
 	// for all of them.
-	Result any
+	Result any `json:"result"`
 }
 
 func (e *ToolCallCompletedEvent) MarshalJSON() ([]byte, error) {
