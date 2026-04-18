@@ -212,6 +212,15 @@ func (e *ToolCallCompletedEvent) MarshalJSON() ([]byte, error) {
 
 func (e *ToolCallCompletedEvent) event() {}
 
+// OtherEvent is a generic event that holds event data that might be
+// specific to a provider.
+type OtherEvent struct {
+	Type string `json:"type"`
+	Data []byte `json:"data"`
+}
+
+func (e *OtherEvent) event() {}
+
 type Message interface {
 	message()
 }

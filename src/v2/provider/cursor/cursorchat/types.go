@@ -67,8 +67,11 @@ func (e *RawEvent) Get() (Event, error) {
 		}
 		return &toolCallEvent, nil
 	case "result":
-		// Ignore result events.
-		return nil, nil
+		var resultEvent ResultEvent
+		if err := json.Unmarshal(e.Raw, &resultEvent); err != nil {
+			return nil, err
+		}
+		return &resultEvent, nil
 	default:
 		return nil, fmt.Errorf("unknown event type '%s': %s", e.Type, string(e.Raw))
 	}
@@ -273,6 +276,20 @@ type ResultEvent struct {
 	RequestID string           `json:"request_id"`
 	Usage     ResultEventUsage `json:"usage"`
 }
+
+func (e *ResultEvent) ToCanonical() (chat.Event, error) {
+	data, err := json.Marshal(e)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling result event: %w", err)
+	}
+	// There is no canonical event for a result event.
+	return &chat.OtherEvent{
+		Type: "cursor_result",
+		Data: data,
+	}, nil
+}
+
+func (e *ResultEvent) event() {}
 
 type EventContent interface {
 	content()

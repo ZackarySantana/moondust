@@ -1,6 +1,7 @@
 package cursorchat
 
 import (
+	"encoding/json"
 	"fmt"
 	"moondust/src/v2/chat"
 )
@@ -62,9 +63,17 @@ func FromCanonical(event chat.Event) (Event, error) {
 			ToolCall: event.Result,
 		}, nil
 
-	default:
-		return nil, fmt.Errorf("unknown event type: %T", event)
+	case *chat.OtherEvent:
+		if event.Type == "cursor_result" {
+			var resultEvent ResultEvent
+			if err := json.Unmarshal(event.Data, &resultEvent); err != nil {
+				return nil, fmt.Errorf("unmarshalling result event: %w", err)
+			}
+			return &resultEvent, nil
+		}
 	}
+
+	return nil, fmt.Errorf("unknown event type: %T", event)
 }
 
 func toCanonicalMessageList(contents []EventContent) ([]chat.Message, error) {
