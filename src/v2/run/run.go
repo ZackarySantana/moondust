@@ -6,7 +6,7 @@ import (
 )
 
 type Executor interface {
-	LookPath(ctx context.Context, binaryName string) (string, error)
-	QuickRun(ctx context.Context, path string, args ...string) ([]byte, error)
-	Run(ctx context.Context, path string, args ...string) (io.ReadCloser, io.ReadCloser, error)
+	LookPath(ctx context.Context) (string, error)
+	QuickRun(ctx context.Context, args ...string) ([]byte, error)
+	Run(ctx context.Context, args ...string) (io.ReadCloser, io.ReadCloser, error)
 }

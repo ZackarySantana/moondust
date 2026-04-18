@@ -5,25 +5,16 @@ import (
 )
 
 type Options struct {
-	binaryName string
-
 	executor run.Executor
 }
 
 func defaultOptions() *Options {
 	return &Options{
-		binaryName: "agent",
-		executor:   run.Default(),
+		executor: run.Default("agent"),
 	}
 }
 
 type Option func(*Options)
-
-func WithBinaryName(binaryName string) Option {
-	return func(o *Options) {
-		o.binaryName = binaryName
-	}
-}
 
 func WithCommandRunner(runner run.Executor) Option {
 	return func(o *Options) {

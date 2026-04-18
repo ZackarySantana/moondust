@@ -28,7 +28,7 @@ type MockExecutor struct {
 	runErrorIndex int
 }
 
-func (m *MockExecutor) LookPath(ctx context.Context, binaryName string) (string, error) {
+func (m *MockExecutor) LookPath(ctx context.Context) (string, error) {
 	if m.lookPathIndex >= len(m.LookPathOutputs) {
 		if m.lookPathErrorIndex >= len(m.LookPathErrors) {
 			return "", ErrIntentionalError
@@ -42,7 +42,7 @@ func (m *MockExecutor) LookPath(ctx context.Context, binaryName string) (string,
 	return output, nil
 }
 
-func (m *MockExecutor) QuickRun(ctx context.Context, path string, args ...string) ([]byte, error) {
+func (m *MockExecutor) QuickRun(ctx context.Context, args ...string) ([]byte, error) {
 	if m.quickRunIndex >= len(m.QuickRunOutputs) {
 		if m.quickRunErrorIndex >= len(m.QuickRunErrors) {
 			return nil, ErrIntentionalError
@@ -56,7 +56,7 @@ func (m *MockExecutor) QuickRun(ctx context.Context, path string, args ...string
 	return output, nil
 }
 
-func (m *MockExecutor) Run(ctx context.Context, path string, args ...string) (io.ReadCloser, io.ReadCloser, error) {
+func (m *MockExecutor) Run(ctx context.Context, args ...string) (io.ReadCloser, io.ReadCloser, error) {
 	if m.runIndex >= len(m.RunOutputs) {
 		if m.runErrorIndex >= len(m.RunErrors) {
 			return nil, nil, ErrIntentionalError

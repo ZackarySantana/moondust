@@ -46,7 +46,7 @@ func (p *Provider) binaryPath(ctx context.Context) (string, error) {
 	if p.bp != "" {
 		return p.bp, nil
 	}
-	binaryPath, err := p.opts.executor.LookPath(ctx, p.opts.binaryName)
+	binaryPath, err := p.opts.executor.LookPath(ctx)
 	if err != nil {
 		return "", fmt.Errorf("looking up cursor binary: %w", err)
 	}

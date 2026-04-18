@@ -11,11 +11,6 @@ import (
 )
 
 func (p *Provider) Ask(ctx context.Context, workDir, model string, history []chat.Event, prompt string) (<-chan chat.Event, error) {
-	bp, err := p.binaryPath(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getting cursor binary path: %w", err)
-	}
-
 	cursorHistory := make([]cursorchat.Event, len(history))
 	for i, event := range history {
 		cursorEvent, err := cursorchat.FromCanonical(event)
@@ -44,9 +39,11 @@ func (p *Provider) Ask(ctx context.Context, workDir, model string, history []cha
 
 	stdout, _, err := p.opts.executor.Run(
 		ctx,
-		bp,
 		args...,
 	)
+	if err != nil {
+		return nil, fmt.Errorf("running cursor agent: %w", err)
+	}
 
 	sc := bufio.NewScanner(stdout)
 	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
