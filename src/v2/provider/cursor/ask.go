@@ -58,15 +58,28 @@ func (p *Provider) Ask(ctx context.Context, workDir, model string, history []cha
 			if len(line) == 0 {
 				continue
 			}
-			var event cursorchat.EventWrapper
-			if err := json.Unmarshal(line, &event); err != nil {
+			var rawEvent cursorchat.RawEvent
+			if err := json.Unmarshal(line, &rawEvent); err != nil {
 				// TODO-v2: log error? New event type?
 				continue
 			}
-			transformed, err := event.Event.ToCanonical()
+			event, err := rawEvent.Get()
+			if err != nil {
+				// TODO-v2: log error? New event type?
+				continue
+			}
+			if event == nil {
+				// Nil events are skipped on purpose.
+				continue
+			}
+			transformed, err := event.ToCanonical()
 			if err != nil {
 				// TODO-v2: log error? New event type?
 				return
+			}
+			if transformed == nil {
+				// A nil transformed event means there's no generic event that fits.
+				continue
 			}
 			select {
 			case <-ctx.Done():

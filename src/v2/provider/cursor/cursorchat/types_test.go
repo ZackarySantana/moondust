@@ -10,11 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestEventWrapper(t *testing.T) {
+func TestEvent(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Small", func(t *testing.T) {
-		rawData, err := os.ReadFile("testdata/example.ndjson")
+		t.Parallel()
+
+		rawData, err := os.ReadFile("testdata/example_small.ndjson")
 		require.NoError(t, err)
 
 		events := strings.Split(string(rawData), "\n")
@@ -26,10 +28,12 @@ func TestEventWrapper(t *testing.T) {
 		assistantEvents := 0
 		toolCallEvents := 0
 
-		for _, event := range events {
-			var eventWrapper cursorchat.EventWrapper
-			require.NoError(t, json.Unmarshal([]byte(event), &eventWrapper))
-			switch eventWrapper.Event.(type) {
+		for _, eventData := range events {
+			var rawEvent cursorchat.RawEvent
+			require.NoError(t, json.Unmarshal([]byte(eventData), &rawEvent))
+			event, err := rawEvent.Get()
+			require.NoError(t, err)
+			switch event.(type) {
 			case *cursorchat.InitSystemEvent:
 				systemEvents++
 			case *cursorchat.UserEvent:
@@ -51,7 +55,9 @@ func TestEventWrapper(t *testing.T) {
 	})
 
 	t.Run("Large", func(t *testing.T) {
-		rawData, err := os.ReadFile("testdata/example2.ndjson")
+		t.Parallel()
+
+		rawData, err := os.ReadFile("testdata/example_large.ndjson")
 		require.NoError(t, err)
 
 		events := strings.Split(string(rawData), "\n")
@@ -63,10 +69,12 @@ func TestEventWrapper(t *testing.T) {
 		assistantEvents := 0
 		toolCallEvents := 0
 
-		for _, event := range events {
-			var eventWrapper cursorchat.EventWrapper
-			require.NoError(t, json.Unmarshal([]byte(event), &eventWrapper))
-			switch eventWrapper.Event.(type) {
+		for _, eventData := range events {
+			var rawEvent cursorchat.RawEvent
+			require.NoError(t, json.Unmarshal([]byte(eventData), &rawEvent))
+			event, err := rawEvent.Get()
+			require.NoError(t, err)
+			switch event.(type) {
 			case *cursorchat.InitSystemEvent:
 				systemEvents++
 			case *cursorchat.UserEvent:

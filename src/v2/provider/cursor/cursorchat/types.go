@@ -84,6 +84,51 @@ func (e *RawEvent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (e *RawEvent) Get() (Event, error) {
+	switch e.Type {
+	case "system":
+		switch e.SubType {
+		case "init":
+			var initEvent InitSystemEvent
+			if err := json.Unmarshal(e.Raw, &initEvent); err != nil {
+				return nil, err
+			}
+			return &initEvent, nil
+		default:
+			return nil, fmt.Errorf("unknown system event subtype '%s': %s", e.SubType, string(e.Raw))
+		}
+	case "user":
+		var userEvent UserEvent
+		if err := json.Unmarshal(e.Raw, &userEvent); err != nil {
+			return nil, err
+		}
+		return &userEvent, nil
+	case "thinking":
+		var thinkingEvent ThinkingEvent
+		if err := json.Unmarshal(e.Raw, &thinkingEvent); err != nil {
+			return nil, err
+		}
+		return &thinkingEvent, nil
+	case "assistant":
+		var assistantEvent AssistantEvent
+		if err := json.Unmarshal(e.Raw, &assistantEvent); err != nil {
+			return nil, err
+		}
+		return &assistantEvent, nil
+	case "tool_call":
+		var toolCallEvent ToolCallEvent
+		if err := json.Unmarshal(e.Raw, &toolCallEvent); err != nil {
+			return nil, err
+		}
+		return &toolCallEvent, nil
+	case "result":
+		// Ignore result events.
+		return nil, nil
+	default:
+		return nil, fmt.Errorf("unknown event type '%s': %s", e.Type, string(e.Raw))
+	}
+}
+
 type InitSystemEvent struct {
 	ApiKeySource   string `json:"apiKeySource"`
 	CWD            string `json:"cwd"`
