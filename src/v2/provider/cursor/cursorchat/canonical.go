@@ -1,7 +1,6 @@
 package cursorchat
 
 import (
-	"encoding/json"
 	"fmt"
 	"moondust/src/v2/chat"
 )
@@ -57,14 +56,10 @@ func FromCanonical(event chat.Event) (Event, error) {
 		}, nil
 
 	case *chat.ToolCallCompletedEvent:
-		result, err := json.Marshal(event.Result)
-		if err != nil {
-			return nil, fmt.Errorf("marshalling tool call result: %w", err)
-		}
 		return &ToolCallEvent{
-			CallID:  event.ID,
-			SubType: "completed",
-			Result:  result,
+			CallID:   event.ID,
+			SubType:  "completed",
+			ToolCall: event.Result,
 		}, nil
 
 	default:

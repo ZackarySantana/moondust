@@ -190,18 +190,10 @@ func (e *ThinkingEvent) ToCanonical() (chat.Event, error) {
 
 func (e *ThinkingEvent) event() {}
 
-type AssistantEventUsage struct {
-	InputTokens      int `json:"inputTokens"`
-	OutputTokens     int `json:"outputTokens"`
-	CacheReadTokens  int `json:"cacheReadTokens"`
-	CacheWriteTokens int `json:"cacheWriteTokens"`
-}
-
 type AssistantEvent struct {
-	Message   EventMessage        `json:"message"`
-	SessionID string              `json:"session_id"`
-	RequestID string              `json:"request_id"`
-	Usage     AssistantEventUsage `json:"usage"`
+	Message     EventMessage `json:"message"`
+	SessionID   string       `json:"session_id"`
+	TimeStampMs int64        `json:"timestamp_ms"`
 }
 
 func (e *AssistantEvent) MarshalJSON() ([]byte, error) {
@@ -229,18 +221,12 @@ func (e *AssistantEvent) event() {}
 
 type ToolCallEvent struct {
 	// started or completed
-	SubType string `json:"subtype"`
-	CallID  string `json:"call_id"`
-	// TODO-v2: This could be parsed, like `readToolCall` etc.
-	ToolCall    json.RawMessage `json:"tool_call"`
-	ModelCallID string          `json:"model_call_id"`
-	SessionID   string          `json:"session_id"`
-	TimestampMs int64           `json:"timestamp_ms"`
-
-	// TODO-v2: This could be parsed, like `success` etc.
-	// The success field in this has "relatedCursorRulePaths" and "relatedCursorRules" fields,
-	// which would be very nice to have.
-	Result json.RawMessage `json:"result"`
+	SubType     string `json:"subtype"`
+	CallID      string `json:"call_id"`
+	ToolCall    any    `json:"tool_call"`
+	ModelCallID string `json:"model_call_id"`
+	SessionID   string `json:"session_id"`
+	TimestampMs int64  `json:"timestamp_ms"`
 }
 
 func (e *ToolCallEvent) MarshalJSON() ([]byte, error) {
@@ -262,11 +248,31 @@ func (e *ToolCallEvent) ToCanonical() (chat.Event, error) {
 	}
 	return &chat.ToolCallCompletedEvent{
 		ID:     e.CallID,
-		Result: e.Result,
+		Result: e.ToolCall,
 	}, nil
 }
 
 func (e *ToolCallEvent) event() {}
+
+type ResultEventUsage struct {
+	InputTokens      int `json:"inputTokens"`
+	OutputTokens     int `json:"outputTokens"`
+	CacheReadTokens  int `json:"cacheReadTokens"`
+	CacheWriteTokens int `json:"cacheWriteTokens"`
+}
+
+type ResultEvent struct {
+	// Can be "success", unknown others.
+	SubType       string `json:"subtype"`
+	DurationMs    int64  `json:"duration_ms"`
+	DurationAPIMs int64  `json:"duration_api_ms"`
+	IsError       bool   `json:"is_error"`
+	// The raw text result.
+	Result    string           `json:"result"`
+	SessionID string           `json:"session_id"`
+	RequestID string           `json:"request_id"`
+	Usage     ResultEventUsage `json:"usage"`
+}
 
 type EventContent interface {
 	content()
