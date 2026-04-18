@@ -3,13 +3,33 @@ package cursor
 import (
 	"context"
 	"fmt"
-	"moondust/src/v2/provider/cursor/client"
 )
 
-func (p *Provider) GetUsage(ctx context.Context) (*client.Usage, error) {
+type Usage struct {
+	AutoPercentUsed  float64 `json:"autoPercentUsed"`
+	APIPercentUsed   float64 `json:"apiPercentUsed"`
+	TotalPercentUsed float64 `json:"totalPercentUsed"`
+}
+
+func (p *Provider) GetUsage(ctx context.Context) (*Usage, error) {
 	client, err := p.client()
 	if err != nil {
 		return nil, fmt.Errorf("getting cursor client: %w", err)
 	}
-	return client.GetUsage(ctx)
+	usage, err := client.GetUsage(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("calling cursor client: %w", err)
+	}
+	return &Usage{
+		AutoPercentUsed:  valueOf(usage.PlanUsage.AutoPercentUsed),
+		APIPercentUsed:   valueOf(usage.PlanUsage.APIPercentUsed),
+		TotalPercentUsed: valueOf(usage.PlanUsage.TotalPercentUsed),
+	}, nil
+}
+
+func valueOf[T any](v *T) T {
+	if v == nil {
+		return *new(T)
+	}
+	return *v
 }

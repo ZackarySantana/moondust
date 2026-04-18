@@ -29,7 +29,7 @@ func New(opts ...Option) *Provider {
 }
 
 func (p *Provider) client() (*client.Client, error) {
-	if p.client != nil {
+	if p.c != nil {
 		return p.c, nil
 	}
 	client, err := client.NewClient()
