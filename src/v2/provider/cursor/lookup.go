@@ -23,7 +23,7 @@ func (p *Provider) LookUp(ctx context.Context) (*provider.Status, error) {
 	}
 
 	var err error
-	status.BinaryPath, err = p.opts.executor.LookPath(ctx, p.opts.binaryName)
+	status.BinaryPath, err = p.binaryPath(ctx)
 	if err != nil {
 		if errors.Is(err, exec.ErrNotFound) {
 			return status, nil

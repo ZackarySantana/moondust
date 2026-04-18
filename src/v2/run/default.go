@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -24,6 +25,20 @@ func Default() Executor {
 
 type executor struct{}
 
+func (c *executor) LookPath(_ context.Context, binaryName string) (string, error) {
+	p, err := exec.LookPath(binaryName)
+	if err == nil {
+		return p, nil
+	}
+	if runtime.GOOS == "windows" {
+		p, err := exec.LookPath(binaryName + ".exe")
+		if err == nil {
+			return p, nil
+		}
+	}
+	return "", fmt.Errorf("binary '%s' not found: %w", binaryName, err)
+}
+
 func (c *executor) QuickRun(ctx context.Context, path string, args ...string) ([]byte, error) {
 	ctx, cancel := context.WithTimeoutCause(ctx, quickRunTimeout, ErrTimeout)
 	defer cancel()
@@ -38,16 +53,20 @@ func (c *executor) QuickRun(ctx context.Context, path string, args ...string) ([
 	return out, nil
 }
 
-func (c *executor) LookPath(_ context.Context, binaryName string) (string, error) {
-	p, err := exec.LookPath(binaryName)
-	if err == nil {
-		return p, nil
+func (c *executor) Run(ctx context.Context, path string, args ...string) (io.ReadCloser, io.ReadCloser, error) {
+	cmd := exec.CommandContext(ctx, path, args...)
+	hideConsole(cmd)
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, nil, fmt.Errorf("creating stdout pipe: %w", err)
 	}
-	if runtime.GOOS == "windows" {
-		p, err := exec.LookPath(binaryName + ".exe")
-		if err == nil {
-			return p, nil
-		}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, nil, fmt.Errorf("creating stderr pipe: %w", err)
 	}
-	return "", fmt.Errorf("binary '%s' not found: %w", binaryName, err)
+	if err := cmd.Start(); err != nil {
+		return nil, nil, fmt.Errorf("starting command '%s %s': %w", path, strings.Join(args, " "), err)
+	}
+	return stdout, stderr, nil
 }

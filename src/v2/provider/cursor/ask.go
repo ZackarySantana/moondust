@@ -1,15 +1,65 @@
 package cursor
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"moondust/src/v2/chat"
+	"strings"
 )
 
-func (p *Provider) Ask(ctx context.Context, history []chat.Event, prompt string) (<-chan chat.Event, error) {
+func (p *Provider) Ask(ctx context.Context, workDir, model string, history []chat.Event, prompt string) (<-chan chat.Event, error) {
+	bp, err := p.binaryPath(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting cursor binary path: %w", err)
+	}
 
-	return nil, nil
+	events := make(chan chat.Event)
+
+	// Compile history.
+	message := []string{
+		"history here",
+		prompt,
+	}
+
+	stdout, _, err := p.opts.executor.Run(
+		ctx,
+		bp,
+		"--print",
+		"--output-format", "stream-json",
+		"--stream-partial-output",
+		"--trust", "--force",
+		"--workspace", workDir,
+		"--model", model,
+		strings.Join(message, "\n"),
+	)
+
+	sc := bufio.NewScanner(stdout)
+	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+
+	go func() {
+		defer close(events)
+
+		for sc.Scan() {
+			line := strings.TrimSpace(sc.Text())
+			if line == "" {
+				continue
+			}
+			event, err := p.parseLineToEvent(line)
+			if err != nil {
+				// TODO-v2: log error? New event type?
+				return
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case events <- event:
+			}
+		}
+	}()
+
+	return events, nil
 }
 
 type RawEvent struct {
@@ -83,7 +133,7 @@ type ToolCallEvent struct {
 	Result json.RawMessage `json:"result"`
 }
 
-func (p *Provider) parseEvent(line string) (chat.Event, error) {
+func (p *Provider) parseLineToEvent(line string) (chat.Event, error) {
 	var event RawEvent
 	if err := json.Unmarshal([]byte(line), &event); err != nil {
 		return nil, fmt.Errorf("unmarshalling event: %w", err)

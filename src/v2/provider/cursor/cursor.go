@@ -1,6 +1,7 @@
 package cursor
 
 import (
+	"context"
 	"fmt"
 	"moondust/src/v2/provider"
 	"moondust/src/v2/provider/cursor/client"
@@ -15,7 +16,8 @@ var _ provider.Provider = (*Provider)(nil)
 type Provider struct {
 	opts *Options
 
-	c *client.Client
+	c  *client.Client
+	bp string
 }
 
 func New(opts ...Option) *Provider {
@@ -38,4 +40,16 @@ func (p *Provider) client() (*client.Client, error) {
 	}
 	p.c = client
 	return client, nil
+}
+
+func (p *Provider) binaryPath(ctx context.Context) (string, error) {
+	if p.bp != "" {
+		return p.bp, nil
+	}
+	binaryPath, err := p.opts.executor.LookPath(ctx, p.opts.binaryName)
+	if err != nil {
+		return "", fmt.Errorf("looking up cursor binary: %w", err)
+	}
+	p.bp = binaryPath
+	return binaryPath, nil
 }

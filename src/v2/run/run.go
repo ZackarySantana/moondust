@@ -1,8 +1,12 @@
 package run
 
-import "context"
+import (
+	"context"
+	"io"
+)
 
 type Executor interface {
-	QuickRun(ctx context.Context, path string, args ...string) ([]byte, error)
 	LookPath(ctx context.Context, binaryName string) (string, error)
+	QuickRun(ctx context.Context, path string, args ...string) ([]byte, error)
+	Run(ctx context.Context, path string, args ...string) (io.ReadCloser, io.ReadCloser, error)
 }

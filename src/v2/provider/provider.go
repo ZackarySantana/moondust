@@ -7,9 +7,9 @@ import (
 )
 
 type Provider interface {
-	LookUp(context.Context) (*Status, error)
+	LookUp(ctx context.Context) (*Status, error)
 
-	Ask(context.Context, string) (<-chan chat.Event, error)
+	Ask(ctx context.Context, workDir, model string, history []chat.Event, prompt string) (<-chan chat.Event, error)
 }
 
 type Status struct {
