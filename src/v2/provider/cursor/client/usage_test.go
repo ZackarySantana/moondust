@@ -12,19 +12,26 @@ import (
 )
 
 func TestGetUsage(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Unauthorized", func(t *testing.T) {
+		t.Parallel()
+
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 		}))
 		t.Cleanup(server.Close)
 		client, err := client.NewClient(client.WithAccessToken("test"), client.WithUsageEndpoint(server.URL))
 		require.NoError(t, err)
+		require.NotNil(t, client)
 		usage, err := client.GetUsage(t.Context())
 		require.ErrorContains(t, err, "cursor access token is invalid or expired")
 		require.Nil(t, usage)
 	})
 
 	t.Run("OK", func(t *testing.T) {
+		t.Parallel()
+
 		autoPercentUsed := 40.0
 		apiPercentUsed := 60.0
 		totalPercentUsed := 50.0
@@ -46,6 +53,7 @@ func TestGetUsage(t *testing.T) {
 		t.Cleanup(server.Close)
 		client, err := client.NewClient(client.WithAccessToken("test"), client.WithUsageEndpoint(server.URL))
 		require.NoError(t, err)
+		require.NotNil(t, client)
 		usage, err := client.GetUsage(t.Context())
 		require.NoError(t, err)
 		require.NotNil(t, usage)
