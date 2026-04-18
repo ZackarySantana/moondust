@@ -1,0 +1,17 @@
+cursor-agent -p --output-format stream-json --trust --force "how many questions have I asked you" --resume 215b0bf0-73d6-4e50-98b8-cc3589ec4a58
+
+{"type":"system","subtype":"init","apiKeySource":"login","cwd":"/home/lidtop/moondust","session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58","model":"Composer 2 Fast","permissionMode":"default"}
+{"type":"user","message":{"role":"user","content":[{"type":"text","text":"how many questions have I asked you"}]},"session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58"}
+{"type":"thinking","subtype":"delta","text":"You have asked one question","session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58","timestamp_ms":1776516846362}
+{"type":"thinking","subtype":"delta","text":" so far.","session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58","timestamp_ms":1776516846458}
+{"type":"thinking","subtype":"delta","text":" You have asked four","session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58","timestamp_ms":1776516847468}
+{"type":"thinking","subtype":"delta","text":" messages total. If ","session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58","timestamp_ms":1776516847469}
+{"type":"thinking","subtype":"delta","text":"counting all messages","session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58","timestamp_ms":1776516847472}
+{"type":"thinking","subtype":"delta","text":" as questions, there","session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58","timestamp_ms":1776516847472}
+{"type":"thinking","subtype":"delta","text":" are four. If counting","session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58","timestamp_ms":1776516847473}
+{"type":"thinking","subtype":"delta","text":" only interrogative ","session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58","timestamp_ms":1776516847473}
+{"type":"thinking","subtype":"delta","text":"questions, there are","session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58","timestamp_ms":1776516847473}
+{"type":"thinking","subtype":"delta","text":" three.","session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58","timestamp_ms":1776516847474}
+{"type":"thinking","subtype":"completed","session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58","timestamp_ms":1776516848909}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"\nIn this chat you’ve sent **four** messages to me:\n\n1. “hey what is up”  \n2. “what did I just ask you?”  \n3. “how many questions have I asked you”  \n4. “how many questions have I asked you” (again)\n\nSo you’ve asked **“how many questions have I asked you” twice**.  \n\nIf you mean **how many separate things you’ve asked overall**, it depends how you count the first line: as a casual hello (**three** “real” questions) or as a question too (**four**)."}]},"session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58"}
+{"type":"result","subtype":"success","duration_ms":4391,"duration_api_ms":4391,"is_error":false,"result":"\nIn this chat you’ve sent **four** messages to me:\n\n1. “hey what is up”  \n2. “what did I just ask you?”  \n3. “how many questions have I asked you”  \n4. “how many questions have I asked you” (again)\n\nSo you’ve asked **“how many questions have I asked you” twice**.  \n\nIf you mean **how many separate things you’ve asked overall**, it depends how you count the first line: as a casual hello (**three** “real” questions) or as a question too (**four**).","session_id":"215b0bf0-73d6-4e50-98b8-cc3589ec4a58","request_id":"fd17c997-850e-4a9f-8ffe-41b1f078d9a0","usage":{"inputTokens":10155,"outputTokens":565,"cacheReadTokens":2016,"cacheWriteTokens":0}}
