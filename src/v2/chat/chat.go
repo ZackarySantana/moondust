@@ -40,7 +40,7 @@ type ToolCallCompletedEvent struct {
 	ID string
 	// TODO-v2: We should type this and have many tool call responses, make a uniform UI
 	// for all of them.
-	Reuslt any
+	Result any
 }
 
 func (e *ToolCallCompletedEvent) event() {}
