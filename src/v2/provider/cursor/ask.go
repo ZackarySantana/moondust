@@ -11,15 +11,6 @@ import (
 )
 
 func (p *Provider) Ask(ctx context.Context, workDir, model string, history []chat.Event, prompt string) (<-chan chat.Event, error) {
-	cursorHistory := make([]cursorchat.Event, len(history))
-	for i, event := range history {
-		cursorEvent, err := cursorchat.FromCanonical(event)
-		if err != nil {
-			return nil, fmt.Errorf("converting history event to cursor: %w", err)
-		}
-		cursorHistory[i] = cursorEvent
-	}
-
 	args := []string{
 		"--print",
 		"--output-format", "stream-json",
@@ -28,8 +19,12 @@ func (p *Provider) Ask(ctx context.Context, workDir, model string, history []cha
 		"--workspace", workDir,
 		"--model", model,
 	}
-	for _, event := range cursorHistory {
-		data, err := json.Marshal(event)
+	for _, event := range history {
+		cursorEvent, err := cursorchat.FromCanonical(event)
+		if err != nil {
+			return nil, fmt.Errorf("converting history event to cursor: %w", err)
+		}
+		data, err := json.Marshal(cursorEvent)
 		if err != nil {
 			return nil, fmt.Errorf("marshalling history event to cursor: %w", err)
 		}
