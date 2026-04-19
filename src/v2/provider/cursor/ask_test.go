@@ -25,7 +25,7 @@ func TestAsk(t *testing.T) {
 	require.NoError(t, err)
 
 	// Send over all the history as history and as Run output.
-	// This unit test is testing that the history are processed correctly.
+	// This unit test is testing that the history and events are processed correctly.
 	history := make([]chat.Event, 15)
 	eventsJSON := make([]string, 15)
 	for i, line := range strings.Split(string(data), "\n") {
@@ -44,7 +44,6 @@ func TestAsk(t *testing.T) {
 		canonicalEvent, err := event.ToCanonical()
 		require.NoError(t, err)
 		history[i] = canonicalEvent
-
 	}
 
 	require.Len(t, history, 15)
