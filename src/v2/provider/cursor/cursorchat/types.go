@@ -277,6 +277,17 @@ type ResultEvent struct {
 	Usage     ResultEventUsage `json:"usage"`
 }
 
+func (e *ResultEvent) MarshalJSON() ([]byte, error) {
+	type Alias ResultEvent
+	return json.Marshal(&struct {
+		Type string `json:"type"`
+		*Alias
+	}{
+		Type:  "result",
+		Alias: (*Alias)(e),
+	})
+}
+
 func (e *ResultEvent) ToCanonical() (chat.Event, error) {
 	data, err := json.Marshal(e)
 	if err != nil {
