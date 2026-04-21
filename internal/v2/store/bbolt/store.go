@@ -9,6 +9,21 @@ import (
 	"go.etcd.io/bbolt"
 )
 
+var _ store.Store[any] = (*bboltStore[any])(nil)
+
+type bboltStore[T any] struct {
+	db *bbolt.DB
+
+	bucket []byte
+}
+
+func new[T any](db *bbolt.DB, bucket []byte) *bboltStore[T] {
+	return &bboltStore[T]{
+		db:     db,
+		bucket: bucket,
+	}
+}
+
 func New(dbPath string) (*store.Stores, error) {
 	db, err := bbolt.Open(dbPath, 0600, nil)
 	if err != nil {
@@ -37,21 +52,6 @@ func New(dbPath string) (*store.Stores, error) {
 	}
 
 	return store, nil
-}
-
-var _ store.Store[any] = (*bboltStore[any])(nil)
-
-func new[T any](db *bbolt.DB, bucket []byte) *bboltStore[T] {
-	return &bboltStore[T]{
-		db:     db,
-		bucket: bucket,
-	}
-}
-
-type bboltStore[T any] struct {
-	db *bbolt.DB
-
-	bucket []byte
 }
 
 func (b *bboltStore[T]) Put(ctx context.Context, id []byte, data *T) error {
