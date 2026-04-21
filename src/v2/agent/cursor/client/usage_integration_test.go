@@ -3,7 +3,7 @@
 package client_test
 
 import (
-	"moondust/src/v2/provider/cursor/client"
+	"moondust/src/v2/agent/cursor/client"
 	"testing"
 
 	"github.com/stretchr/testify/require"

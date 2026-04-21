@@ -2,7 +2,7 @@ package client_test
 
 import (
 	"encoding/json"
-	"moondust/src/v2/provider/cursor/client"
+	"moondust/src/v2/agent/cursor/client"
 	"net/http"
 	"net/http/httptest"
 	"testing"

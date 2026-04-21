@@ -2,7 +2,7 @@ package cursorchat_test
 
 import (
 	"encoding/json"
-	"moondust/src/v2/provider/cursor/cursorchat"
+	"moondust/src/v2/agent/cursor/cursorchat"
 	"os"
 	"strings"
 	"testing"
