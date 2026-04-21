@@ -26,6 +26,18 @@ func (e *RawEvent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (e *RawEvent) MarshalJSON() ([]byte, error) {
+	if len(e.Raw) > 0 {
+		return e.Raw, nil
+	}
+	type Alias RawEvent
+	return json.Marshal(&struct {
+		*Alias
+	}{
+		Alias: (*Alias)(e),
+	})
+}
+
 func (e *RawEvent) Get() (Event, error) {
 	switch e.Type {
 	case "system":
@@ -240,6 +252,18 @@ func (e *RawMessage) UnmarshalJSON(data []byte) error {
 	// Copy the data to its own memory, we cannot use data directly.
 	e.Raw = append(json.RawMessage(nil), data...)
 	return nil
+}
+
+func (e *RawMessage) MarshalJSON() ([]byte, error) {
+	if len(e.Raw) > 0 {
+		return e.Raw, nil
+	}
+	type Alias RawMessage
+	return json.Marshal(&struct {
+		*Alias
+	}{
+		Alias: (*Alias)(e),
+	})
 }
 
 func (e *RawMessage) Get() (Message, error) {
