@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"moondust/src/v2/provider"
+	"moondust/src/v2/agent"
 	"os/exec"
 )
 
@@ -17,13 +17,13 @@ type StatusCommandOutput struct {
 	Message         string `json:"message"`
 }
 
-func (p *Provider) LookUp(ctx context.Context) (*provider.Status, error) {
-	status := &provider.Status{
+func (a *Agent) LookUp(ctx context.Context) (*agent.Status, error) {
+	status := &agent.Status{
 		DownloadURL: downloadURL,
 	}
 
 	var err error
-	status.BinaryPath, err = p.binaryPath(ctx)
+	status.BinaryPath, err = a.binaryPath(ctx)
 	if err != nil {
 		if errors.Is(err, exec.ErrNotFound) {
 			return status, nil
@@ -32,13 +32,13 @@ func (p *Provider) LookUp(ctx context.Context) (*provider.Status, error) {
 	}
 	status.Installed = true
 
-	version, err := p.opts.executor.QuickRun(ctx, status.BinaryPath, "--version")
+	version, err := a.opts.executor.QuickRun(ctx, status.BinaryPath, "--version")
 	if err != nil {
 		return nil, fmt.Errorf("getting cursor version: %w", err)
 	}
 	status.Version = string(version)
 
-	statusOutput, err := p.opts.executor.QuickRun(ctx, status.BinaryPath, "status", "--format", "json")
+	statusOutput, err := a.opts.executor.QuickRun(ctx, status.BinaryPath, "status", "--format", "json")
 	if err != nil {
 		return nil, fmt.Errorf("getting cursor status: %w", err)
 	}

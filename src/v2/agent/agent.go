@@ -1,4 +1,4 @@
-package provider
+package agent
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"moondust/src/v2/chat"
 )
 
-type Provider interface {
+type Agent interface {
 	LookUp(ctx context.Context) (*Status, error)
 
 	Ask(ctx context.Context, workDir, model string, history []chat.Event, prompt string) (<-chan chat.Event, error)

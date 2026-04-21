@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"moondust/src/v2/agent/cursor/cursorchat"
 	"moondust/src/v2/chat"
-	"moondust/src/v2/provider/cursor/cursorchat"
 )
 
-func (p *Provider) Ask(ctx context.Context, workDir, model string, history []chat.Event, prompt string) (<-chan chat.Event, error) {
+func (a *Agent) Ask(ctx context.Context, workDir, model string, history []chat.Event, prompt string) (<-chan chat.Event, error) {
 	args := []string{
 		"--print",
 		"--output-format", "stream-json",
@@ -32,7 +32,7 @@ func (p *Provider) Ask(ctx context.Context, workDir, model string, history []cha
 	}
 	args = append(args, prompt)
 
-	stdout, _, err := p.opts.executor.Run(
+	stdout, _, err := a.opts.executor.Run(
 		ctx,
 		args...,
 	)

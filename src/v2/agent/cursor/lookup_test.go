@@ -2,7 +2,7 @@ package cursor_test
 
 import (
 	"encoding/json"
-	"moondust/src/v2/provider/cursor"
+	"moondust/src/v2/agent/cursor"
 	"moondust/src/v2/run/runtest"
 	"os/exec"
 	"testing"

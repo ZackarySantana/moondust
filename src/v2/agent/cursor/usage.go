@@ -11,8 +11,8 @@ type Usage struct {
 	TotalPercentUsed float64 `json:"totalPercentUsed"`
 }
 
-func (p *Provider) GetUsage(ctx context.Context) (*Usage, error) {
-	client, err := p.client()
+func (a *Agent) GetUsage(ctx context.Context) (*Usage, error) {
+	client, err := a.client()
 	if err != nil {
 		return nil, fmt.Errorf("getting cursor client: %w", err)
 	}

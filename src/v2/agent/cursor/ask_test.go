@@ -3,9 +3,9 @@ package cursor_test
 import (
 	"encoding/json"
 	"io"
+	"moondust/src/v2/agent/cursor"
+	"moondust/src/v2/agent/cursor/cursorchat"
 	"moondust/src/v2/chat"
-	"moondust/src/v2/provider/cursor"
-	"moondust/src/v2/provider/cursor/cursorchat"
 	"moondust/src/v2/run/runtest"
 	"os"
 	"strings"
