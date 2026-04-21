@@ -3,6 +3,7 @@ module moondust
 go 1.25
 
 require (
+	dario.cat/mergo v1.0.0
 	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3
 	github.com/UserExistsError/conpty v0.1.4
 	github.com/coder/websocket v1.8.14
@@ -16,7 +17,6 @@ require (
 )
 
 require (
-	dario.cat/mergo v1.0.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.1.6 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
