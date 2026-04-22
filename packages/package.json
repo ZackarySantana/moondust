@@ -1,0 +1,28 @@
+{
+    "name": "moondust",
+    "dependencies": {
+        "clsx": "^2.1.1",
+        "lucide-solid": "^1.8.0",
+        "solid-js": "^1.9.12",
+        "tailwind-merge": "^3.5.0"
+    },
+    "packageManager": "bun@1.3.6",
+    "private": true,
+    "workspaces": [
+        "components",
+        "studio",
+        "docs"
+    ],
+    "devDependencies": {
+        "@storybook/addon-docs": "^10.3.5",
+        "@tailwindcss/vite": "^4.2.4",
+        "@types/node": "^25.6.0",
+        "storybook": "^10.3.5",
+        "storybook-dark-mode": "^5.0.0",
+        "storybook-solidjs-vite": "^10.0.12",
+        "tailwindcss": "^4.2.4",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.9",
+        "vite-plugin-solid": "^2.11.12"
+    }
+}
