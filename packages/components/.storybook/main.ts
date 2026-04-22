@@ -14,7 +14,7 @@ const STORYBOOK_DEPLOY_BASE = "/storybook/components/";
 
 export default defineMain({
     stories: ["../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
-    addons: ["@storybook/addon-docs", "storybook-dark-mode"],
+    addons: ["@storybook/addon-docs"],
     framework: {
         name: "storybook-solidjs-vite",
         options: {},

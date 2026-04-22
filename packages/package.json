@@ -18,7 +18,6 @@
         "@tailwindcss/vite": "^4.2.4",
         "@types/node": "^25.6.0",
         "storybook": "^10.3.5",
-        "storybook-dark-mode": "^5.0.0",
         "storybook-solidjs-vite": "^10.0.12",
         "tailwindcss": "^4.2.4",
         "typescript": "^6.0.3",
