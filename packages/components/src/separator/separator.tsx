@@ -12,8 +12,8 @@ export const Separator: Component<SeparatorProps> = (props) => {
         <div
             class={cn(
                 local.orientation === "vertical"
-                    ? "h-full w-px bg-slate-800/50"
-                    : "h-px w-full bg-slate-800/50",
+                    ? "h-full w-px bg-void-700"
+                    : "h-px w-full bg-void-700",
                 local.class,
             )}
             role="separator"

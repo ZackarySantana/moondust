@@ -12,40 +12,38 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-    args: { combo: "⌘K" },
+    render: () => <Kbd>⌘K</Kbd>,
 };
 
 export const Combo: Story = {
-    args: { combo: "Ctrl+Shift+P" },
+    render: () => (
+        <span class="inline-flex items-center gap-1">
+            <Kbd>Ctrl</Kbd>
+            <Kbd>Shift</Kbd>
+            <Kbd>P</Kbd>
+        </span>
+    ),
 };
 
 export const Inline: Story = {
     render: () => (
-        <p class="text-sm text-slate-300">
-            Press <Kbd combo="⌘K" /> to open the command palette.
+        <p class="text-sm text-void-300">
+            Press <Kbd>⌘</Kbd>
+            <Kbd>K</Kbd> to open the command palette.
         </p>
     ),
 };
 
 export const Row: Story = {
     render: () => (
-        <div class="flex items-center gap-3 text-sm text-slate-300">
+        <div class="flex items-center gap-3 text-sm text-void-300">
             <span>Move</span>
-            <Kbd combo="↑" />
-            <Kbd combo="↓" />
+            <Kbd>↑</Kbd>
+            <Kbd>↓</Kbd>
             <span>Open</span>
-            <Kbd combo="Enter" />
+            <Kbd>Enter</Kbd>
             <span>Close</span>
-            <Kbd combo="Esc" />
+            <Kbd>Esc</Kbd>
         </div>
     ),
-};
-
-export const Empty: Story = {
-    args: { combo: "" },
-    parameters: {
-        docs: {
-            description: { story: "Renders nothing when combo is empty." },
-        },
-    },
 };

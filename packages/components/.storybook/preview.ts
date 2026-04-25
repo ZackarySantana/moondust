@@ -5,14 +5,15 @@ const preview: Preview = {
     parameters: {
         backgrounds: {
             options: {
-                app: { name: "App", value: "#080c0a" },
-                panel: { name: "Panel", value: "#0c110f" },
-                surface: { name: "Surface", value: "#121815" },
+                void: { name: "Void", value: "#050610" },
+                panel: { name: "Panel", value: "#080a18" },
+                surface: { name: "Surface", value: "#0c1024" },
+                elevated: { name: "Elevated", value: "#131730" },
             },
         },
     },
     initialGlobals: {
-        backgrounds: { value: "app" },
+        backgrounds: { value: "void" },
     },
 };
 

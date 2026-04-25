@@ -35,13 +35,15 @@ export const CollapsibleSection: ParentComponent<CollapsibleSectionProps> = (
     const [open, setOpen] = createSignal(props.defaultOpen ?? props.count > 0);
     return (
         <div class={cn("rounded-r border-l-2", TONE_BORDER[props.tone])}>
-            <div class="flex w-full items-center gap-1 px-2.5 py-1.5">
+            <div class="relative">
                 <button
                     type="button"
-                    class="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 text-left transition-colors hover:bg-slate-800/30"
+                    class="absolute inset-0 z-0 cursor-pointer transition-colors hover:bg-slate-800/30 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-slate-500"
                     onClick={() => setOpen((o) => !o)}
                     aria-expanded={open()}
-                >
+                    aria-label={`Toggle ${props.title}`}
+                />
+                <div class="pointer-events-none relative z-10 flex w-full items-center gap-1 px-2.5 py-1.5">
                     <ChevronRight
                         class={cn(
                             "size-3 shrink-0 text-slate-500 transition-transform duration-150",
@@ -53,20 +55,20 @@ export const CollapsibleSection: ParentComponent<CollapsibleSectionProps> = (
                     <span class="min-w-0 flex-1 text-[11px] font-medium text-slate-300">
                         {props.title}
                     </span>
-                </button>
-                <Show when={props.trailing}>
-                    <div class="flex shrink-0 items-center gap-0.5">
-                        {props.trailing}
-                    </div>
-                </Show>
-                <span
-                    class={cn(
-                        "shrink-0 rounded px-1.5 py-0.5 text-[10px] leading-none",
-                        TONE_BADGE[props.tone],
-                    )}
-                >
-                    {props.count}
-                </span>
+                    <Show when={props.trailing}>
+                        <div class="pointer-events-auto flex shrink-0 items-center gap-0.5">
+                            {props.trailing}
+                        </div>
+                    </Show>
+                    <span
+                        class={cn(
+                            "shrink-0 rounded px-1.5 py-0.5 text-[10px] leading-none",
+                            TONE_BADGE[props.tone],
+                        )}
+                    >
+                        {props.count}
+                    </span>
+                </div>
             </div>
             <Show when={open()}>
                 <div class="px-2.5 pb-2 pt-1">{props.children}</div>
