@@ -1,1 +1,20 @@
 @import "tailwindcss";
+
+@theme {
+    --color-slate-50: rgb(242 244 243);
+    --color-slate-100: rgb(227 231 229);
+    --color-slate-200: rgb(203 210 206);
+    --color-slate-300: rgb(172 182 177);
+    --color-slate-400: rgb(131 144 137);
+    --color-slate-500: rgb(91 106 98);
+    --color-slate-600: rgb(64 76 70);
+    --color-slate-700: rgb(42 52 47);
+    --color-slate-800: rgb(25 33 29);
+    --color-slate-900: rgb(16 22 19);
+    --color-slate-950: rgb(10 14 12);
+
+    --color-app-bg: rgb(8 12 10);
+    --color-app-panel: rgb(12 17 15);
+    --color-app-surface: rgb(18 24 21);
+    --color-app-elevated: rgb(24 31 27);
+}
