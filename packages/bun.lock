@@ -49,6 +49,7 @@
       "name": "@moondust/studio",
       "version": "0.0.0",
       "dependencies": {
+        "@moondust/components": "workspace:*",
         "@solidjs/router": "^0.16.1",
         "@tanstack/solid-query": "^5.99.2",
       },
