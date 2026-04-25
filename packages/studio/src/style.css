@@ -1,4 +1,7 @@
 @import "tailwindcss";
 
+/* Include components theme */
+@import "../../components/src/theme.css";
+
 /* Include components styles */
 @source "../../components/src";

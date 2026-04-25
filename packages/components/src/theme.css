@@ -1,0 +1,50 @@
+@theme {
+    /* Type system: Inter for prose/UI, JetBrains Mono for identifiers (auto-applied to code/kbd/pre/samp via Tailwind preflight) */
+    --font-sans:
+        "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+        sans-serif;
+    --font-mono:
+        "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+    /* Void: neutral blue-black scale, replaces slate */
+    --color-void-50: #f0f2f9;
+    --color-void-100: #dde2f0;
+    --color-void-200: #b8c0dc;
+    --color-void-300: #8a93bd;
+    --color-void-400: #5d6798;
+    --color-void-500: #3d4574;
+    --color-void-600: #2a305a;
+    --color-void-700: #1c2142;
+    --color-void-800: #131730;
+    --color-void-850: #0c1024;
+    --color-void-900: #080a18;
+    --color-void-950: #050610;
+
+    /* Starlight: signature gold, primary actions */
+    --color-starlight-50: #fef9e7;
+    --color-starlight-100: #fcefb8;
+    --color-starlight-200: #f5dc7a;
+    --color-starlight-300: #e8c248;
+    --color-starlight-400: #c89e2b;
+    --color-starlight-500: #a17e1f;
+    --color-starlight-600: #745b15;
+    --color-starlight-700: #4a3a0d;
+
+    /* Nebula: secondary cosmic violet, links and identifiers in motion */
+    --color-nebula-100: #ece5f8;
+    --color-nebula-200: #d8cdf0;
+    --color-nebula-300: #b9a6e6;
+    --color-nebula-400: #9b87d4;
+    --color-nebula-500: #7d6abf;
+    --color-nebula-600: #5e4fa0;
+    --color-nebula-700: #443a7c;
+
+    /* Flare: destructive warm sun, replaces red */
+    --color-flare-100: #fbded4;
+    --color-flare-200: #f6c1b3;
+    --color-flare-300: #f1a092;
+    --color-flare-400: #e87766;
+    --color-flare-500: #d65a48;
+    --color-flare-600: #ab3d2e;
+    --color-flare-700: #7a2920;
+}
