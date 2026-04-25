@@ -53,8 +53,7 @@ export const Default: Story = {
                 </TabsContent>
                 <TabsContent value="git">
                     <PanelBody>
-                        Git integration, default branch, and worktree
-                        behavior.
+                        Git integration, default branch, and worktree behavior.
                     </PanelBody>
                 </TabsContent>
                 <TabsContent value="agent">
@@ -65,8 +64,8 @@ export const Default: Story = {
                 </TabsContent>
                 <TabsContent value="env">
                     <PanelBody>
-                        Shell, package manager, and environment variables
-                        passed to spawned commands.
+                        Shell, package manager, and environment variables passed
+                        to spawned commands.
                     </PanelBody>
                 </TabsContent>
             </Tabs>
@@ -103,7 +102,10 @@ export const Variants: Story = {
                 <p class="mb-3 font-mono text-[10px] uppercase tracking-[0.16em] text-void-500">
                     segmented
                 </p>
-                <Tabs defaultValue="diff" variant="segmented">
+                <Tabs
+                    defaultValue="diff"
+                    variant="segmented"
+                >
                     <TabsList aria-label="View mode">
                         <TabsTrigger value="diff">Diff</TabsTrigger>
                         <TabsTrigger value="rendered">Rendered</TabsTrigger>
@@ -143,7 +145,10 @@ export const Sizes: Story = {
                 <p class="mb-3 font-mono text-[10px] uppercase tracking-[0.16em] text-void-500">
                     sm
                 </p>
-                <Tabs defaultValue="a" size="sm">
+                <Tabs
+                    defaultValue="a"
+                    size="sm"
+                >
                     <TabsList aria-label="Small size">
                         <TabsTrigger value="a">First</TabsTrigger>
                         <TabsTrigger value="b">Second</TabsTrigger>
@@ -155,7 +160,11 @@ export const Sizes: Story = {
                 <p class="mb-3 font-mono text-[10px] uppercase tracking-[0.16em] text-void-500">
                     sm + segmented
                 </p>
-                <Tabs defaultValue="a" size="sm" variant="segmented">
+                <Tabs
+                    defaultValue="a"
+                    size="sm"
+                    variant="segmented"
+                >
                     <TabsList aria-label="Small segmented">
                         <TabsTrigger value="a">Diff</TabsTrigger>
                         <TabsTrigger value="b">Raw</TabsTrigger>
@@ -186,7 +195,10 @@ export const WithIcons: Story = {
                             aria-hidden
                         />
                         Git
-                        <Badge size="sm" mono>
+                        <Badge
+                            size="sm"
+                            mono
+                        >
                             12
                         </Badge>
                     </TabsTrigger>
@@ -205,7 +217,10 @@ export const WithIcons: Story = {
                             aria-hidden
                         />
                         Environment
-                        <Badge size="sm" tone="flare">
+                        <Badge
+                            size="sm"
+                            tone="flare"
+                        >
                             !2
                         </Badge>
                     </TabsTrigger>
@@ -234,10 +249,16 @@ export const Disabled: Story = {
                 <TabsList aria-label="Settings sections">
                     <TabsTrigger value="general">General</TabsTrigger>
                     <TabsTrigger value="git">Git</TabsTrigger>
-                    <TabsTrigger value="agent" disabled>
+                    <TabsTrigger
+                        value="agent"
+                        disabled
+                    >
                         Agent (Pro)
                     </TabsTrigger>
-                    <TabsTrigger value="env" disabled>
+                    <TabsTrigger
+                        value="env"
+                        disabled
+                    >
                         Environment (Pro)
                     </TabsTrigger>
                 </TabsList>
@@ -262,18 +283,36 @@ export const Controlled: Story = {
                         external value
                     </span>
                     <Badge mono>{tab()}</Badge>
-                    <Separator orientation="vertical" class="h-4" />
-                    <Button size="sm" variant="ghost" onClick={() => setTab("a")}>
+                    <Separator
+                        orientation="vertical"
+                        class="h-4"
+                    />
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setTab("a")}
+                    >
                         a
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setTab("b")}>
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setTab("b")}
+                    >
                         b
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setTab("c")}>
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setTab("c")}
+                    >
                         c
                     </Button>
                 </div>
-                <Tabs value={tab()} onValueChange={setTab}>
+                <Tabs
+                    value={tab()}
+                    onValueChange={setTab}
+                >
                     <TabsList aria-label="Controlled tabs">
                         <TabsTrigger value="a">Tab A</TabsTrigger>
                         <TabsTrigger value="b">Tab B</TabsTrigger>
@@ -328,7 +367,10 @@ export const InContext: Story = {
                                 aria-hidden
                             />
                             Git
-                            <Badge size="sm" mono>
+                            <Badge
+                                size="sm"
+                                mono
+                            >
                                 12
                             </Badge>
                         </TabsTrigger>
@@ -371,7 +413,11 @@ export const InContext: Story = {
 
                     <TabsContent value="git">
                         <PanelBody>
-                            <SettingRow label="Default branch" value="main" mono />
+                            <SettingRow
+                                label="Default branch"
+                                value="main"
+                                mono
+                            />
                             <SettingRow
                                 label="Worktree mode"
                                 value="On every fork"
@@ -416,13 +462,20 @@ export const InContext: Story = {
 
                     <TabsContent value="env">
                         <PanelBody>
-                            <SettingRow label="Shell" value="zsh" mono />
                             <SettingRow
-                                label="Package manager"
-                                value="bun@1.3.6"
+                                label="Shell"
+                                value="zsh"
                                 mono
                             />
-                            <SettingRow label="Variables" value="3 defined" />
+                            <SettingRow
+                                label="Package manager"
+                                value="bun@1.3.13"
+                                mono
+                            />
+                            <SettingRow
+                                label="Variables"
+                                value="3 defined"
+                            />
                         </PanelBody>
                     </TabsContent>
                 </Tabs>
@@ -431,13 +484,17 @@ export const InContext: Story = {
                     Use{" "}
                     <code class="font-mono text-[11px] text-void-300">←</code>
                     {" / "}
-                    <code class="font-mono text-[11px] text-void-300">→</code>{" "}
+                    <code class="font-mono text-[11px] text-void-300">
+                        →
+                    </code>{" "}
                     to move between tabs,{" "}
                     <code class="font-mono text-[11px] text-void-300">
                         Home
                     </code>
                     {" / "}
-                    <code class="font-mono text-[11px] text-void-300">End</code>{" "}
+                    <code class="font-mono text-[11px] text-void-300">
+                        End
+                    </code>{" "}
                     for first/last.
                 </p>
             </div>
