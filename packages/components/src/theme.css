@@ -18,6 +18,8 @@
     --color-void-800: #131730;
     --color-void-850: #0c1024;
     --color-void-900: #080a18;
+    /* This is the background color for the wails app, if this is changed,
+    the background color for the wails app should also be changed in main.go */
     --color-void-950: #050610;
 
     /* Starlight: signature gold, primary actions */

@@ -35,7 +35,7 @@ func Main(assets embed.FS) {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
+		BackgroundColour: &options.RGBA{R: 5, G: 6, B: 16, A: 1},
 		OnStartup: func(ctx context.Context) {
 			slog.InfoContext(ctx, "startup started...")
 			slog.InfoContext(ctx, "startup completed...")
