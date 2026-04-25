@@ -4,6 +4,10 @@ import "./style.css";
 import { queryClient } from "./lib/query-client";
 import { Button } from "@moondust/components";
 
+import { CancelCreateProject } from "@moondust/wails-app/app";
+
+await CancelCreateProject();
+
 render(
     () => (
         <QueryClientProvider client={queryClient}>

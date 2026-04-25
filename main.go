@@ -22,7 +22,7 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-//go:embed all:frontend/dist
+//go:embed all:packages/studio/dist
 var assets embed.FS
 
 func main() {

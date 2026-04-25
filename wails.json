@@ -1,13 +1,15 @@
 {
-  "$schema": "https://wails.io/schemas/config.v2.json",
-  "name": "moondust",
-  "outputfilename": "moondust",
-  "frontend:install": "bun install",
-  "frontend:build": "bun run build",
-  "frontend:dev:watcher": "bun run dev",
-  "frontend:dev:serverUrl": "auto",
-  "author": {
-    "name": "ZackarySantana",
-    "email": "64446617+ZackarySantana@users.noreply.github.com"
-  }
+    "$schema": "https://wails.io/schemas/config.v2.json",
+    "name": "moondust",
+    "outputfilename": "moondust",
+    "frontend:dir": "packages/studio",
+    "frontend:install": "bun install",
+    "frontend:build": "bun run build",
+    "frontend:dev:watcher": "bun run dev",
+    "frontend:dev:serverUrl": "auto",
+    "wailsjsdir": "packages/wails-app",
+    "author": {
+        "name": "ZackarySantana",
+        "email": "64446617+ZackarySantana@users.noreply.github.com"
+    }
 }
