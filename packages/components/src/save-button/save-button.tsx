@@ -74,8 +74,8 @@ export const SaveButton: Component<SaveButtonProps> = (props) => {
                     fallback={
                         <>
                             <Check
-                                class="size-4 text-emerald-400"
-                                stroke-width={2}
+                                class="size-4 text-void-950"
+                                stroke-width={2.5}
                                 aria-hidden
                             />
                             {props.savedLabel ?? "Saved"}

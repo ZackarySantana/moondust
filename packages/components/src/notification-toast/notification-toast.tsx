@@ -38,21 +38,21 @@ export const NotificationToastViewport: Component<
         <div class="pointer-events-none fixed right-4 bottom-4 z-50 flex flex-col gap-2">
             <For each={[...props.toasts]}>
                 {(toast) => (
-                    <div class="pointer-events-auto flex w-80 flex-col gap-2 rounded-lg border border-emerald-800/30 bg-slate-900/95 px-4 py-3 shadow-lg shadow-black/30 backdrop-blur-sm">
+                    <div class="pointer-events-auto flex w-80 flex-col gap-2 border border-void-700 border-l-2 border-l-starlight-400 bg-void-900 px-4 py-3">
                         <div class="flex items-start gap-3">
                             <div class="min-w-0 flex-1">
-                                <p class="text-[13px] font-medium text-slate-100">
+                                <p class="text-[13px] font-medium text-void-50">
                                     {toast.title}
                                 </p>
                                 {toast.body && (
-                                    <p class="mt-0.5 text-xs leading-relaxed text-slate-400">
+                                    <p class="mt-0.5 text-xs leading-relaxed text-void-300">
                                         {toast.body}
                                     </p>
                                 )}
                             </div>
                             <button
                                 type="button"
-                                class="shrink-0 cursor-pointer rounded p-0.5 text-slate-600 transition-colors hover:text-slate-300"
+                                class="shrink-0 cursor-pointer rounded-none p-0.5 text-void-500 transition-colors duration-100 hover:text-void-100"
                                 onClick={() => props.onDismiss(toast.id)}
                                 aria-label="Dismiss notification"
                             >
@@ -66,7 +66,7 @@ export const NotificationToastViewport: Component<
                         {toast.deepLink && (
                             <button
                                 type="button"
-                                class="cursor-pointer self-start rounded-md bg-emerald-900/40 px-2.5 py-1 text-[11px] font-medium text-emerald-200/90 transition-colors hover:bg-emerald-800/50"
+                                class="cursor-pointer self-start rounded-none border border-starlight-400/30 bg-starlight-400/10 px-2.5 py-1 text-[11px] font-medium text-starlight-200 transition-colors duration-100 hover:border-starlight-400/50 hover:bg-starlight-400/20"
                                 onClick={() =>
                                     props.onNavigate(toast.id, toast.deepLink!)
                                 }

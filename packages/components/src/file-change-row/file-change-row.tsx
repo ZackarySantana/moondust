@@ -13,23 +13,23 @@ export type FileChangeContext = "staged" | "unstaged" | "untracked";
  * Mirrors the legacy `gitStatusColor` helper.
  */
 function gitStatusColor(status: string): string {
-    if (!status) return "text-slate-500";
-    if (status === "untracked") return "text-sky-400";
+    if (!status) return "text-void-500";
+    if (status === "untracked") return "text-nebula-300";
     const ch = status[0]?.toUpperCase();
     switch (ch) {
         case "A":
         case "?":
-            return "text-emerald-400";
+            return "text-starlight-300";
         case "M":
-            return "text-amber-400";
+            return "text-nebula-300";
         case "D":
-            return "text-red-400";
+            return "text-flare-400";
         case "R":
-            return "text-violet-400";
+            return "text-nebula-400";
         case "U":
-            return "text-rose-400";
+            return "text-flare-300";
         default:
-            return "text-slate-400";
+            return "text-void-300";
     }
 }
 
@@ -49,7 +49,7 @@ export const FileChangeRow: Component<FileChangeRowProps> = (props) => {
     const isPending = () => props.pendingPath === props.path;
 
     return (
-        <div class="group flex w-full items-center gap-0.5 rounded px-1 py-0.5 transition-colors hover:bg-slate-800/40">
+        <div class="group flex w-full items-center gap-0.5 rounded-none px-1 py-0.5 transition-colors duration-100 hover:bg-void-800/60">
             <button
                 type="button"
                 class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
@@ -63,25 +63,25 @@ export const FileChangeRow: Component<FileChangeRowProps> = (props) => {
                 >
                     {props.status === "untracked" ? "?" : props.status}
                 </span>
-                <span class="min-w-0 flex-1 truncate text-[11px] text-slate-300">
+                <span class="min-w-0 flex-1 truncate font-mono text-[11px] text-void-200">
                     {props.path}
                 </span>
             </button>
 
             <Show when={isPending()}>
                 <Loader2
-                    class="size-3 shrink-0 animate-spin text-slate-500"
+                    class="size-3 shrink-0 animate-spin text-void-400"
                     stroke-width={2}
                     aria-hidden
                 />
             </Show>
 
             <Show when={!isPending()}>
-                <div class="flex shrink-0 items-center gap-px opacity-0 transition-opacity group-hover:opacity-100">
+                <div class="flex shrink-0 items-center gap-px opacity-0 transition-opacity duration-100 group-hover:opacity-100">
                     <Show when={props.context === "staged" && props.onUnstage}>
                         <button
                             type="button"
-                            class="flex size-5 cursor-pointer items-center justify-center rounded text-slate-500 transition-colors hover:bg-slate-700/60 hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-35"
+                            class="flex size-5 cursor-pointer items-center justify-center rounded-none text-void-400 transition-colors duration-100 hover:bg-void-700 hover:text-void-100 disabled:cursor-not-allowed disabled:opacity-35"
                             title="Unstage file"
                             disabled={props.disabled}
                             onClick={(e) => {
@@ -106,7 +106,7 @@ export const FileChangeRow: Component<FileChangeRowProps> = (props) => {
                     >
                         <button
                             type="button"
-                            class="flex size-5 cursor-pointer items-center justify-center rounded text-slate-500 transition-colors hover:bg-slate-700/60 hover:text-emerald-300 disabled:cursor-not-allowed disabled:opacity-35"
+                            class="flex size-5 cursor-pointer items-center justify-center rounded-none text-void-400 transition-colors duration-100 hover:bg-void-700 hover:text-starlight-300 disabled:cursor-not-allowed disabled:opacity-35"
                             title="Stage file"
                             disabled={props.disabled}
                             onClick={(e) => {
@@ -129,7 +129,7 @@ export const FileChangeRow: Component<FileChangeRowProps> = (props) => {
                     >
                         <button
                             type="button"
-                            class="flex size-5 cursor-pointer items-center justify-center rounded text-slate-500 transition-colors hover:bg-slate-700/60 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-35"
+                            class="flex size-5 cursor-pointer items-center justify-center rounded-none text-void-400 transition-colors duration-100 hover:bg-void-700 hover:text-flare-400 disabled:cursor-not-allowed disabled:opacity-35"
                             title="Discard changes"
                             disabled={props.disabled}
                             onClick={(e) => {

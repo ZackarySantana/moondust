@@ -65,11 +65,11 @@ export const VerticalNav: Component<VerticalNavProps> = (props) => {
                     {(item) => {
                         const active = () => local.activeId === item.id;
                         const linkClass = cn(
-                            "flex w-full items-center gap-2.5 rounded-lg py-2 pr-3 pl-3 text-left text-[13px] font-medium transition-all duration-100 no-underline",
-                            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500/55",
+                            "flex w-full items-center gap-2.5 rounded-none border-l-2 py-2 pr-3 pl-3 text-left text-[13px] font-medium transition-colors duration-100 no-underline",
+                            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-starlight-400/60",
                             active()
-                                ? "bg-slate-800/50 text-slate-100"
-                                : "text-slate-500 hover:bg-slate-800/25 hover:text-slate-300",
+                                ? "border-starlight-400 bg-void-800 text-void-50"
+                                : "border-transparent text-void-400 hover:bg-void-800/60 hover:text-void-100",
                         );
                         const renderLink =
                             local.renderLink ?? defaultRenderLink;
@@ -84,8 +84,8 @@ export const VerticalNav: Component<VerticalNavProps> = (props) => {
                                             class={cn(
                                                 "size-4 shrink-0 transition-colors duration-100",
                                                 active()
-                                                    ? "text-emerald-500/80"
-                                                    : "text-slate-600",
+                                                    ? "text-starlight-300"
+                                                    : "text-void-500",
                                             )}
                                             stroke-width={1.75}
                                             aria-hidden

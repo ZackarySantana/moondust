@@ -19,7 +19,7 @@ export const FieldRow: Component<FieldRowProps> = (props) => (
     <div class="grid grid-cols-[11rem_1fr] items-start gap-4">
         <Label
             for={props.id}
-            class="mb-0 pt-2 text-right text-[13px] text-slate-400"
+            class="mb-0 pt-2 text-right text-[13px] text-void-400"
         >
             {props.label}
         </Label>
@@ -33,7 +33,7 @@ export const FieldRow: Component<FieldRowProps> = (props) => (
                 readOnly={!props.onInput}
             />
             {props.description && (
-                <p class="text-xs text-slate-600">{props.description}</p>
+                <p class="text-xs text-void-500">{props.description}</p>
             )}
         </div>
     </div>
@@ -47,9 +47,11 @@ export interface SectionProps {
 export const Section: ParentComponent<SectionProps> = (props) => (
     <section class="space-y-5">
         <div>
-            <h2 class="text-sm font-medium text-slate-200">{props.title}</h2>
+            <h2 class="text-sm font-semibold tracking-tight text-void-100">
+                {props.title}
+            </h2>
             {props.description && (
-                <p class="mt-0.5 text-xs text-slate-600">{props.description}</p>
+                <p class="mt-0.5 text-xs text-void-500">{props.description}</p>
             )}
         </div>
         <div class="space-y-4">{props.children}</div>
@@ -89,17 +91,17 @@ export const CopyableReadonlyField: Component<CopyableReadonlyFieldProps> = (
 
     return (
         <div class="grid grid-cols-[11rem_1fr] items-start gap-4">
-            <Label class="mb-0 pt-2 text-right text-[13px] text-slate-400">
+            <Label class="mb-0 pt-2 text-right text-[13px] text-void-400">
                 {props.label}
             </Label>
             <div class="space-y-1">
                 <div class="flex items-center gap-2">
-                    <code class="flex h-9 min-w-0 flex-1 items-center rounded-lg border border-slate-800/40 bg-slate-950/30 px-3 font-mono text-xs text-slate-500 select-all">
+                    <code class="flex h-9 min-w-0 flex-1 items-center rounded-none border border-void-700 bg-void-900 px-3 font-mono text-xs text-void-300 select-all">
                         {props.value}
                     </code>
                     <button
                         type="button"
-                        class="shrink-0 cursor-pointer rounded-lg border border-slate-800/40 p-2 text-slate-500 transition-colors duration-100 hover:bg-slate-800/40 hover:text-slate-300"
+                        class="shrink-0 cursor-pointer rounded-none border border-void-700 p-2 text-void-400 transition-colors duration-100 hover:border-void-600 hover:bg-void-800 hover:text-void-100"
                         aria-label={props.copyAriaLabel}
                         onClick={() => void copy()}
                     >
@@ -107,8 +109,8 @@ export const CopyableReadonlyField: Component<CopyableReadonlyFieldProps> = (
                             when={!copied()}
                             fallback={
                                 <Check
-                                    class="size-3.5 text-emerald-500"
-                                    stroke-width={2}
+                                    class="size-3.5 text-starlight-300"
+                                    stroke-width={2.5}
                                     aria-hidden
                                 />
                             }
@@ -122,7 +124,7 @@ export const CopyableReadonlyField: Component<CopyableReadonlyFieldProps> = (
                     </button>
                 </div>
                 {props.description && (
-                    <p class="text-xs text-slate-600">{props.description}</p>
+                    <p class="text-xs text-void-500">{props.description}</p>
                 )}
             </div>
         </div>
