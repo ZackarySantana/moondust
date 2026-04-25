@@ -24,11 +24,7 @@ func new[T any](db *bbolt.DB, bucket []byte) *bboltStore[T] {
 	}
 }
 
-func New(dbPath string) (*store.Stores, error) {
-	db, err := bbolt.Open(dbPath, 0600, nil)
-	if err != nil {
-		return nil, fmt.Errorf("open database: %w", err)
-	}
+func New(db *bbolt.DB) (*store.Stores, error) {
 	store := &store.Stores{
 		Project:   newProject(db),
 		Thread:    newThread(db),
