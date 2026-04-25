@@ -8,9 +8,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * Same site as Docusaurus (`packages/docs/docusaurus.config.ts` `url` + `baseUrl`).
- * Canonical Storybook URL: https://docs.moondust.pro/storybook/components/
+ * Canonical Storybook URL: https://docs.moondust.pro/storybook/
  */
-const STORYBOOK_DEPLOY_BASE = "/storybook/components/";
+const STORYBOOK_DEPLOY_BASE = "/storybook/";
 
 export default defineMain({
     stories: ["../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],

@@ -5,12 +5,7 @@ on:
         branches: [main]
         paths:
             - "packages/docs/**"
-            - "frontend/.storybook/**"
-            - "frontend/src/**/*.stories.*"
-            - "frontend/src/style.css"
-            - "frontend/package.json"
-            - "frontend/bun.lock"
-            - "frontend/vite.config.ts"
+            - "packages/components/**"
             - ".github/workflows/docs-deploy.yml"
     workflow_dispatch:
 
@@ -39,12 +34,12 @@ jobs:
             - uses: actions/checkout@v4
             - uses: oven-sh/setup-bun@v2
             - name: Install and build Storybook
-              working-directory: frontend
-              run: bun install --frozen-lockfile && bun run build-storybook
+              working-directory: packages
+              run: bun install --frozen-lockfile && bun run --filter @moondust/components build
             - uses: actions/upload-artifact@v4
               with:
                   name: storybook-dist
-                  path: frontend/storybook-static
+                  path: packages/components/dist
 
     merge:
         runs-on: ubuntu-latest
