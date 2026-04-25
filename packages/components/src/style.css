@@ -35,6 +35,7 @@
     --color-starlight-700: #4a3a0d;
 
     /* Nebula: secondary cosmic violet, links and identifiers in motion */
+    --color-nebula-100: #ece5f8;
     --color-nebula-200: #d8cdf0;
     --color-nebula-300: #b9a6e6;
     --color-nebula-400: #9b87d4;
@@ -43,6 +44,8 @@
     --color-nebula-700: #443a7c;
 
     /* Flare: destructive warm sun, replaces red */
+    --color-flare-100: #fbded4;
+    --color-flare-200: #f6c1b3;
     --color-flare-300: #f1a092;
     --color-flare-400: #e87766;
     --color-flare-500: #d65a48;
