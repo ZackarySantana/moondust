@@ -1,5 +1,7 @@
 package store
 
+import "time"
+
 type WorktreeOptions string
 
 const (
@@ -25,6 +27,9 @@ type GlobalSettings struct {
 
 	// UtilityProvider is the provider for utility LLM calls.
 	UtilityProvider Provider
+
+	// UpdatedAt is the last time the settings were updated.
+	UpdatedAt time.Time
 }
 
 type GlobalSettingsStore interface {
@@ -33,19 +38,28 @@ type GlobalSettingsStore interface {
 
 type OpenRouterSettings struct {
 	APIKey string
+
+	// UpdatedAt is the last time the settings were updated.
+	UpdatedAt time.Time
 }
 
 type OpenRouterSettingsStore interface {
 	Store[OpenRouterSettings]
 }
 
-type CursorSettings struct{}
+type CursorSettings struct {
+	// UpdatedAt is the last time the settings were updated.
+	UpdatedAt time.Time
+}
 
 type CursorSettingsStore interface {
 	Store[CursorSettings]
 }
 
-type ClaudeSettings struct{}
+type ClaudeSettings struct {
+	// UpdatedAt is the last time the settings were updated.
+	UpdatedAt time.Time
+}
 
 type ClaudeSettingsStore interface {
 	Store[ClaudeSettings]

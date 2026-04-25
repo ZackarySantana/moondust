@@ -30,8 +30,8 @@ func Connect() (*bolt.DB, error) {
 	return db, nil
 }
 
-func New(db *bbolt.DB) (*store.Stores, error) {
-	store := &store.Stores{
+func New(db *bbolt.DB) *store.Stores {
+	return &store.Stores{
 		Project:   newProject(db),
 		Thread:    newThread(db),
 		ChatEvent: newChatEvent(db),
@@ -48,10 +48,4 @@ func New(db *bbolt.DB) (*store.Stores, error) {
 		},
 		Log: newLog(db),
 	}
-
-	if err := store.Validate(); err != nil {
-		return nil, fmt.Errorf("validate store: %w", err)
-	}
-
-	return store, nil
 }

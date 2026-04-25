@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"moondust/internal/v2/app"
 	"moondust/internal/v2/store/bbolt"
+	"moondust/internal/v2/store/policy"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -19,9 +20,9 @@ func Main(assets embed.FS) {
 		panic(fmt.Errorf("connect to database: %w", err))
 	}
 
-	stores, err := bbolt.New(db)
-	if err != nil {
-		panic(fmt.Errorf("create stores: %w", err))
+	stores := policy.Wrap(bbolt.New(db))
+	if err := stores.Validate(); err != nil {
+		panic(fmt.Errorf("validate stores: %w", err))
 	}
 
 	err = wails.Run(&options.App{
