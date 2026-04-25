@@ -16,8 +16,13 @@ type AskOptions struct {
 	// Prompt is the prompt for the session.
 	Prompt string
 
+	// Resumability options.
 	// SessionID is an optional ID for the session.
 	SessionID string
+	// LastHistoryIndex is the index of the last history event to resume from.
+	LastHistoryIndex int
+	// ForkSession indicates if the session should be forked.
+	ForkSession bool
 }
 
 type Agent interface {

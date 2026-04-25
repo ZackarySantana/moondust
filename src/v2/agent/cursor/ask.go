@@ -20,10 +20,16 @@ func (a *Agent) Ask(ctx context.Context, opts *agent.AskOptions) (<-chan chat.Ev
 		"--workspace", opts.WorkDir,
 		"--model", opts.Model,
 	}
-	if opts.SessionID != "" {
+	// At this point, cursor's CLI does not support forking sessions.
+	// We have to create a new session for forked sessions.
+	if opts.SessionID != "" && opts.ForkSession {
 		args = append(args, "--resume", opts.SessionID)
 	}
-	for _, event := range opts.History {
+	from := max(0, opts.LastHistoryIndex-1)
+	if opts.ForkSession {
+		from = 0
+	}
+	for _, event := range opts.History[from:] {
 		cursorEvent, err := cursorchat.FromCanonical(event)
 		if err != nil {
 			return nil, fmt.Errorf("converting history event to cursor: %w", err)
