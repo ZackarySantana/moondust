@@ -2,8 +2,6 @@ package bbolt
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"moondust/internal/v2/store"
 
 	"go.etcd.io/bbolt"
@@ -12,32 +10,39 @@ import (
 var _ store.ChatEventStore = (*ChatEventStore)(nil)
 
 type ChatEventStore struct {
-	*bboltStore[store.ChatEvent]
+	*nestedStore[store.ChatEvent]
 }
 
 func newChatEvent(db *bbolt.DB) *ChatEventStore {
 	return &ChatEventStore{
-		bboltStore: new[store.ChatEvent](db, []byte("chat_event")),
+		nestedStore: newNestedStore[store.ChatEvent](db, []byte("chat_event")),
 	}
 }
 
-func (c *ChatEventStore) ListByThread(ctx context.Context, threadID []byte) ([]*store.ChatEvent, error) {
-	var events []*store.ChatEvent
-	return events, c.db.View(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket(c.bucket)
-		if bucket == nil {
-			return fmt.Errorf("bucket not found")
-		}
-		return bucket.ForEach(func(k, v []byte) error {
-			var event store.ChatEvent
-			if err := json.Unmarshal(v, &event); err != nil {
-				return fmt.Errorf("unmarshal event: %w", err)
-			}
-			if event.ThreadID != string(threadID) {
-				return nil
-			}
-			events = append(events, &event)
-			return nil
-		})
+func (c *ChatEventStore) Put(ctx context.Context, id []byte, data *store.ChatEvent) error {
+	return c.nestedStore.Put(ctx, []byte(data.ThreadID), id, data)
+}
+
+func (c *ChatEventStore) Get(ctx context.Context, id []byte) (*store.ChatEvent, error) {
+	return c.nestedStore.Get(ctx, func(event store.ChatEvent) bool {
+		return event.ID == string(id)
 	})
+}
+
+func (c *ChatEventStore) List(ctx context.Context) ([]*store.ChatEvent, error) {
+	return c.nestedStore.ListAll(ctx)
+}
+
+func (c *ChatEventStore) Update(ctx context.Context, id []byte, data *store.ChatEvent) error {
+	return c.nestedStore.Update(ctx, []byte(data.ThreadID), id, data)
+}
+
+func (c *ChatEventStore) Delete(ctx context.Context, id []byte) error {
+	return c.nestedStore.Delete(ctx, func(event store.ChatEvent) bool {
+		return event.ID == string(id)
+	})
+}
+
+func (c *ChatEventStore) ListByThread(ctx context.Context, threadID []byte) ([]*store.ChatEvent, error) {
+	return c.nestedStore.List(ctx, []byte(threadID))
 }

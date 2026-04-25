@@ -12,12 +12,12 @@ import (
 var _ store.ThreadStore = (*ThreadStore)(nil)
 
 type ThreadStore struct {
-	*bboltStore[store.Thread]
+	*bucketStore[store.Thread]
 }
 
 func newThread(db *bbolt.DB) *ThreadStore {
 	return &ThreadStore{
-		bboltStore: new[store.Thread](db, []byte("thread")),
+		bucketStore: new[store.Thread](db, []byte("thread")),
 	}
 }
 

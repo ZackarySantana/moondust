@@ -12,41 +12,41 @@ var _ store.CursorSettingsStore = (*CursorSettingsStore)(nil)
 var _ store.ClaudeSettingsStore = (*ClaudeSettingsStore)(nil)
 
 type SettingsStore struct {
-	*bboltStore[store.Settings]
+	*bucketStore[store.Settings]
 }
 
 func newSettings(db *bbolt.DB) *SettingsStore {
 	return &SettingsStore{
-		bboltStore: new[store.Settings](db, []byte("settings")),
+		bucketStore: new[store.Settings](db, []byte("settings")),
 	}
 }
 
 type OpenRouterSettingsStore struct {
-	*bboltStore[store.OpenRouterSettings]
+	*bucketStore[store.OpenRouterSettings]
 }
 
 func newOpenRouterSettings(db *bbolt.DB) *OpenRouterSettingsStore {
 	return &OpenRouterSettingsStore{
-		bboltStore: new[store.OpenRouterSettings](db, []byte("openrouter_settings")),
+		bucketStore: new[store.OpenRouterSettings](db, []byte("openrouter_settings")),
 	}
 }
 
 type CursorSettingsStore struct {
-	*bboltStore[store.CursorSettings]
+	*bucketStore[store.CursorSettings]
 }
 
 func newCursorSettings(db *bbolt.DB) *CursorSettingsStore {
 	return &CursorSettingsStore{
-		bboltStore: new[store.CursorSettings](db, []byte("cursor_settings")),
+		bucketStore: new[store.CursorSettings](db, []byte("cursor_settings")),
 	}
 }
 
 type ClaudeSettingsStore struct {
-	*bboltStore[store.ClaudeSettings]
+	*bucketStore[store.ClaudeSettings]
 }
 
 func newClaudeSettings(db *bbolt.DB) *ClaudeSettingsStore {
 	return &ClaudeSettingsStore{
-		bboltStore: new[store.ClaudeSettings](db, []byte("claude_settings")),
+		bucketStore: new[store.ClaudeSettings](db, []byte("claude_settings")),
 	}
 }

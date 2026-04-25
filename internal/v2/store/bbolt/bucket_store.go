@@ -9,16 +9,16 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-var _ store.Store[any] = (*bboltStore[any])(nil)
+var _ store.Store[any] = (*bucketStore[any])(nil)
 
-type bboltStore[T any] struct {
+type bucketStore[T any] struct {
 	db *bbolt.DB
 
 	bucket []byte
 }
 
-func new[T any](db *bbolt.DB, bucket []byte) *bboltStore[T] {
-	return &bboltStore[T]{
+func new[T any](db *bbolt.DB, bucket []byte) *bucketStore[T] {
+	return &bucketStore[T]{
 		db:     db,
 		bucket: bucket,
 	}
@@ -50,15 +50,11 @@ func New(db *bbolt.DB) (*store.Stores, error) {
 	return store, nil
 }
 
-func (b *bboltStore[T]) Put(ctx context.Context, id []byte, data *T) error {
+func (b *bucketStore[T]) Put(ctx context.Context, id []byte, data *T) error {
 	return b.db.Update(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket(b.bucket)
-		if bucket == nil {
-			var err error
-			bucket, err = tx.CreateBucketIfNotExists(b.bucket)
-			if err != nil {
-				return fmt.Errorf("create bucket: %w", err)
-			}
+		bucket, err := tx.CreateBucketIfNotExists(b.bucket)
+		if err != nil {
+			return fmt.Errorf("create bucket: %w", err)
 		}
 		raw, err := json.Marshal(data)
 		if err != nil {
@@ -72,12 +68,12 @@ func (b *bboltStore[T]) Put(ctx context.Context, id []byte, data *T) error {
 	})
 }
 
-func (b *bboltStore[T]) Get(ctx context.Context, id []byte) (*T, error) {
+func (b *bucketStore[T]) Get(ctx context.Context, id []byte) (*T, error) {
 	var data *T
 	err := b.db.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(b.bucket)
 		if bucket == nil {
-			return fmt.Errorf("bucket not found")
+			return nil
 		}
 		raw := bucket.Get(id)
 		if len(raw) == 0 {
@@ -91,7 +87,7 @@ func (b *bboltStore[T]) Get(ctx context.Context, id []byte) (*T, error) {
 	return data, err
 }
 
-func (b *bboltStore[T]) List(ctx context.Context) ([]*T, error) {
+func (b *bucketStore[T]) List(ctx context.Context) ([]*T, error) {
 	var data []*T
 	err := b.db.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(b.bucket)
@@ -110,7 +106,7 @@ func (b *bboltStore[T]) List(ctx context.Context) ([]*T, error) {
 	return data, err
 }
 
-func (b *bboltStore[T]) Update(ctx context.Context, id []byte, data *T) error {
+func (b *bucketStore[T]) Update(ctx context.Context, id []byte, data *T) error {
 	return b.db.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(b.bucket)
 		if bucket == nil {
@@ -141,7 +137,7 @@ func (b *bboltStore[T]) Update(ctx context.Context, id []byte, data *T) error {
 	})
 }
 
-func (b *bboltStore[T]) Delete(ctx context.Context, id []byte) error {
+func (b *bucketStore[T]) Delete(ctx context.Context, id []byte) error {
 	return b.db.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(b.bucket)
 		if bucket == nil {
