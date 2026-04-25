@@ -19,7 +19,7 @@ type Stores struct {
 	ChatEvent ChatEventStore
 
 	Settings struct {
-		Global     SettingsStore
+		Global     GlobalSettingsStore
 		OpenRouter OpenRouterSettingsStore
 		Cursor     CursorSettingsStore
 		Claude     ClaudeSettingsStore

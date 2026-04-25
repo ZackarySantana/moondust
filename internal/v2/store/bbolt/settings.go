@@ -6,18 +6,18 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-var _ store.SettingsStore = (*SettingsStore)(nil)
+var _ store.GlobalSettingsStore = (*GlobalSettingsStore)(nil)
 var _ store.OpenRouterSettingsStore = (*OpenRouterSettingsStore)(nil)
 var _ store.CursorSettingsStore = (*CursorSettingsStore)(nil)
 var _ store.ClaudeSettingsStore = (*ClaudeSettingsStore)(nil)
 
-type SettingsStore struct {
-	*bucketStore[store.Settings]
+type GlobalSettingsStore struct {
+	*bucketStore[store.GlobalSettings]
 }
 
-func newSettings(db *bbolt.DB) *SettingsStore {
-	return &SettingsStore{
-		bucketStore: newBucketStore[store.Settings](db, []byte("settings")),
+func newSettings(db *bbolt.DB) *GlobalSettingsStore {
+	return &GlobalSettingsStore{
+		bucketStore: newBucketStore[store.GlobalSettings](db, []byte("settings")),
 	}
 }
 

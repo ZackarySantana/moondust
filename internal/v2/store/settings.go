@@ -16,7 +16,7 @@ const (
 	ProviderClaude     Provider = "claude"
 )
 
-type Settings struct {
+type GlobalSettings struct {
 	// SSHAuthSocket is an optional path to the ssh-agent socket.
 	SSHAuthsocket string
 
@@ -27,8 +27,8 @@ type Settings struct {
 	UtilityProvider Provider
 }
 
-type SettingsStore interface {
-	Store[Settings]
+type GlobalSettingsStore interface {
+	Store[GlobalSettings]
 }
 
 type OpenRouterSettings struct {

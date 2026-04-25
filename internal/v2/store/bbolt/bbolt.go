@@ -36,7 +36,7 @@ func New(db *bbolt.DB) (*store.Stores, error) {
 		Thread:    newThread(db),
 		ChatEvent: newChatEvent(db),
 		Settings: struct {
-			Global     store.SettingsStore
+			Global     store.GlobalSettingsStore
 			OpenRouter store.OpenRouterSettingsStore
 			Cursor     store.CursorSettingsStore
 			Claude     store.ClaudeSettingsStore
