@@ -103,17 +103,18 @@ export const InMessageHeader: Story = {
                         </div>
                         <div class="flex items-center gap-0.5">
                             <AssistantMessageMetadataButton
+                                summary="$0.0124"
                                 sections={[
                                     {
                                         heading: "OpenRouter",
+                                        subheading: "claude-3.5-sonnet",
+                                        hero: {
+                                            label: "Total cost",
+                                            value: "$0.0124",
+                                        },
                                         pills: [
                                             { label: "Input", value: "1,420" },
                                             { label: "Output", value: "382" },
-                                            {
-                                                label: "Total",
-                                                value: "$0.0124",
-                                                accent: true,
-                                            },
                                         ],
                                     },
                                 ]}
