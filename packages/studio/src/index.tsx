@@ -9,7 +9,12 @@ import { Button } from "@moondust/components";
 
 import { GetProjects } from "@moondust/wails-app/project";
 
-await GetProjects();
+try {
+    let projects = await GetProjects();
+    console.log(projects);
+} catch (error) {
+    console.error(error);
+}
 
 render(
     () => (

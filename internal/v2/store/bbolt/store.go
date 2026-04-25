@@ -54,7 +54,11 @@ func (b *bboltStore[T]) Put(ctx context.Context, id []byte, data *T) error {
 	return b.db.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(b.bucket)
 		if bucket == nil {
-			return fmt.Errorf("bucket not found")
+			var err error
+			bucket, err = tx.CreateBucketIfNotExists(b.bucket)
+			if err != nil {
+				return fmt.Errorf("create bucket: %w", err)
+			}
 		}
 		raw, err := json.Marshal(data)
 		if err != nil {
@@ -92,7 +96,7 @@ func (b *bboltStore[T]) List(ctx context.Context) ([]*T, error) {
 	err := b.db.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(b.bucket)
 		if bucket == nil {
-			return fmt.Errorf("bucket not found")
+			return nil
 		}
 		return bucket.ForEach(func(k, v []byte) error {
 			var item T
