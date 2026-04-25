@@ -2,10 +2,10 @@
     "$schema": "https://wails.io/schemas/config.v2.json",
     "name": "moondust",
     "outputfilename": "moondust",
-    "frontend:dir": "packages/studio",
+    "frontend:dir": "packages",
     "frontend:install": "bun install",
-    "frontend:build": "bun run build",
-    "frontend:dev:watcher": "bun run dev",
+    "frontend:build": "bun run --filter @moondust/studio build",
+    "frontend:dev:watcher": "bun run --filter @moondust/studio dev",
     "frontend:dev:serverUrl": "auto",
     "wailsjsdir": "packages/wails-app",
     "author": {
