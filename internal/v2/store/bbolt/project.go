@@ -14,6 +14,6 @@ type ProjectStore struct {
 
 func newProject(db *bbolt.DB) *ProjectStore {
 	return &ProjectStore{
-		bucketStore: new[store.Project](db, []byte("project")),
+		bucketStore: newBucketStore[store.Project](db, []byte("project")),
 	}
 }

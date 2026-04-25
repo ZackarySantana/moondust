@@ -17,7 +17,7 @@ type SettingsStore struct {
 
 func newSettings(db *bbolt.DB) *SettingsStore {
 	return &SettingsStore{
-		bucketStore: new[store.Settings](db, []byte("settings")),
+		bucketStore: newBucketStore[store.Settings](db, []byte("settings")),
 	}
 }
 
@@ -27,7 +27,7 @@ type OpenRouterSettingsStore struct {
 
 func newOpenRouterSettings(db *bbolt.DB) *OpenRouterSettingsStore {
 	return &OpenRouterSettingsStore{
-		bucketStore: new[store.OpenRouterSettings](db, []byte("openrouter_settings")),
+		bucketStore: newBucketStore[store.OpenRouterSettings](db, []byte("openrouter_settings")),
 	}
 }
 
@@ -37,7 +37,7 @@ type CursorSettingsStore struct {
 
 func newCursorSettings(db *bbolt.DB) *CursorSettingsStore {
 	return &CursorSettingsStore{
-		bucketStore: new[store.CursorSettings](db, []byte("cursor_settings")),
+		bucketStore: newBucketStore[store.CursorSettings](db, []byte("cursor_settings")),
 	}
 }
 
@@ -47,6 +47,6 @@ type ClaudeSettingsStore struct {
 
 func newClaudeSettings(db *bbolt.DB) *ClaudeSettingsStore {
 	return &ClaudeSettingsStore{
-		bucketStore: new[store.ClaudeSettings](db, []byte("claude_settings")),
+		bucketStore: newBucketStore[store.ClaudeSettings](db, []byte("claude_settings")),
 	}
 }

@@ -17,7 +17,7 @@ type ThreadStore struct {
 
 func newThread(db *bbolt.DB) *ThreadStore {
 	return &ThreadStore{
-		bucketStore: new[store.Thread](db, []byte("thread")),
+		bucketStore: newBucketStore[store.Thread](db, []byte("thread")),
 	}
 }
 

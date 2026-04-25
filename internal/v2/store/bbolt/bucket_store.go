@@ -17,37 +17,11 @@ type bucketStore[T any] struct {
 	bucket []byte
 }
 
-func new[T any](db *bbolt.DB, bucket []byte) *bucketStore[T] {
+func newBucketStore[T any](db *bbolt.DB, bucket []byte) *bucketStore[T] {
 	return &bucketStore[T]{
 		db:     db,
 		bucket: bucket,
 	}
-}
-
-func New(db *bbolt.DB) (*store.Stores, error) {
-	store := &store.Stores{
-		Project:   newProject(db),
-		Thread:    newThread(db),
-		ChatEvent: newChatEvent(db),
-		Settings: struct {
-			Global     store.SettingsStore
-			OpenRouter store.OpenRouterSettingsStore
-			Cursor     store.CursorSettingsStore
-			Claude     store.ClaudeSettingsStore
-		}{
-			Global:     newSettings(db),
-			OpenRouter: newOpenRouterSettings(db),
-			Cursor:     newCursorSettings(db),
-			Claude:     newClaudeSettings(db),
-		},
-		Log: newLog(db),
-	}
-
-	if err := store.Validate(); err != nil {
-		return nil, fmt.Errorf("validate store: %w", err)
-	}
-
-	return store, nil
 }
 
 func (b *bucketStore[T]) Put(ctx context.Context, id []byte, data *T) error {

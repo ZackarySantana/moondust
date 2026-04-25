@@ -14,6 +14,6 @@ type LogStore struct {
 
 func newLog(db *bbolt.DB) *LogStore {
 	return &LogStore{
-		bucketStore: new[store.Log](db, []byte("log")),
+		bucketStore: newBucketStore[store.Log](db, []byte("log")),
 	}
 }

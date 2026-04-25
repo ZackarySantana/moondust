@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"moondust/internal/v2/store"
 )
 
@@ -19,7 +18,10 @@ func NewProject(stores *store.Stores) *Project {
 	}
 }
 
+func (p *Project) GetProject(id string) (*store.Project, error) {
+	return p.stores.Project.Get(p.ctx, []byte(id))
+}
+
 func (p *Project) GetProjects() ([]*store.Project, error) {
-	fmt.Println("GetProjects has ran")
 	return p.stores.Project.List(p.ctx)
 }
