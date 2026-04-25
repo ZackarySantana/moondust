@@ -1,4 +1,4 @@
-package frontenddist
+package main
 
 import (
 	"embed"
