@@ -3,24 +3,36 @@ import { render } from "solid-js/web";
 import "./style.css";
 import { queryClient } from "./lib/query-client";
 import { Button } from "@moondust/components";
+import { Route, Router } from "@solidjs/router";
+import { AppShell } from "./layouts/app-shell";
 
-// import { CancelCreateProject } from "@moondust/wails-app/app";
-// await CancelCreateProject();
+// import { List } from "@moondust/wails-app/project";
 
-import { List } from "@moondust/wails-app/project";
+// try {
+//     let projects = await List();
+//     console.log(projects);
+// } catch (error) {
+//     console.error(error);
+// }
 
-try {
-    let projects = await List();
-    console.log(projects);
-} catch (error) {
-    console.error(error);
-}
+const HomePage = () => {
+    return (
+        <>
+            <div>Hello World</div>
+            <Button>Click me</Button>
+        </>
+    );
+};
 
 render(
     () => (
         <QueryClientProvider client={queryClient}>
-            <div>Hello World</div>
-            <Button>Click me</Button>
+            <Router root={AppShell}>
+                <Route
+                    path="/"
+                    component={HomePage}
+                />
+            </Router>
         </QueryClientProvider>
     ),
     document.getElementById("root")!,
