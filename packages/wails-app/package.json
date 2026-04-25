@@ -5,9 +5,9 @@
     "type": "module",
     "packageManager": "bun@1.3.6",
     "exports": {
-        "./app": {
-            "types": "./wailsjs/go/app/App.d.ts",
-            "import": "./wailsjs/go/app/App.js"
+        "./project": {
+            "types": "./wailsjs/go/app/Project.d.ts",
+            "import": "./wailsjs/go/app/Project.js"
         }
     }
 }

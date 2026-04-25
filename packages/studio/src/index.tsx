@@ -4,9 +4,12 @@ import "./style.css";
 import { queryClient } from "./lib/query-client";
 import { Button } from "@moondust/components";
 
-import { CancelCreateProject } from "@moondust/wails-app/app";
+// import { CancelCreateProject } from "@moondust/wails-app/app";
+// await CancelCreateProject();
 
-await CancelCreateProject();
+import { GetProjects } from "@moondust/wails-app/project";
+
+await GetProjects();
 
 render(
     () => (
