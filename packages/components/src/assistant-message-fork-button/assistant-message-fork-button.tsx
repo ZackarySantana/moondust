@@ -50,7 +50,7 @@ export const AssistantMessageForkButton: Component<
                 ref={(el) => {
                     buttonEl = el;
                 }}
-                class="rounded-md p-1 text-slate-600 transition-all duration-150 hover:bg-slate-800/50 hover:text-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
+                class="cursor-pointer rounded-none p-1 text-void-500 transition-colors duration-100 hover:bg-void-800/60 hover:text-void-100 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label={props.title ?? "Fork from this message"}
                 aria-expanded={open()}
                 onClick={() => setOpen((v) => !v)}
@@ -66,14 +66,14 @@ export const AssistantMessageForkButton: Component<
                     ref={(el) => {
                         panelEl = el;
                     }}
-                    class="absolute right-0 top-full z-50 mt-1.5 w-64 rounded-lg border border-slate-800/50 bg-slate-950 p-3 shadow-xl shadow-black/30"
+                    class="absolute right-0 top-full z-50 mt-1.5 w-64 rounded-none border border-void-700 bg-void-900 p-3 shadow-2xl shadow-black/50"
                     role="dialog"
                     aria-label={props.title ?? "Fork from this message"}
                 >
-                    <p class="text-[12px] font-medium text-slate-200">
+                    <p class="text-[12px] font-medium text-void-50">
                         {props.title ?? "Fork from this message"}
                     </p>
-                    <p class="mt-1 text-[11px] leading-relaxed text-slate-500">
+                    <p class="mt-1 text-[11px] leading-relaxed text-void-400">
                         {props.description ??
                             "Creates a new thread that branches off here. The original thread is unchanged."}
                     </p>

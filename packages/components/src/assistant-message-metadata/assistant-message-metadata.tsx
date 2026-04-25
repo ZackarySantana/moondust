@@ -11,7 +11,7 @@ import {
 export interface MetadataPill {
     label: string;
     value: string;
-    /** Tints the value emerald to highlight cost/totals. */
+    /** Tints the value starlight to highlight cost/totals. */
     accent?: boolean;
 }
 
@@ -41,15 +41,15 @@ export interface AssistantMessageMetadataButtonProps {
 }
 
 const StatPill: Component<MetadataPill> = (props) => (
-    <div class="flex flex-col gap-0.5 rounded-md bg-slate-800/40 px-2 py-1.5">
-        <span class="text-[9px] font-medium uppercase tracking-widest text-slate-600">
+    <div class="flex flex-col gap-0.5 rounded-none bg-void-800/60 px-2 py-1.5">
+        <span class="font-mono text-[9px] font-medium uppercase tracking-[0.16em] text-void-500">
             {props.label}
         </span>
         <span
-            class="font-mono text-[11px] font-medium"
+            class="font-mono text-[11px] font-medium tabular-nums"
             classList={{
-                "text-emerald-400/90": props.accent,
-                "text-slate-200": !props.accent,
+                "text-starlight-300": props.accent,
+                "text-void-100": !props.accent,
             }}
         >
             {props.value}
@@ -61,8 +61,8 @@ const MetaRow: Component<{ label: string; children: JSX.Element }> = (
     props,
 ) => (
     <div class="flex items-baseline justify-between gap-3">
-        <span class="text-[10px] text-slate-500">{props.label}</span>
-        <span class="font-mono text-[10px] text-slate-300">
+        <span class="text-[10px] text-void-500">{props.label}</span>
+        <span class="font-mono text-[10px] text-void-200 tabular-nums">
             {props.children}
         </span>
     </div>
@@ -70,7 +70,7 @@ const MetaRow: Component<{ label: string; children: JSX.Element }> = (
 
 const SectionView: Component<{ section: MetadataSection }> = (props) => (
     <div class="flex flex-col gap-2">
-        <p class="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+        <p class="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-void-500">
             {props.section.heading}
         </p>
         <Show when={props.section.pills && props.section.pills.length > 0}>
@@ -94,17 +94,17 @@ const SectionView: Component<{ section: MetadataSection }> = (props) => (
             </div>
         </Show>
         <Show when={props.section.requestId}>
-            <div class="rounded-md bg-slate-800/30 px-2 py-1">
-                <p class="text-[9px] font-medium uppercase tracking-widest text-slate-600">
+            <div class="rounded-none bg-void-800/40 px-2 py-1">
+                <p class="font-mono text-[9px] font-medium uppercase tracking-[0.16em] text-void-500">
                     Request ID
                 </p>
-                <p class="mt-0.5 break-all font-mono text-[9px] leading-snug text-slate-500 select-all">
+                <p class="mt-0.5 break-all font-mono text-[9px] leading-snug text-void-400 select-all">
                     {props.section.requestId}
                 </p>
             </div>
         </Show>
         <Show when={props.section.footnote}>
-            <p class="text-[9px] leading-snug text-slate-600">
+            <p class="text-[9px] leading-snug text-void-500">
                 {props.section.footnote}
             </p>
         </Show>
@@ -138,7 +138,7 @@ export const AssistantMessageMetadataButton: Component<
                     ref={(el) => {
                         buttonEl = el;
                     }}
-                    class="rounded-md p-1 text-slate-600 transition-all duration-150 hover:bg-slate-800/50 hover:text-slate-300"
+                    class="cursor-pointer rounded-none p-1 text-void-500 transition-colors duration-100 hover:bg-void-800/60 hover:text-void-100"
                     aria-label={props.label ?? "Message details"}
                     aria-expanded={open()}
                     onClick={() => setOpen((v) => !v)}
@@ -154,7 +154,7 @@ export const AssistantMessageMetadataButton: Component<
                         ref={(el) => {
                             panelEl = el;
                         }}
-                        class="absolute left-0 top-full z-50 mt-1.5 w-[min(17rem,calc(100vw-1rem))] rounded-lg border border-slate-800/50 bg-slate-950 shadow-xl shadow-black/30 backdrop-blur-sm"
+                        class="absolute left-0 top-full z-50 mt-1.5 w-[min(17rem,calc(100vw-1rem))] rounded-none border border-void-700 bg-void-900 shadow-2xl shadow-black/50"
                         role="dialog"
                         aria-label="Message usage details"
                     >
@@ -164,7 +164,7 @@ export const AssistantMessageMetadataButton: Component<
                                     <>
                                         <Show when={i() > 0}>
                                             <div
-                                                class="border-t border-slate-800/40"
+                                                class="border-t border-void-700"
                                                 aria-hidden
                                             />
                                         </Show>

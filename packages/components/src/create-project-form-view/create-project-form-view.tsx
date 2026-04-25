@@ -60,7 +60,7 @@ export const CreateProjectFormView: Component<CreateProjectFormViewProps> = (
                     onSubmit={props.onSubmit}
                 >
                     <div
-                        class="flex rounded-lg bg-slate-950/60 p-1"
+                        class="flex border border-void-700 bg-void-950/40"
                         role="tablist"
                         aria-label="Project source"
                     >
@@ -69,10 +69,10 @@ export const CreateProjectFormView: Component<CreateProjectFormViewProps> = (
                             role="tab"
                             aria-selected={props.tab === "url"}
                             class={cn(
-                                "flex-1 cursor-pointer rounded-md px-3 py-1.5 text-[13px] font-medium transition-all duration-150 disabled:cursor-not-allowed",
+                                "flex-1 cursor-pointer rounded-none px-3 py-2 text-[12px] font-medium uppercase tracking-[0.14em] transition-colors duration-100 disabled:cursor-not-allowed",
                                 props.tab === "url"
-                                    ? "bg-slate-800/80 text-slate-100 shadow-sm"
-                                    : "text-slate-500 hover:text-slate-300",
+                                    ? "bg-void-800 text-starlight-300"
+                                    : "text-void-500 hover:bg-void-800/60 hover:text-void-200",
                             )}
                             disabled={props.submitting}
                             onClick={() => props.onTabChange("url")}
@@ -85,10 +85,10 @@ export const CreateProjectFormView: Component<CreateProjectFormViewProps> = (
                             aria-selected={props.tab === "folder"}
                             disabled={props.submitting}
                             class={cn(
-                                "flex-1 cursor-pointer rounded-md px-3 py-1.5 text-[13px] font-medium transition-all duration-150 disabled:cursor-not-allowed",
+                                "flex-1 cursor-pointer rounded-none border-l border-void-700 px-3 py-2 text-[12px] font-medium uppercase tracking-[0.14em] transition-colors duration-100 disabled:cursor-not-allowed",
                                 props.tab === "folder"
-                                    ? "bg-slate-800/80 text-slate-100 shadow-sm"
-                                    : "text-slate-500 hover:text-slate-300",
+                                    ? "bg-void-800 text-starlight-300"
+                                    : "text-void-500 hover:bg-void-800/60 hover:text-void-200",
                             )}
                             onClick={() => props.onTabChange("folder")}
                         >
@@ -124,7 +124,7 @@ export const CreateProjectFormView: Component<CreateProjectFormViewProps> = (
                                     type="button"
                                     variant="outline"
                                     disabled={props.submitting}
-                                    class="h-auto w-full cursor-pointer justify-start bg-slate-950/40 py-2.5 text-left font-normal text-slate-300 hover:bg-slate-900/60"
+                                    class="h-auto w-full cursor-pointer justify-start py-2.5 text-left font-mono font-normal text-void-200 hover:bg-void-800/60"
                                     onClick={() => props.onPickFolder()}
                                 >
                                     {props.folderPath.trim()
@@ -149,16 +149,16 @@ export const CreateProjectFormView: Component<CreateProjectFormViewProps> = (
                                         )
                                     }
                                 />
-                                <p class="text-[11px] text-slate-600">
+                                <p class="text-[11px] text-void-500">
                                     Which branch represents the main line of
                                     development for this repo (often{" "}
-                                    <span class="font-mono text-slate-500">
+                                    <code class="font-mono text-[11px] text-nebula-300">
                                         main
-                                    </span>{" "}
+                                    </code>{" "}
                                     or{" "}
-                                    <span class="font-mono text-slate-500">
+                                    <code class="font-mono text-[11px] text-nebula-300">
                                         master
-                                    </span>
+                                    </code>
                                     ).
                                 </p>
                             </div>

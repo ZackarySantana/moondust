@@ -42,13 +42,13 @@ export interface ChatProviderBarProps {
 }
 
 const triggerClass =
-    "inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-slate-500 transition-colors hover:bg-slate-800/50 hover:text-slate-300 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-40";
+    "inline-flex cursor-pointer items-center gap-1.5 rounded-none px-2 py-1 text-[11px] text-void-400 transition-colors duration-100 hover:bg-void-800/60 hover:text-void-100 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-40";
 
 const menuClass =
-    "absolute left-0 bottom-full z-50 mb-0.5 rounded-md border border-slate-800/60 bg-slate-950/95 shadow-lg backdrop-blur-sm";
+    "absolute left-0 bottom-full z-50 mb-0.5 rounded-none border border-void-700 bg-void-900 shadow-2xl shadow-black/50";
 
 const menuItemClass =
-    "flex w-full cursor-pointer items-center px-2 py-1 text-left text-[11px] text-slate-400 transition-colors hover:bg-slate-800/60 hover:text-slate-200";
+    "flex w-full cursor-pointer items-center px-2 py-1 text-left text-[11px] text-void-300 transition-colors duration-100 hover:bg-void-800 hover:text-void-50";
 
 type OpenMenu = "provider" | "model" | null;
 
@@ -119,9 +119,9 @@ export const ChatProviderBar: Component<ChatProviderBarProps> = (props) => {
                             )
                         }
                     >
-                        <span>{providerLabel()}</span>
+                        <span class="font-mono">{providerLabel()}</span>
                         <ChevronUp
-                            class="size-3 shrink-0 text-slate-600"
+                            class="size-3 shrink-0 text-void-500"
                             stroke-width={2}
                             aria-hidden
                         />
@@ -144,7 +144,7 @@ export const ChatProviderBar: Component<ChatProviderBarProps> = (props) => {
                                             class={cn(
                                                 menuItemClass,
                                                 props.provider === p.id &&
-                                                    "bg-slate-800/40 text-slate-200",
+                                                    "bg-void-800 text-starlight-300",
                                             )}
                                             onClick={() => {
                                                 props.onProviderChange(p.id);
@@ -184,7 +184,7 @@ export const ChatProviderBar: Component<ChatProviderBarProps> = (props) => {
                             aria-hidden
                         />
                         <span
-                            class="max-w-44 truncate"
+                            class="max-w-44 truncate font-mono"
                             title={
                                 props.model.trim()
                                     ? props.model.trim()
@@ -194,7 +194,7 @@ export const ChatProviderBar: Component<ChatProviderBarProps> = (props) => {
                             {modelLabel()}
                         </span>
                         <ChevronUp
-                            class="size-3 shrink-0 text-slate-600"
+                            class="size-3 shrink-0 text-void-500"
                             stroke-width={2}
                             aria-hidden
                         />
@@ -207,16 +207,16 @@ export const ChatProviderBar: Component<ChatProviderBarProps> = (props) => {
                             )}
                             role="presentation"
                         >
-                            <div class="flex shrink-0 items-center gap-1.5 border-b border-slate-800/60 px-2 py-1.5">
+                            <div class="flex shrink-0 items-center gap-1.5 border-b border-void-700 px-2 py-1.5">
                                 <Search
-                                    class="size-3.5 shrink-0 text-slate-600"
+                                    class="size-3.5 shrink-0 text-void-500"
                                     stroke-width={2}
                                     aria-hidden
                                 />
                                 <input
                                     type="search"
                                     placeholder="Search models…"
-                                    class="min-w-0 flex-1 bg-transparent text-[11px] text-slate-200 outline-none placeholder:text-slate-600"
+                                    class="min-w-0 flex-1 bg-transparent text-[11px] text-void-100 outline-none placeholder:text-void-500"
                                     value={search()}
                                     onInput={(e) =>
                                         setSearch(e.currentTarget.value)
@@ -231,7 +231,7 @@ export const ChatProviderBar: Component<ChatProviderBarProps> = (props) => {
                                 <Show
                                     when={filteredModels().length > 0}
                                     fallback={
-                                        <li class="px-3 py-6 text-center text-[11px] text-slate-600">
+                                        <li class="px-3 py-6 text-center text-[11px] text-void-500">
                                             No models match your search.
                                         </li>
                                     }
@@ -246,9 +246,9 @@ export const ChatProviderBar: Component<ChatProviderBarProps> = (props) => {
                                                         props.model === m.id
                                                     }
                                                     class={cn(
-                                                        "flex w-full cursor-pointer flex-col gap-0.5 border-t border-slate-800/30 px-2.5 py-2 text-left transition-colors first:border-t-0 hover:bg-slate-800/40",
+                                                        "flex w-full cursor-pointer flex-col gap-0.5 border-t border-void-800 px-2.5 py-2 text-left transition-colors duration-100 first:border-t-0 hover:bg-void-800",
                                                         props.model === m.id &&
-                                                            "bg-slate-800/45",
+                                                            "border-l-2 border-l-starlight-400 bg-void-800",
                                                     )}
                                                     onClick={() => {
                                                         props.onModelChange(
@@ -257,11 +257,18 @@ export const ChatProviderBar: Component<ChatProviderBarProps> = (props) => {
                                                         close();
                                                     }}
                                                 >
-                                                    <span class="truncate text-[12px] font-medium text-slate-100">
+                                                    <span
+                                                        class={cn(
+                                                            "truncate font-mono text-[12px] font-medium text-void-50",
+                                                            props.model ===
+                                                                m.id &&
+                                                                "text-starlight-200",
+                                                        )}
+                                                    >
                                                         {m.label}
                                                     </span>
                                                     {m.description && (
-                                                        <span class="truncate text-[10px] text-slate-500">
+                                                        <span class="truncate text-[10px] text-void-400">
                                                             {m.description}
                                                         </span>
                                                     )}
@@ -276,7 +283,7 @@ export const ChatProviderBar: Component<ChatProviderBarProps> = (props) => {
                 </div>
             </div>
             <Show when={props.warning}>
-                <div class="text-[11px] text-amber-500/90">{props.warning}</div>
+                <div class="text-[11px] text-flare-300">{props.warning}</div>
             </Show>
         </div>
     );

@@ -70,13 +70,13 @@ export const GitActionDialog: Component<GitActionDialogProps> = (props) => {
                 <DialogTitle>{props.title}</DialogTitle>
                 {props.children}
                 <Show when={props.error}>
-                    <p class="mb-4 rounded-lg border border-red-900/30 bg-red-950/15 px-3 py-2 text-xs text-red-400">
+                    <p class="mb-4 rounded-none border border-flare-600/40 bg-flare-700/10 px-3 py-2 text-xs text-flare-300">
                         {props.error}
                     </p>
                 </Show>
                 <div class="flex items-center justify-between gap-2">
                     <Show when={props.hasTextarea}>
-                        <p class="text-[10px] text-slate-600">
+                        <p class="font-mono text-[10px] text-void-500">
                             {platformHint()}+Enter to confirm
                         </p>
                     </Show>
@@ -136,10 +136,10 @@ export const DiscardFileGitDialog: Component<DiscardFileGitDialogProps> = (
         onClose={props.onClose}
         onConfirm={props.onConfirm}
     >
-        <p class="mb-1 text-sm text-slate-400">
+        <p class="mb-1 text-sm text-void-300">
             Working tree edits will be reverted for:
         </p>
-        <p class="mb-4 break-all rounded bg-slate-950/50 px-2.5 py-1.5 font-mono text-xs text-slate-300">
+        <p class="mb-4 break-all border border-void-700 bg-void-950 px-2.5 py-1.5 font-mono text-xs text-void-100 select-all">
             {props.filePath}
         </p>
     </GitActionDialog>
@@ -166,7 +166,7 @@ export const DiscardUnstagedGitDialog: Component<
         onClose={props.onClose}
         onConfirm={props.onConfirm}
     >
-        <p class="mb-4 text-sm text-slate-400">
+        <p class="mb-4 text-sm text-void-300">
             Working tree edits for unstaged files will be reverted to match the
             index or HEAD. Staged changes are not affected.
         </p>
@@ -216,13 +216,15 @@ export const CommitStagedGitDialog: Component<CommitStagedGitDialogProps> = (
             onConfirm={props.onConfirm}
         >
             <div class="mb-1.5 flex items-center justify-between">
-                <label class="text-xs text-slate-500">Message</label>
+                <label class="font-mono text-[10px] uppercase tracking-[0.16em] text-void-400">
+                    Message
+                </label>
                 <Show when={props.onGenerate}>
                     <button
                         type="button"
                         disabled={generating() || props.pending}
                         onClick={() => void generate()}
-                        class="inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-0.5 text-[11px] text-slate-400 transition-colors hover:bg-slate-800/50 hover:text-emerald-400 disabled:cursor-not-allowed disabled:opacity-40"
+                        class="inline-flex cursor-pointer items-center gap-1 rounded-none px-2 py-0.5 text-[11px] text-void-400 transition-colors duration-100 hover:bg-void-800 hover:text-starlight-300 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         <Show
                             when={!generating()}
@@ -243,7 +245,7 @@ export const CommitStagedGitDialog: Component<CommitStagedGitDialogProps> = (
                 </Show>
             </div>
             <textarea
-                class="mb-4 min-h-24 w-full resize-y rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:border-slate-600 focus:outline-none"
+                class="mb-4 min-h-24 w-full resize-y rounded-none border border-void-700 bg-void-950 px-3 py-2 font-mono text-sm text-void-100 placeholder:text-void-500 focus-visible:border-starlight-400 focus-visible:outline-none"
                 placeholder="Commit message"
                 rows={4}
                 value={props.message}
@@ -302,14 +304,14 @@ export const BranchCommitGitDialog: Component<BranchCommitGitDialogProps> = (
             <div class="mb-3 space-y-1.5">
                 <label
                     for="review-branch-name"
-                    class="text-xs text-slate-500"
+                    class="font-mono text-[10px] uppercase tracking-[0.16em] text-void-400"
                 >
                     Branch name
                 </label>
                 <input
                     id="review-branch-name"
                     type="text"
-                    class="w-full rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 font-mono text-sm text-slate-200 placeholder:text-slate-600 focus:border-slate-600 focus:outline-none"
+                    class="w-full rounded-none border border-void-700 bg-void-950 px-3 py-2 font-mono text-sm text-void-100 placeholder:text-void-500 focus-visible:border-starlight-400 focus-visible:outline-none"
                     placeholder="feature/my-change"
                     value={props.branchName}
                     disabled={props.pending}
@@ -317,13 +319,15 @@ export const BranchCommitGitDialog: Component<BranchCommitGitDialogProps> = (
                 />
             </div>
             <div class="mb-1.5 flex items-center justify-between">
-                <label class="text-xs text-slate-500">Commit message</label>
+                <label class="font-mono text-[10px] uppercase tracking-[0.16em] text-void-400">
+                    Commit message
+                </label>
                 <Show when={props.onGenerate}>
                     <button
                         type="button"
                         disabled={generating() || props.pending}
                         onClick={() => void generate()}
-                        class="inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-0.5 text-[11px] text-slate-400 transition-colors hover:bg-slate-800/50 hover:text-emerald-400 disabled:cursor-not-allowed disabled:opacity-40"
+                        class="inline-flex cursor-pointer items-center gap-1 rounded-none px-2 py-0.5 text-[11px] text-void-400 transition-colors duration-100 hover:bg-void-800 hover:text-starlight-300 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         <Show
                             when={!generating()}
@@ -344,7 +348,7 @@ export const BranchCommitGitDialog: Component<BranchCommitGitDialogProps> = (
                 </Show>
             </div>
             <textarea
-                class="mb-4 min-h-24 w-full resize-y rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:border-slate-600 focus:outline-none"
+                class="mb-4 min-h-24 w-full resize-y rounded-none border border-void-700 bg-void-950 px-3 py-2 font-mono text-sm text-void-100 placeholder:text-void-500 focus-visible:border-starlight-400 focus-visible:outline-none"
                 placeholder="Commit message"
                 rows={4}
                 value={props.commitMessage}

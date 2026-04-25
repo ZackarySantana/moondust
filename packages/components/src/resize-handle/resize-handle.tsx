@@ -45,20 +45,22 @@ export const ResizeHandle: Component<ResizeHandleProps> = (props) => {
     return (
         <div
             class={cn(
-                "group/handle relative z-10 flex shrink-0 items-center justify-center",
+                "group/handle relative z-10 flex shrink-0 items-center justify-center transition-colors duration-100",
                 isVertical()
                     ? "h-1.5 cursor-row-resize"
                     : "w-1.5 cursor-col-resize",
-                dragging() ? "bg-emerald-600/30" : "hover:bg-emerald-600/20",
+                dragging()
+                    ? "bg-starlight-400/25"
+                    : "hover:bg-starlight-400/15",
                 props.class,
             )}
             onPointerDown={onPointerDown}
         >
             <div
                 class={cn(
-                    "rounded-full bg-slate-700 transition-colors group-hover/handle:bg-emerald-500/50",
+                    "bg-void-600 transition-colors duration-100 group-hover/handle:bg-starlight-400/70",
                     isVertical() ? "h-0.5 w-8" : "h-8 w-0.5",
-                    dragging() && "bg-emerald-500/50",
+                    dragging() && "bg-starlight-400",
                 )}
             />
         </div>

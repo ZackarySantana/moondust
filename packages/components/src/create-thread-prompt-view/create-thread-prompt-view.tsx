@@ -51,16 +51,16 @@ export const CreateThreadPromptView: Component<CreateThreadPromptViewProps> = (
                     fallback={
                         <div class="flex flex-col items-center gap-4 py-6">
                             <Loader2
-                                class="size-8 animate-spin text-emerald-500"
+                                class="size-8 animate-spin text-starlight-400"
                                 stroke-width={1.5}
                                 aria-hidden
                             />
                             <div class="text-center">
-                                <p class="text-sm font-medium text-slate-200">
+                                <p class="text-sm font-medium text-void-50">
                                     Creating thread…
                                 </p>
                                 <Show when={props.useWorktree}>
-                                    <p class="mt-1 text-xs text-slate-500">
+                                    <p class="mt-1 text-xs text-void-400">
                                         Setting up Git worktree and branch
                                     </p>
                                 </Show>
@@ -70,16 +70,16 @@ export const CreateThreadPromptView: Component<CreateThreadPromptViewProps> = (
                 >
                     <DialogTitle>New thread</DialogTitle>
                     <div class="space-y-4">
-                        <p class="text-sm text-slate-400">
+                        <p class="text-sm text-void-300">
                             Would you like to create a Git worktree for this
                             thread? This gives the thread its own branch and
                             working copy.
                         </p>
 
-                        <label class="flex cursor-pointer items-center gap-2.5 rounded-lg border border-slate-800/40 px-3 py-2.5">
+                        <label class="flex cursor-pointer items-center gap-2.5 rounded-none border border-void-700 bg-void-850 px-3 py-2.5 transition-colors duration-100 hover:border-void-600">
                             <input
                                 type="checkbox"
-                                class="size-4 shrink-0 cursor-pointer rounded border-slate-700 bg-slate-950/40 text-emerald-500 accent-emerald-500"
+                                class="size-4 shrink-0 cursor-pointer rounded-none border-void-600 bg-void-900 accent-starlight-400"
                                 checked={props.useWorktree}
                                 disabled={props.pending}
                                 onChange={(e) =>
@@ -90,23 +90,23 @@ export const CreateThreadPromptView: Component<CreateThreadPromptViewProps> = (
                             />
                             <div class="flex items-center gap-1.5">
                                 <GitBranch
-                                    class="size-3.5 text-slate-400"
+                                    class="size-3.5 text-nebula-300"
                                     stroke-width={2}
                                 />
-                                <span class="text-sm text-slate-300">
+                                <span class="text-sm text-void-100">
                                     Use a Git worktree
                                 </span>
                             </div>
                         </label>
 
                         <Show when={props.helperHint}>
-                            <p class="text-[11px] text-slate-600">
+                            <p class="text-[11px] text-void-500">
                                 {props.helperHint}
                             </p>
                         </Show>
 
                         <Show when={props.error}>
-                            <p class="rounded-lg border border-red-900/30 bg-red-950/15 px-3 py-2 text-xs text-red-400">
+                            <p class="rounded-none border border-flare-600/40 bg-flare-700/10 px-3 py-2 text-xs text-flare-300">
                                 {props.error}
                             </p>
                         </Show>

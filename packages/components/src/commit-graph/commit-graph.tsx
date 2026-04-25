@@ -121,7 +121,7 @@ export const CommitGraph: Component<CommitGraphProps> = (props) => {
             onMouseLeave={scheduleHide}
         >
             <Show when={noCommits()}>
-                <p class="py-1 text-[11px] text-slate-600">No commits</p>
+                <p class="py-1 text-[11px] text-void-500">No commits</p>
             </Show>
 
             <Show when={!noCommits()}>
@@ -142,7 +142,7 @@ export const CommitGraph: Component<CommitGraphProps> = (props) => {
                                         ? forkY()
                                         : localNodeY(totalLocalRows() - 1)
                                 }
-                                class="stroke-violet-600 opacity-50 [stroke-width:1.5]"
+                                class="stroke-nebula-500 opacity-70 [stroke-width:1.5]"
                             />
                             <For each={[...props.localCommits]}>
                                 {(_, i) => (
@@ -150,7 +150,7 @@ export const CommitGraph: Component<CommitGraphProps> = (props) => {
                                         cx={NODE_X}
                                         cy={localNodeY(i())}
                                         r={NODE_R}
-                                        class="fill-violet-600"
+                                        class="fill-nebula-400"
                                     />
                                 )}
                             </For>
@@ -159,7 +159,7 @@ export const CommitGraph: Component<CommitGraphProps> = (props) => {
                         <Show when={hasFork()}>
                             <polygon
                                 points={`${NODE_X},${forkY() - DIAMOND_SIZE} ${NODE_X + DIAMOND_SIZE},${forkY()} ${NODE_X},${forkY() + DIAMOND_SIZE} ${NODE_X - DIAMOND_SIZE},${forkY()}`}
-                                class="fill-slate-600 stroke-slate-500 [stroke-width:0.5]"
+                                class="fill-void-500 stroke-void-400 [stroke-width:0.5]"
                             />
                         </Show>
 
@@ -169,7 +169,7 @@ export const CommitGraph: Component<CommitGraphProps> = (props) => {
                                 y1={hasFork() ? forkY() : mainNodeY(0)}
                                 x2={NODE_X}
                                 y2={mainNodeY(totalMainRows() - 1)}
-                                class="stroke-slate-600 opacity-40 [stroke-width:1.5]"
+                                class="stroke-void-500 opacity-50 [stroke-width:1.5]"
                             />
                             <For each={[...props.mainCommits]}>
                                 {(_, i) => (
@@ -177,7 +177,7 @@ export const CommitGraph: Component<CommitGraphProps> = (props) => {
                                         cx={NODE_X}
                                         cy={mainNodeY(i())}
                                         r={NODE_R}
-                                        class="fill-slate-600"
+                                        class="fill-void-500"
                                     />
                                 )}
                             </For>
@@ -195,13 +195,13 @@ export const CommitGraph: Component<CommitGraphProps> = (props) => {
                                     }
                                     onMouseLeave={scheduleHide}
                                 >
-                                    <span class="shrink-0 font-mono text-[10px] text-violet-400">
+                                    <span class="shrink-0 font-mono text-[10px] text-nebula-300">
                                         {commit.hash}
                                     </span>
-                                    <span class="min-w-0 flex-1 truncate text-[11px] text-slate-200">
+                                    <span class="min-w-0 flex-1 truncate text-[11px] text-void-100">
                                         {commit.subject}
                                     </span>
-                                    <span class="shrink-0 text-[10px] text-slate-600">
+                                    <span class="shrink-0 font-mono text-[10px] tabular-nums text-void-500">
                                         {commit.when}
                                     </span>
                                 </div>
@@ -210,14 +210,14 @@ export const CommitGraph: Component<CommitGraphProps> = (props) => {
 
                         <Show when={hasFork()}>
                             <div
-                                class="flex items-center gap-1"
+                                class="flex items-center gap-1.5"
                                 style={{ height: `${FORK_ROW_HEIGHT}px` }}
                             >
-                                <span class="h-px flex-1 bg-slate-700/50" />
-                                <span class="text-[9px] text-slate-500">
+                                <span class="h-px flex-1 bg-void-700" />
+                                <span class="font-mono text-[9px] uppercase tracking-[0.16em] text-void-500">
                                     {baseBranchLabel()}
                                 </span>
-                                <span class="h-px flex-1 bg-slate-700/50" />
+                                <span class="h-px flex-1 bg-void-700" />
                             </div>
                         </Show>
 
@@ -231,13 +231,13 @@ export const CommitGraph: Component<CommitGraphProps> = (props) => {
                                     }
                                     onMouseLeave={scheduleHide}
                                 >
-                                    <span class="shrink-0 font-mono text-[10px] text-slate-500">
+                                    <span class="shrink-0 font-mono text-[10px] text-void-400">
                                         {commit.hash}
                                     </span>
-                                    <span class="min-w-0 flex-1 truncate text-[11px] text-slate-400">
+                                    <span class="min-w-0 flex-1 truncate text-[11px] text-void-300">
                                         {commit.subject}
                                     </span>
-                                    <span class="shrink-0 text-[10px] text-slate-600">
+                                    <span class="shrink-0 font-mono text-[10px] tabular-nums text-void-500">
                                         {commit.when}
                                     </span>
                                 </div>
@@ -250,7 +250,7 @@ export const CommitGraph: Component<CommitGraphProps> = (props) => {
             <Show when={hovered()}>
                 {(commit) => (
                     <div
-                        class="absolute z-50 w-56 rounded-lg border border-slate-700/60 bg-slate-900 px-3 py-2 shadow-lg shadow-black/40"
+                        class="absolute z-50 w-56 rounded-none border border-void-700 bg-void-900 px-3 py-2 shadow-2xl shadow-black/50"
                         style={{
                             left: `${tooltipPos().x}px`,
                             top: `${tooltipPos().y}px`,
@@ -262,7 +262,7 @@ export const CommitGraph: Component<CommitGraphProps> = (props) => {
                             <div class="flex items-center justify-between gap-2">
                                 <button
                                     type="button"
-                                    class="cursor-pointer font-mono text-violet-400 hover:text-violet-300"
+                                    class="cursor-pointer font-mono text-nebula-300 transition-colors duration-100 hover:text-nebula-200"
                                     onClick={() =>
                                         void copyHash(commit().hash)
                                     }
@@ -273,7 +273,7 @@ export const CommitGraph: Component<CommitGraphProps> = (props) => {
                                 <Show when={props.githubURL}>
                                     <button
                                         type="button"
-                                        class="cursor-pointer text-[10px] text-sky-400 hover:text-sky-300"
+                                        class="cursor-pointer font-mono text-[10px] uppercase tracking-[0.14em] text-starlight-300 transition-colors duration-100 hover:text-starlight-200"
                                         onClick={() =>
                                             openOnGitHub(commit().hash)
                                         }
@@ -282,9 +282,9 @@ export const CommitGraph: Component<CommitGraphProps> = (props) => {
                                     </button>
                                 </Show>
                             </div>
-                            <p class="text-slate-200">{commit().subject}</p>
-                            <p class="text-slate-500">{commit().author}</p>
-                            <p class="text-slate-600">
+                            <p class="text-void-100">{commit().subject}</p>
+                            <p class="text-void-400">{commit().author}</p>
+                            <p class="font-mono text-void-500 tabular-nums">
                                 {commit().exact_date || commit().when}
                             </p>
                         </div>
