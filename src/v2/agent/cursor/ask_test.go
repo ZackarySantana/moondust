@@ -3,6 +3,7 @@ package cursor_test
 import (
 	"encoding/json"
 	"io"
+	"moondust/src/v2/agent"
 	"moondust/src/v2/agent/cursor"
 	"moondust/src/v2/agent/cursor/cursorchat"
 	"moondust/src/v2/chat"
@@ -59,7 +60,12 @@ func TestAsk(t *testing.T) {
 		},
 	}
 
-	eventsChan, err := cli.Ask(t.Context(), workDir, model, history, prompt)
+	eventsChan, err := cli.Ask(t.Context(), &agent.AskOptions{
+		WorkDir: workDir,
+		Model:   model,
+		History: history,
+		Prompt:  prompt,
+	})
 	require.NoError(t, err)
 
 	receivedEvents := 0

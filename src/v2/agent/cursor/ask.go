@@ -6,20 +6,24 @@ import (
 	"encoding/json"
 	"fmt"
 
+	agent "moondust/src/v2/agent"
 	"moondust/src/v2/agent/cursor/cursorchat"
 	"moondust/src/v2/chat"
 )
 
-func (a *Agent) Ask(ctx context.Context, workDir, model string, history []chat.Event, prompt string) (<-chan chat.Event, error) {
+func (a *Agent) Ask(ctx context.Context, opts *agent.AskOptions) (<-chan chat.Event, error) {
 	args := []string{
 		"--print",
 		"--output-format", "stream-json",
 		"--stream-partial-output",
 		"--trust", "--force",
-		"--workspace", workDir,
-		"--model", model,
+		"--workspace", opts.WorkDir,
+		"--model", opts.Model,
 	}
-	for _, event := range history {
+	if opts.SessionID != "" {
+		args = append(args, "--resume", opts.SessionID)
+	}
+	for _, event := range opts.History {
 		cursorEvent, err := cursorchat.FromCanonical(event)
 		if err != nil {
 			return nil, fmt.Errorf("converting history event to cursor: %w", err)
@@ -30,7 +34,7 @@ func (a *Agent) Ask(ctx context.Context, workDir, model string, history []chat.E
 		}
 		args = append(args, string(data))
 	}
-	args = append(args, prompt)
+	args = append(args, opts.Prompt)
 
 	stdout, _, err := a.opts.executor.Run(
 		ctx,
