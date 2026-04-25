@@ -7,10 +7,10 @@ import { Button } from "@moondust/components";
 // import { CancelCreateProject } from "@moondust/wails-app/app";
 // await CancelCreateProject();
 
-import { GetProjects } from "@moondust/wails-app/project";
+import { List } from "@moondust/wails-app/project";
 
 try {
-    let projects = await GetProjects();
+    let projects = await List();
     console.log(projects);
 } catch (error) {
     console.error(error);

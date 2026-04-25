@@ -2,26 +2,27 @@ package app
 
 import (
 	"context"
+	"moondust/internal/v2/service"
 	"moondust/internal/v2/store"
 )
 
 type Project struct {
 	ctx context.Context
 
-	stores *store.Stores
+	service *service.Project
 }
 
-func NewProject(stores *store.Stores) *Project {
+func NewProject(service *service.Project) *Project {
 	return &Project{
-		ctx:    context.Background(),
-		stores: stores,
+		ctx:     context.Background(),
+		service: service,
 	}
 }
 
-func (p *Project) GetProject(id string) (*store.Project, error) {
-	return p.stores.Project.Get(p.ctx, []byte(id))
+func (p *Project) Get(id string) (*store.Project, error) {
+	return p.service.Get(p.ctx, id)
 }
 
-func (p *Project) GetProjects() ([]*store.Project, error) {
-	return p.stores.Project.List(p.ctx)
+func (p *Project) List() ([]*store.Project, error) {
+	return p.service.List(p.ctx)
 }

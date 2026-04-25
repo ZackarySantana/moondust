@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"moondust/internal/v2/app"
+	"moondust/internal/v2/service"
 	"moondust/internal/v2/store/bbolt"
 	"moondust/internal/v2/store/policy"
 
@@ -44,7 +45,7 @@ func Main(assets embed.FS) {
 			slog.InfoContext(ctx, "shutdown completed...")
 		},
 		Bind: []interface{}{
-			app.NewProject(stores),
+			app.NewProject(service.NewProject(stores)),
 		},
 	})
 
