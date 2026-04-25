@@ -1,5 +1,6 @@
 export * from "./assistant-message-fork-button/assistant-message-fork-button";
 export * from "./assistant-message-metadata/assistant-message-metadata";
+export * from "./badge/badge";
 export * from "./button/button";
 export * from "./chat-provider-bar/chat-provider-bar";
 export * from "./collapsible-section/collapsible-section";
@@ -19,4 +20,6 @@ export * from "./save-button/save-button";
 export * from "./select/select";
 export * from "./separator/separator";
 export * from "./settings-form/settings-form";
+export * from "./tabs/tabs";
+export * from "./tooltip/tooltip";
 export * from "./vertical-nav/vertical-nav";

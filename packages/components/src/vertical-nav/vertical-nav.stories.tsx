@@ -11,6 +11,10 @@ import type { Meta, StoryObj } from "storybook-solidjs-vite";
 
 import type { VerticalNavItem } from "./vertical-nav";
 import { VerticalNav } from "./vertical-nav";
+import { Badge } from "../badge/badge";
+import { Button } from "../button/button";
+import { Separator } from "../separator/separator";
+import { Tooltip } from "../tooltip/tooltip";
 
 const PROJECT_SECTIONS: VerticalNavItem[] = [
     { id: "general", label: "General", icon: Settings },
@@ -141,29 +145,59 @@ export const InteractiveRouter: Story = {
 export const InContext: Story = {
     parameters: { layout: "fullscreen" },
     render: () => {
-        const [active, setActive] = createSignal("agent");
+        const [active, setActive] = createSignal("git");
         return (
-            <div class="min-h-screen bg-void-950 p-10">
-                <div class="mx-auto max-w-5xl border border-void-700 bg-void-900">
-                    <header class="flex items-center justify-between border-b border-void-700 bg-void-850 px-5 py-3">
-                        <div class="flex items-baseline gap-3">
-                            <span class="font-mono text-[11px] uppercase tracking-[0.18em] text-starlight-400">
-                                project
-                            </span>
-                            <span class="text-sm font-medium text-void-100">
+            <div class="min-h-screen bg-void-950">
+                <div class="mx-auto h-screen max-w-7xl">
+                    <div class="grid h-full grid-cols-[60px_220px_1fr] border-x border-void-700 bg-void-900">
+                        {/* App rail (level 1) */}
+                        <aside class="flex flex-col items-center gap-1 border-r border-void-700 bg-void-950 py-3">
+                            <RailIcon
+                                tip="Projects"
+                                shortcut={["⌘", "1"]}
+                                icon={Folder}
+                            />
+                            <RailIcon
+                                tip="Providers"
+                                shortcut={["⌘", "2"]}
+                                icon={Bot}
+                                active
+                            />
+                            <RailIcon
+                                tip="Notifications"
+                                shortcut={["⌘", "3"]}
+                                icon={Bell}
+                                badge="3"
+                            />
+                            <div class="mt-auto flex flex-col items-center gap-1">
+                                <RailIcon
+                                    tip="Shortcuts"
+                                    shortcut={["⌘", "K"]}
+                                    icon={Keyboard}
+                                />
+                                <RailIcon tip="About" icon={Info} />
+                            </div>
+                        </aside>
+
+                        {/* Section nav (level 2) */}
+                        <aside class="flex flex-col border-r border-void-700 bg-void-900 p-3">
+                            <header class="mb-3 flex items-baseline justify-between px-2">
+                                <span class="font-mono text-[10px] uppercase tracking-[0.16em] text-void-500">
+                                    Project
+                                </span>
+                                <Badge tone="starlight" size="sm" dot>
+                                    Active
+                                </Badge>
+                            </header>
+                            <p class="mb-1 truncate px-2 text-sm font-medium text-void-50">
                                 moondust-companion
-                            </span>
-                            <code class="text-[12px] text-void-400">
+                            </p>
+                            <code class="mb-3 block truncate px-2 font-mono text-[11px] text-void-400">
                                 ~/code/moondust-companion
                             </code>
-                        </div>
-                        <span class="text-xs text-void-400">Settings</span>
-                    </header>
-
-                    <div class="grid grid-cols-[200px_1fr]">
-                        <aside class="border-r border-void-700 bg-void-900 p-3">
+                            <Separator class="mb-3" />
                             <p class="mb-2 px-2 font-mono text-[10px] uppercase tracking-[0.16em] text-void-500">
-                                Sections
+                                Settings
                             </p>
                             <VerticalNav
                                 items={PROJECT_SECTIONS}
@@ -183,20 +217,64 @@ export const InContext: Story = {
                                     );
                                 }}
                             />
+                            <div class="mt-auto px-2">
+                                <Separator class="mb-3" />
+                                <Tooltip
+                                    content="Open project settings"
+                                    shortcut={["⌘", ","]}
+                                    side="right"
+                                >
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        class="w-full justify-start"
+                                    >
+                                        <Settings
+                                            class="size-3.5"
+                                            stroke-width={2}
+                                            aria-hidden
+                                        />
+                                        Settings
+                                    </Button>
+                                </Tooltip>
+                            </div>
                         </aside>
-                        <main class="p-6">
-                            <h2 class="text-xl font-semibold tracking-tight text-void-50">
-                                {SECTION_LABEL[active()] ?? "General"}
-                            </h2>
-                            <p class="mt-2 text-sm text-void-400">
-                                Active section is{" "}
-                                <code class="text-[12px] text-nebula-300">
-                                    {active()}
-                                </code>
-                                . The vertical nav signals state with a
-                                starlight border on the left and a brighter
-                                surface tone.
-                            </p>
+
+                        {/* Main */}
+                        <main class="flex flex-col overflow-hidden">
+                            <header class="flex items-center justify-between border-b border-void-700 bg-void-850 px-5 py-3">
+                                <div class="flex items-baseline gap-3">
+                                    <span class="font-mono text-[11px] uppercase tracking-[0.18em] text-starlight-400">
+                                        settings
+                                    </span>
+                                    <span class="text-sm font-medium text-void-100">
+                                        {SECTION_LABEL[active()] ?? "General"}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <Badge tone="nebula" mono size="sm">
+                                        main
+                                    </Badge>
+                                    <Badge mono size="sm">
+                                        12 changes
+                                    </Badge>
+                                </div>
+                            </header>
+                            <div class="flex-1 overflow-y-auto p-6">
+                                <h2 class="text-xl font-semibold tracking-tight text-void-50">
+                                    {SECTION_LABEL[active()] ?? "General"}
+                                </h2>
+                                <p class="mt-2 max-w-prose text-sm leading-relaxed text-void-400">
+                                    {SECTION_DESCRIPTION[active()] ??
+                                        "Pick a section from the left."}
+                                </p>
+                                <div class="mt-6 inline-flex items-center gap-2">
+                                    <span class="font-mono text-[10px] uppercase tracking-[0.14em] text-void-500">
+                                        active id
+                                    </span>
+                                    <Badge mono>{active()}</Badge>
+                                </div>
+                            </div>
                         </main>
                     </div>
                 </div>
@@ -205,9 +283,52 @@ export const InContext: Story = {
     },
 };
 
+const RailIcon = (props: {
+    icon: (p: {
+        class?: string;
+        "stroke-width"?: number;
+    }) => JSX.Element;
+    tip: string;
+    shortcut?: readonly string[];
+    active?: boolean;
+    badge?: string;
+}) => {
+    const Icon = props.icon;
+    return (
+        <Tooltip content={props.tip} shortcut={props.shortcut} side="right">
+            <button
+                type="button"
+                class={`relative flex size-9 items-center justify-center rounded-none border-l-2 transition-colors duration-100 ${
+                    props.active
+                        ? "border-starlight-400 bg-void-800 text-starlight-300"
+                        : "border-transparent text-void-500 hover:bg-void-800/60 hover:text-void-100"
+                }`}
+            >
+                <Icon class="size-4" stroke-width={1.75} />
+                {props.badge && (
+                    <span class="absolute -top-0.5 -right-0.5">
+                        <Badge tone="flare" size="sm" mono>
+                            {props.badge}
+                        </Badge>
+                    </span>
+                )}
+            </button>
+        </Tooltip>
+    );
+};
+
 const SECTION_LABEL: Record<string, string> = {
     general: "General",
     git: "Git",
     agent: "Agent",
     environment: "Environment",
+};
+
+const SECTION_DESCRIPTION: Record<string, string> = {
+    general:
+        "Project name, path, and the surface used to identify this project across windows.",
+    git: "Default branch, worktree behavior, and the rules used when forking from threads.",
+    agent: "Default provider, model, system prompt, and the tools the agent is allowed to call.",
+    environment:
+        "Shell, package manager, and the environment variables passed to spawned commands.",
 };

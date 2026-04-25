@@ -1,6 +1,10 @@
 import { createSignal, type JSX } from "solid-js";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
+import GitBranch from "lucide-solid/icons/git-branch";
 import { Button } from "../button/button";
+import { Badge } from "../badge/badge";
+import { AssistantMessageMetadataButton } from "../assistant-message-metadata/assistant-message-metadata";
+import { AssistantMessageForkButton } from "../assistant-message-fork-button/assistant-message-fork-button";
 import {
     NotificationToastViewport,
     type NotificationToastItem,
@@ -17,30 +21,142 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const Stage = (props: { label: string; children: JSX.Element }) => (
-    <div class="relative h-screen bg-void-950">
-        {/* Faux app surface so the toasts appear over a real-feeling backdrop */}
-        <div class="absolute inset-0 grid grid-cols-[220px_1fr] opacity-60">
-            <aside class="border-r border-void-700 bg-void-900 p-4">
-                <p class="mb-2 px-2 font-mono text-[10px] uppercase tracking-[0.16em] text-void-500">
-                    Threads
-                </p>
-                <div class="space-y-px text-sm text-void-400">
-                    <div class="border-l-2 border-starlight-400 bg-void-800 px-2 py-1.5 text-void-50">
-                        Refactor router
-                    </div>
-                    <div class="border-l-2 border-transparent px-2 py-1.5">
-                        Replace floating-ui
-                    </div>
+    <div class="relative h-screen bg-void-950 text-void-200">
+        {/* Real-feeling app shell so the toasts appear over a believable backdrop */}
+        <div class="absolute inset-0 grid grid-cols-[220px_1fr]">
+            <aside class="flex flex-col border-r border-void-700 bg-void-900">
+                <header class="border-b border-void-700 px-4 py-3">
+                    <p class="font-mono text-[10px] uppercase tracking-[0.16em] text-void-500">
+                        Project
+                    </p>
+                    <p class="mt-1 truncate text-sm font-medium text-void-50">
+                        moondust-companion
+                    </p>
+                    <code class="block truncate font-mono text-[11px] text-void-400">
+                        ~/code/moondust-companion
+                    </code>
+                </header>
+                <div class="flex-1 overflow-y-auto p-3">
+                    <p class="mb-2 px-2 font-mono text-[10px] uppercase tracking-[0.16em] text-void-500">
+                        Threads
+                    </p>
+                    <nav class="space-y-px text-sm">
+                        <ThreadItem active>Refactor router</ThreadItem>
+                        <ThreadItem>Replace floating-ui</ThreadItem>
+                        <ThreadItem>Investigate flaky test</ThreadItem>
+                        <ThreadItem>Notes on theme tokens</ThreadItem>
+                    </nav>
+                </div>
+                <div class="border-t border-void-700 px-3 py-3">
+                    <Badge tone="starlight" size="sm" dot>
+                        Connected
+                    </Badge>
                 </div>
             </aside>
-            <main class="p-6">
-                <div class="border border-void-700 bg-void-850 p-5 text-sm text-void-300">
-                    {props.label}
+            <main class="flex flex-col overflow-hidden">
+                <header class="flex items-center justify-between border-b border-void-700 bg-void-850 px-5 py-3">
+                    <div class="flex items-baseline gap-3">
+                        <span class="font-mono text-[11px] uppercase tracking-[0.18em] text-starlight-400">
+                            thread
+                        </span>
+                        <span class="text-sm font-medium text-void-100">
+                            Refactor router
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <Badge tone="nebula" mono size="sm">
+                            main
+                        </Badge>
+                        <Badge mono size="sm">
+                            12,481 tok
+                        </Badge>
+                    </div>
+                </header>
+                <div class="flex-1 overflow-y-auto p-6">
+                    <article class="border border-void-700 bg-void-900">
+                        <header class="flex items-center justify-between border-b border-void-700 px-4 py-2">
+                            <div class="flex items-center gap-2">
+                                <span class="size-1.5 bg-starlight-400" />
+                                <span class="font-mono text-[10px] uppercase tracking-[0.16em] text-void-400">
+                                    assistant
+                                </span>
+                                <code class="font-mono text-[11px] text-nebula-300">
+                                    claude-3.5-sonnet
+                                </code>
+                            </div>
+                            <div class="flex items-center gap-0.5">
+                                <AssistantMessageMetadataButton
+                                    summary="$0.0124"
+                                    sections={[
+                                        {
+                                            heading: "OpenRouter",
+                                            subheading:
+                                                "anthropic/claude-3.5-sonnet",
+                                            hero: {
+                                                label: "Total cost",
+                                                value: "$0.0124",
+                                            },
+                                            pills: [
+                                                { label: "Input", value: "1,420" },
+                                                { label: "Output", value: "382" },
+                                            ],
+                                        },
+                                    ]}
+                                />
+                                <AssistantMessageForkButton
+                                    onFork={() =>
+                                        new Promise((r) => setTimeout(r, 500))
+                                    }
+                                />
+                            </div>
+                        </header>
+                        <div class="space-y-3 p-4 text-sm leading-relaxed text-void-200">
+                            <p>
+                                The router lives at{" "}
+                                <code class="text-[12px] text-void-100">
+                                    src/router.tsx
+                                </code>{" "}
+                                and pulls in{" "}
+                                <code class="text-[12px] text-nebula-300">
+                                    @solidjs/router
+                                </code>
+                                . Two ways forward:
+                            </p>
+                            <ul class="ml-4 list-disc text-void-300 marker:text-void-600">
+                                <li>Custom hook (~30 LOC, no extra dep).</li>
+                                <li>tanstack/router (composes with suspense).</li>
+                            </ul>
+                            <p>{props.label}</p>
+                        </div>
+                        <footer class="flex items-center justify-end border-t border-void-700 px-4 py-2">
+                            <Button variant="ghost" size="sm">
+                                <GitBranch
+                                    class="size-3.5"
+                                    stroke-width={2}
+                                    aria-hidden
+                                />
+                                Fork from here
+                            </Button>
+                        </footer>
+                    </article>
                 </div>
             </main>
         </div>
         {props.children}
     </div>
+);
+
+const ThreadItem = (props: { active?: boolean; children: JSX.Element }) => (
+    <a
+        href="#"
+        class={`block border-l-2 px-2 py-1.5 transition-colors duration-100 ${
+            props.active
+                ? "border-starlight-400 bg-void-800 text-void-50"
+                : "border-transparent text-void-400 hover:bg-void-800/60 hover:text-void-100"
+        }`}
+    >
+        {props.children}
+    </a>
 );
 
 const SINGLE: NotificationToastItem[] = [

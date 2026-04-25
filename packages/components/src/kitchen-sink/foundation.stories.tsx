@@ -1,5 +1,13 @@
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import { For } from "solid-js";
+import Bell from "lucide-solid/icons/bell";
+import Bot from "lucide-solid/icons/bot";
+import GitBranch from "lucide-solid/icons/git-branch";
+import Info from "lucide-solid/icons/info";
+import Save from "lucide-solid/icons/save";
+import Settings from "lucide-solid/icons/settings";
+import Trash2 from "lucide-solid/icons/trash-2";
+import X from "lucide-solid/icons/x";
 
 const meta: Meta = {
     title: "Kitchen Sink/Foundation",
@@ -249,3 +257,225 @@ const Row = (props: { label: string; children: import("solid-js").JSX.Element })
         <div>{props.children}</div>
     </div>
 );
+
+export const Surfaces: Story = {
+    render: () => (
+        <div class="min-h-screen bg-void-950 p-10">
+            <div class="mx-auto max-w-3xl">
+                <header class="mb-10">
+                    <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-starlight-400">
+                        moondust / surfaces
+                    </p>
+                    <h1 class="mt-2 text-3xl font-semibold tracking-tight text-void-50">
+                        Layered void surfaces
+                    </h1>
+                    <p class="mt-3 max-w-2xl text-sm leading-relaxed text-void-300">
+                        Surfaces step up by one shade per layer. Hairlines
+                        live at <code class="font-mono text-[12px] text-nebula-300">void-700</code>.
+                        Hover/active states bump up by one stop. The viewport
+                        below is the canonical four-layer stack.
+                    </p>
+                </header>
+
+                <div class="bg-void-950 p-6">
+                    <Caption tone="950">app background</Caption>
+                    <div class="mt-3 border border-void-700 bg-void-900 p-6">
+                        <Caption tone="900">primary panel</Caption>
+                        <div class="mt-3 border border-void-700 bg-void-850 p-6">
+                            <Caption tone="850">elevated surface</Caption>
+                            <div class="mt-3 border border-void-700 bg-void-800 p-6">
+                                <Caption tone="800">selected / hover</Caption>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <section class="mt-10">
+                    <h2 class="mb-4 border-b border-void-700 pb-2 text-sm font-semibold tracking-tight text-void-100">
+                        Recipe
+                    </h2>
+                    <ul class="space-y-2 text-[13px] leading-relaxed text-void-300">
+                        <li>
+                            <code class="font-mono text-[12px] text-nebula-300">
+                                bg-void-950
+                            </code>{" "}
+                            — app body, story canvas.
+                        </li>
+                        <li>
+                            <code class="font-mono text-[12px] text-nebula-300">
+                                bg-void-900
+                            </code>{" "}
+                            — primary panels, cards, dialogs, popovers.
+                        </li>
+                        <li>
+                            <code class="font-mono text-[12px] text-nebula-300">
+                                bg-void-850
+                            </code>{" "}
+                            — elevated headers, hero strips inside cards.
+                        </li>
+                        <li>
+                            <code class="font-mono text-[12px] text-nebula-300">
+                                bg-void-800
+                            </code>{" "}
+                            — selected/active states, hover targets.
+                        </li>
+                        <li>
+                            <code class="font-mono text-[12px] text-nebula-300">
+                                border-void-700
+                            </code>{" "}
+                            — every hairline divider; no other border tone in
+                            normal flow.
+                        </li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+    ),
+};
+
+const Caption = (props: {
+    tone: string;
+    children: import("solid-js").JSX.Element;
+}) => (
+    <div class="flex items-center justify-between">
+        <span class="font-mono text-[10px] uppercase tracking-[0.14em] text-void-500">
+            void/{props.tone}
+        </span>
+        <span class="text-[11px] text-void-400">{props.children}</span>
+    </div>
+);
+
+export const Iconography: Story = {
+    render: () => (
+        <div class="min-h-screen bg-void-950 p-10">
+            <div class="mx-auto max-w-3xl space-y-12">
+                <header>
+                    <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-starlight-400">
+                        moondust / iconography
+                    </p>
+                    <h1 class="mt-2 text-3xl font-semibold tracking-tight text-void-50">
+                        Lucide, lightly stroked
+                    </h1>
+                    <p class="mt-3 max-w-2xl text-sm leading-relaxed text-void-300">
+                        Icons are{" "}
+                        <code class="font-mono text-[12px] text-nebula-300">
+                            lucide-solid
+                        </code>
+                        . Stroke weight is{" "}
+                        <code class="font-mono text-[12px] text-nebula-300">
+                            2
+                        </code>{" "}
+                        for inline UI affordances and{" "}
+                        <code class="font-mono text-[12px] text-nebula-300">
+                            1.75
+                        </code>{" "}
+                        for navigational and ambient rail icons. The brutal
+                        Stellar look favors fewer, more intentional icons over
+                        decorating every label.
+                    </p>
+                </header>
+
+                <section>
+                    <h2 class="mb-4 border-b border-void-700 pb-2 text-sm font-semibold tracking-tight text-void-100">
+                        Sizes
+                    </h2>
+                    <div class="space-y-4">
+                        <Row label="3.5 / inline">
+                            <div class="flex items-center gap-3 text-void-300">
+                                <Info class="size-3.5" stroke-width={2} />
+                                <span class="text-[12px]">
+                                    Inline with 12-13px text
+                                </span>
+                            </div>
+                        </Row>
+                        <Row label="4 / button">
+                            <div class="flex items-center gap-3 text-void-200">
+                                <Save class="size-4" stroke-width={2} />
+                                <span class="text-sm">
+                                    Default button affordance
+                                </span>
+                            </div>
+                        </Row>
+                        <Row label="5 / hero">
+                            <div class="flex items-center gap-3 text-starlight-300">
+                                <GitBranch class="size-5" stroke-width={1.75} />
+                                <span class="text-base">
+                                    Empty-state or section hero
+                                </span>
+                            </div>
+                        </Row>
+                    </div>
+                </section>
+
+                <section>
+                    <h2 class="mb-4 border-b border-void-700 pb-2 text-sm font-semibold tracking-tight text-void-100">
+                        Tonal use
+                    </h2>
+                    <div class="space-y-4">
+                        <Row label="neutral">
+                            <div class="flex items-center gap-4 text-void-400">
+                                <Settings class="size-4" stroke-width={2} />
+                                <Bell class="size-4" stroke-width={2} />
+                                <Bot class="size-4" stroke-width={2} />
+                            </div>
+                        </Row>
+                        <Row label="active">
+                            <div class="flex items-center gap-4 text-starlight-300">
+                                <Settings class="size-4" stroke-width={2} />
+                                <Bell class="size-4" stroke-width={2} />
+                                <Bot class="size-4" stroke-width={2} />
+                            </div>
+                        </Row>
+                        <Row label="info">
+                            <div class="flex items-center gap-4 text-nebula-300">
+                                <Info class="size-4" stroke-width={2} />
+                                <GitBranch class="size-4" stroke-width={2} />
+                            </div>
+                        </Row>
+                        <Row label="destructive">
+                            <div class="flex items-center gap-4 text-flare-400">
+                                <Trash2 class="size-4" stroke-width={2} />
+                                <X class="size-4" stroke-width={2} />
+                            </div>
+                        </Row>
+                    </div>
+                </section>
+
+                <section>
+                    <h2 class="mb-4 border-b border-void-700 pb-2 text-sm font-semibold tracking-tight text-void-100">
+                        Rules
+                    </h2>
+                    <ul class="space-y-2 text-[13px] leading-relaxed text-void-300">
+                        <li>
+                            Icons are decorative when paired with a label —
+                            mark them{" "}
+                            <code class="font-mono text-[12px] text-nebula-300">
+                                aria-hidden
+                            </code>
+                            .
+                        </li>
+                        <li>
+                            Solo icon buttons need{" "}
+                            <code class="font-mono text-[12px] text-nebula-300">
+                                aria-label
+                            </code>{" "}
+                            and a{" "}
+                            <code class="font-mono text-[12px] text-nebula-300">
+                                Tooltip
+                            </code>
+                            .
+                        </li>
+                        <li>
+                            Match icon color to the surrounding text by
+                            default; reach for tone (
+                            <span class="text-starlight-300">starlight</span>,{" "}
+                            <span class="text-nebula-300">nebula</span>,{" "}
+                            <span class="text-flare-400">flare</span>) only
+                            when the icon carries the meaning.
+                        </li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+    ),
+};
