@@ -1,6 +1,6 @@
 //go:build !darwin
 
-package main
+package wails
 
 import (
 	"github.com/wailsapp/wails/v2/pkg/menu"

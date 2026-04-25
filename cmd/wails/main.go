@@ -1,10 +1,10 @@
-package main
+package wails
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"log/slog"
-	frontenddist "moondust"
 	"moondust/internal/v2/app"
 	"moondust/internal/v2/store/bbolt"
 
@@ -13,7 +13,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 )
 
-func main() {
+func Main(assets embed.FS) {
 	db, err := bbolt.Connect()
 	if err != nil {
 		panic(fmt.Errorf("connect to database: %w", err))
@@ -31,7 +31,7 @@ func main() {
 		Mac:    wailsMacOptions(),
 		Menu:   wailsApplicationMenu(),
 		AssetServer: &assetserver.Options{
-			Assets: frontenddist.Assets,
+			Assets: assets,
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup: func(ctx context.Context) {
