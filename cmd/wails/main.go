@@ -46,6 +46,7 @@ func Main(assets embed.FS) {
 		},
 		Bind: []interface{}{
 			app.NewProject(service.NewProject(stores)),
+			app.NewThread(service.NewThread(stores)),
 		},
 	})
 

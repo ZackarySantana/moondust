@@ -1,39 +1,62 @@
 import { QueryClientProvider } from "@tanstack/solid-query";
+import { Route, Router } from "@solidjs/router";
 import { render } from "solid-js/web";
 import "./style.css";
-import { queryClient } from "./lib/query-client";
-import { Button } from "@moondust/components";
-import { Route, Router } from "@solidjs/router";
-import { AppShell } from "./layouts/app-shell";
+import { queryClient } from "@/lib/query-client";
+import { installWailsDevMock } from "@/lib/wails";
+import { ProvidersLayout } from "@/layouts/providers";
+import { HomePage } from "@/pages/home";
+import { ThreadPage } from "@/pages/thread";
+import { WorkspacePage } from "@/pages/workspace";
 
-// import { List } from "@moondust/wails-app/project";
-
-// try {
-//     let projects = await List();
-//     console.log(projects);
-// } catch (error) {
-//     console.error(error);
-// }
-
-const HomePage = () => {
-    return (
-        <>
-            <div>Hello World</div>
-            <Button>Click me</Button>
-        </>
-    );
-};
+installWailsDevMock();
 
 render(
     () => (
         <QueryClientProvider client={queryClient}>
-            <Router root={AppShell}>
+            <Router root={ProvidersLayout}>
                 <Route
                     path="/"
                     component={HomePage}
+                />
+                <Route
+                    path="/w/:projectId"
+                    component={WorkspacePage}
+                />
+                <Route
+                    path="/w/:projectId/t/:threadId"
+                    component={ThreadPage}
+                />
+                <Route
+                    path="/settings"
+                    component={SettingsStubPage}
+                />
+                <Route
+                    path="*"
+                    component={NotFoundPage}
                 />
             </Router>
         </QueryClientProvider>
     ),
     document.getElementById("root")!,
 );
+
+function SettingsStubPage() {
+    return (
+        <div class="flex min-h-0 min-w-0 flex-1 items-center justify-center p-8 text-center text-void-400">
+            <div>
+                <p class="text-[13px]">Global settings — coming soon.</p>
+            </div>
+        </div>
+    );
+}
+
+function NotFoundPage() {
+    return (
+        <div class="flex min-h-0 min-w-0 flex-1 items-center justify-center p-8 text-center text-void-400">
+            <div>
+                <p class="text-[13px]">Nothing here.</p>
+            </div>
+        </div>
+    );
+}

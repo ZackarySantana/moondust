@@ -16,7 +16,10 @@
         "@moondust/components": "workspace:*",
         "@moondust/wails-app": "workspace:*",
         "@solidjs/router": "^0.16.1",
-        "@tanstack/solid-query": "^5.99.2"
+        "@tanstack/solid-query": "^5.99.2",
+        "clsx": "^2.1.1",
+        "lucide-solid": "^1.8.0",
+        "tailwind-merge": "^3.5.0"
     },
     "devDependencies": {
         "vitest": "^4.1.5"
