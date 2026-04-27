@@ -1,4 +1,4 @@
-import { useNavigate } from "@solidjs/router";
+import { useLocation, useNavigate } from "@solidjs/router";
 import {
     Button,
     Chip,
@@ -14,11 +14,14 @@ import Clock from "lucide-solid/icons/clock";
 import MessageSquare from "lucide-solid/icons/message-square";
 import FolderPlus from "lucide-solid/icons/folder-plus";
 import Plus from "lucide-solid/icons/plus";
+import { useQueryClient } from "@tanstack/solid-query";
 import { createMemo, For, Show, type Component, type JSX } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import { useShortcuts } from "@/lib/shortcuts";
+import { useToast } from "@/lib/toast";
 import { useUIState } from "@/lib/ui-state";
 import {
+    createThreadInProject,
     paths,
     railThreadOrder,
     sortProjectsByLatestThread,
@@ -28,6 +31,11 @@ import {
     type Thread,
 } from "@/lib/workspace";
 import { relativeTime } from "@/lib/time";
+
+function errMsg(e: unknown): string {
+    if (e instanceof Error) return e.message;
+    return String(e);
+}
 
 const KEYBOARD_TIPS = [
     { caps: ["⌘", "K"], copy: "Run any command from the launcher." },
@@ -52,6 +60,9 @@ export const HomePage: Component = () => {
     const projectsQuery = useProjectsQuery();
     const threadsQuery = useThreadsQuery();
     const navigate = useNavigate();
+    const location = useLocation();
+    const queryClient = useQueryClient();
+    const toast = useToast();
     const { formatCaps } = useShortcuts();
     const { openCommandPalette, openNewWorkspaceDialog } = useUIState();
 
@@ -67,6 +78,38 @@ export const HomePage: Component = () => {
 
     const projectThreadCount = (id: string): number =>
         threads().filter((t) => t.ProjectID === id).length;
+
+    async function quickNewThread() {
+        const m = location.pathname.match(/^\/w\/([^/]+)/);
+        let pid = m?.[1];
+        if (!pid) {
+            const list = sortedProjects();
+            if (list.length === 0) {
+                toast.showToast({
+                    title: "No workspaces yet",
+                    body: "Add a workspace first, then create a thread.",
+                });
+                return;
+            }
+            if (list.length === 1) {
+                pid = list[0].ID;
+            } else {
+                toast.showToast({
+                    title: "Pick a workspace",
+                    body: "Open a workspace from the list below, then create a thread there.",
+                });
+                return;
+            }
+        }
+        try {
+            await createThreadInProject(queryClient, navigate, pid);
+        } catch (e) {
+            toast.showToast({
+                title: "Could not create thread",
+                body: errMsg(e),
+            });
+        }
+    }
 
     return (
         <div class="min-h-0 min-w-0 flex-1 overflow-y-auto">
@@ -194,7 +237,7 @@ export const HomePage: Component = () => {
                             icon={Plus}
                             title="New thread in focused workspace"
                             shortcut={formatCaps("new_thread")}
-                            onClick={openCommandPalette}
+                            onClick={() => void quickNewThread()}
                         />
                         <QuickCreateButton
                             icon={MessageSquare}

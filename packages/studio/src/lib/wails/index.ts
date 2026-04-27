@@ -16,6 +16,7 @@ export {
     SelectWorkspaceFolder,
 } from "@wails/go/app/Project";
 export {
+    Create as CreateThread,
     Get as GetThread,
     List as ListThreads,
     ListByProject as ListThreadsByProject,

@@ -16,3 +16,4 @@ export {
     type RailThreadEntry,
 } from "./sidebar-order";
 export { paths } from "./paths";
+export { createThreadInProject } from "./create-thread";

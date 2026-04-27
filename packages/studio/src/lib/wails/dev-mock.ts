@@ -195,6 +195,32 @@ const ProjectMock = {
 };
 
 const ThreadMock = {
+    Create: async (
+        projectID: string,
+        title: string,
+    ): Promise<MockThread> => {
+        const pid = projectID.trim();
+        if (!pid) {
+            throw new Error("project is required");
+        }
+        if (!PROJECTS.some((p) => p.ID === pid)) {
+            throw new Error("project: data not found");
+        }
+        const ts = new Date().toISOString();
+        const id = `dev-thread-${Date.now().toString(36)}`;
+        const t: MockThread = {
+            ID: id,
+            ProjectID: pid,
+            Title: title.trim(),
+            WorktreeDir: "",
+            ChatProvider: "Cursor Agent",
+            ChatModel: "claude-sonnet-4.6",
+            CreatedAt: ts,
+            UpdatedAt: ts,
+        };
+        THREADS.push(t);
+        return t;
+    },
     Get: async (id: string): Promise<MockThread | null> =>
         THREADS.find((t) => t.ID === id) ?? null,
     List: async (): Promise<MockThread[]> => [...THREADS],

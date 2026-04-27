@@ -11,15 +11,22 @@ import {
 import GitBranch from "lucide-solid/icons/git-branch";
 import Clock from "lucide-solid/icons/clock";
 import MessageSquarePlus from "lucide-solid/icons/message-square-plus";
+import { useQueryClient } from "@tanstack/solid-query";
 import { createMemo, For, Show, type Component } from "solid-js";
-import { useUIState } from "@/lib/ui-state";
+import { useToast } from "@/lib/toast";
 import {
+    createThreadInProject,
     paths,
     sortThreadsForProject,
     useProjectQuery,
     useThreadsByProjectQuery,
 } from "@/lib/workspace";
 import { relativeTime } from "@/lib/time";
+
+function errMsg(e: unknown): string {
+    if (e instanceof Error) return e.message;
+    return String(e);
+}
 
 /**
  * Workspace overview. Lands the user inside a workspace without picking a
@@ -30,7 +37,8 @@ import { relativeTime } from "@/lib/time";
 export const WorkspacePage: Component = () => {
     const params = useParams<{ projectId: string }>();
     const navigate = useNavigate();
-    const { openCommandPalette } = useUIState();
+    const queryClient = useQueryClient();
+    const toast = useToast();
 
     const projectQuery = useProjectQuery(() => params.projectId);
     const threadsQuery = useThreadsByProjectQuery(() => params.projectId);
@@ -38,6 +46,19 @@ export const WorkspacePage: Component = () => {
     const sortedThreads = createMemo(() =>
         sortThreadsForProject(params.projectId, threadsQuery.data ?? []),
     );
+
+    async function addThread() {
+        const pid = params.projectId;
+        if (!pid) return;
+        try {
+            await createThreadInProject(queryClient, navigate, pid);
+        } catch (e) {
+            toast.showToast({
+                title: "Could not create thread",
+                body: errMsg(e),
+            });
+        }
+    }
 
     return (
         <div class="min-h-0 min-w-0 flex-1 overflow-y-auto">
@@ -110,7 +131,7 @@ export const WorkspacePage: Component = () => {
                                 </div>
                                 <Button
                                     size="sm"
-                                    onClick={openCommandPalette}
+                                    onClick={() => void addThread()}
                                 >
                                     <MessageSquarePlus class="size-3.5" />
                                     New thread
@@ -128,7 +149,7 @@ export const WorkspacePage: Component = () => {
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={openCommandPalette}
+                                                onClick={() => void addThread()}
                                             >
                                                 New thread
                                             </Button>

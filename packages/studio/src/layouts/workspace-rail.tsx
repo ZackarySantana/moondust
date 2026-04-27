@@ -25,9 +25,12 @@ import {
     onCleanup,
     type Component,
 } from "solid-js";
+import { useQueryClient } from "@tanstack/solid-query";
 import { type ShortcutActionId, useShortcuts } from "@/lib/shortcuts";
+import { useToast } from "@/lib/toast";
 import { useUIState } from "@/lib/ui-state";
 import {
+    createThreadInProject,
     paths,
     railThreadOrder,
     railThreadSlotIndex,
@@ -37,6 +40,11 @@ import {
     useThreadsQuery,
 } from "@/lib/workspace";
 import { relativeTime } from "@/lib/time";
+
+function errMsg(e: unknown): string {
+    if (e instanceof Error) return e.message;
+    return String(e);
+}
 
 const TICK_INTERVAL_MS = 60_000;
 
@@ -62,6 +70,8 @@ export const StudioWorkspaceRail: Component = () => {
     const params = useParams<{ projectId?: string; threadId?: string }>();
     const { formatCaps, onAction } = useShortcuts();
     const { openCommandPalette, openNewWorkspaceDialog } = useUIState();
+    const queryClient = useQueryClient();
+    const toast = useToast();
 
     const [tick, setTick] = createSignal(0);
     const timer = setInterval(() => setTick((n) => n + 1), TICK_INTERVAL_MS);
@@ -85,12 +95,23 @@ export const StudioWorkspaceRail: Component = () => {
         return m?.[1] ?? null;
     });
 
-    function newThread() {
+    async function newThread() {
         const pid = focusedProjectId();
-        void pid;
-        // TODO: wire to a real "New thread" modal flow. For now, surface
-        // discoverability via the command palette.
-        openCommandPalette();
+        if (!pid) {
+            toast.showToast({
+                title: "No workspace in focus",
+                body: "Open a workspace from the hub or sidebar, then try again.",
+            });
+            return;
+        }
+        try {
+            await createThreadInProject(queryClient, navigate, pid);
+        } catch (e) {
+            toast.showToast({
+                title: "Could not create thread",
+                body: errMsg(e),
+            });
+        }
     }
 
     function newWorkspace() {
@@ -252,10 +273,20 @@ export const StudioWorkspaceRail: Component = () => {
                                             onClick={(e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
-                                                navigate(
-                                                    paths.workspace(project.ID),
-                                                );
-                                                newThread();
+                                                void (async () => {
+                                                    try {
+                                                        await createThreadInProject(
+                                                            queryClient,
+                                                            navigate,
+                                                            project.ID,
+                                                        );
+                                                    } catch (err) {
+                                                        toast.showToast({
+                                                            title: "Could not create thread",
+                                                            body: errMsg(err),
+                                                        });
+                                                    }
+                                                })();
                                             }}
                                         >
                                             <Plus

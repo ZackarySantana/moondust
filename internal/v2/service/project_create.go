@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"moondust/internal/v1/rand"
 	"moondust/internal/v2/git"
 	"moondust/internal/v2/store"
 )

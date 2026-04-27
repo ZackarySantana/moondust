@@ -40,3 +40,7 @@ func (t *Thread) List() ([]*store.Thread, error) {
 func (t *Thread) Rename(id string, title string) error {
 	return t.service.Rename(t.ctx, id, title)
 }
+
+func (t *Thread) Create(projectID string, title string) (*store.Thread, error) {
+	return t.service.Create(t.ctx, projectID, title)
+}
