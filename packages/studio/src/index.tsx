@@ -20,11 +20,11 @@ render(
                     component={HomePage}
                 />
                 <Route
-                    path="/w/:projectId"
+                    path="/w/:workspaceId"
                     component={WorkspacePage}
                 />
                 <Route
-                    path="/w/:projectId/t/:threadId"
+                    path="/w/:workspaceId/t/:threadId"
                     component={ThreadPage}
                 />
                 <Route

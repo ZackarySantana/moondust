@@ -29,7 +29,7 @@ func Main(assets embed.FS) {
 
 	gitClient := git.NewClient()
 
-	projectApp := app.NewProject(service.NewProject(stores, gitClient))
+	workspaceApp := app.NewWorkspace(service.NewWorkspace(stores, gitClient))
 	threadApp := app.NewThread(service.NewThread(stores))
 
 	err = wails.Run(&options.App{
@@ -43,7 +43,7 @@ func Main(assets embed.FS) {
 		},
 		BackgroundColour: &options.RGBA{R: 5, G: 6, B: 16, A: 1},
 		OnStartup: func(ctx context.Context) {
-			projectApp.SetContext(ctx)
+			workspaceApp.SetContext(ctx)
 			threadApp.SetContext(ctx)
 			slog.InfoContext(ctx, "startup started...")
 			slog.InfoContext(ctx, "startup completed...")
@@ -53,7 +53,7 @@ func Main(assets embed.FS) {
 			slog.InfoContext(ctx, "shutdown completed...")
 		},
 		Bind: []interface{}{
-			projectApp,
+			workspaceApp,
 			threadApp,
 		},
 	})

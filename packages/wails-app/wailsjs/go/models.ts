@@ -1,6 +1,6 @@
 export namespace store {
 	
-	export class Project {
+	export class Workspace {
 	    ID: string;
 	    Name: string;
 	    Directory: string;
@@ -11,7 +11,7 @@ export namespace store {
 	    UpdatedAt: any;
 	
 	    static createFrom(source: any = {}) {
-	        return new Project(source);
+	        return new Workspace(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -44,7 +44,7 @@ export namespace store {
 	}
 	export class Thread {
 	    ID: string;
-	    ProjectID: string;
+	    WorkspaceID: string;
 	    Title: string;
 	    WorktreeDir: string;
 	    ChatProvider: string;
@@ -61,7 +61,7 @@ export namespace store {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.ID = source["ID"];
-	        this.ProjectID = source["ProjectID"];
+	        this.WorkspaceID = source["WorkspaceID"];
 	        this.Title = source["Title"];
 	        this.WorktreeDir = source["WorktreeDir"];
 	        this.ChatProvider = source["ChatProvider"];

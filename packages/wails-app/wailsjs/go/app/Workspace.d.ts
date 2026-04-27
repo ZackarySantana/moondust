@@ -3,13 +3,13 @@
 import {store} from '../models';
 import {context} from '../models';
 
-export function CreateWorkspaceFromFolder(arg1:string,arg2:string):Promise<store.Project>;
+export function CreateWorkspaceFromFolder(arg1:string,arg2:string):Promise<store.Workspace>;
 
-export function CreateWorkspaceFromGit(arg1:string,arg2:string):Promise<store.Project>;
+export function CreateWorkspaceFromGit(arg1:string,arg2:string):Promise<store.Workspace>;
 
-export function Get(arg1:string):Promise<store.Project>;
+export function Get(arg1:string):Promise<store.Workspace>;
 
-export function List():Promise<Array<store.Project>>;
+export function List():Promise<Array<store.Workspace>>;
 
 export function SelectWorkspaceFolder():Promise<string>;
 

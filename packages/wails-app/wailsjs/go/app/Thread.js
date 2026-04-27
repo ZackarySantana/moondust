@@ -14,8 +14,8 @@ export function List() {
   return window['go']['app']['Thread']['List']();
 }
 
-export function ListByProject(arg1) {
-  return window['go']['app']['Thread']['ListByProject'](arg1);
+export function ListByWorkspace(arg1) {
+  return window['go']['app']['Thread']['ListByWorkspace'](arg1);
 }
 
 export function Rename(arg1, arg2) {

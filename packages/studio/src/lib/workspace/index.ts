@@ -1,19 +1,19 @@
 export {
-    useProjectQuery,
-    useProjectsQuery,
+    useWorkspaceQuery,
+    useWorkspacesQuery,
     useThreadQuery,
-    useThreadsByProjectQuery,
+    useThreadsByWorkspaceQuery,
     useThreadsQuery,
-    type Project,
+    type Workspace,
     type Thread,
 } from "./queries";
 export {
     railThreadOrder,
     railThreadSlotIndex,
-    sortProjectsByLatestThread,
-    sortThreadsForProject,
+    sortWorkspacesByLatestThread,
+    sortThreadsForWorkspace,
     threadTimestamp,
     type RailThreadEntry,
 } from "./sidebar-order";
 export { paths } from "./paths";
-export { createThreadInProject } from "./create-thread";
+export { createThreadInWorkspace } from "./create-thread";

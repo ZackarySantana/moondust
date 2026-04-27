@@ -13,7 +13,7 @@ import PanelBottom from "lucide-solid/icons/panel-bottom";
 import { createMemo, Show, type Component } from "solid-js";
 import { THREAD_VIEW_ORDER, useShortcuts } from "@/lib/shortcuts";
 import { useUIState } from "@/lib/ui-state";
-import { paths, useProjectQuery, useThreadQuery } from "@/lib/workspace";
+import { paths, useThreadQuery, useWorkspaceQuery } from "@/lib/workspace";
 
 const VIEW_LABELS: Record<(typeof THREAD_VIEW_ORDER)[number], string> = {
     chat: "Chat",
@@ -34,24 +34,24 @@ const VIEW_LABELS: Record<(typeof THREAD_VIEW_ORDER)[number], string> = {
  * everything from route params and the UI/shortcut/workspace contexts.
  */
 export const StudioTitleBar: Component = () => {
-    const params = useParams<{ projectId?: string; threadId?: string }>();
+    const params = useParams<{ workspaceId?: string; threadId?: string }>();
     const location = useLocation();
     const ui = useUIState();
     const { formatCaps } = useShortcuts();
 
-    const projectQuery = useProjectQuery(() => params.projectId);
+    const workspaceQuery = useWorkspaceQuery(() => params.workspaceId);
     const threadQuery = useThreadQuery(() => params.threadId);
 
     const segments = createMemo<BreadcrumbSegment[]>(() => {
         const segs: BreadcrumbSegment[] = [];
-        const pid = params.projectId;
+        const wid = params.workspaceId;
         const tid = params.threadId;
 
-        if (pid) {
+        if (wid) {
             segs.push({
                 id: "workspace",
-                label: projectQuery.data?.Name ?? pid,
-                href: paths.workspace(pid),
+                label: workspaceQuery.data?.Name ?? wid,
+                href: paths.workspace(wid),
             });
         } else if (location.pathname.startsWith("/settings")) {
             segs.push({
@@ -67,11 +67,11 @@ export const StudioTitleBar: Component = () => {
             });
         }
 
-        if (pid && tid) {
+        if (wid && tid) {
             segs.push({
                 id: "thread",
                 label: threadQuery.data?.Title || "Thread",
-                href: paths.thread(pid, tid),
+                href: paths.thread(wid, tid),
             });
             segs.push({
                 id: "view",
@@ -89,7 +89,7 @@ export const StudioTitleBar: Component = () => {
                     ?.replace(/^moon-/, "moon/") ?? ""
             );
         }
-        return projectQuery.data?.Branch ?? "";
+        return workspaceQuery.data?.Branch ?? "";
     };
 
     return (

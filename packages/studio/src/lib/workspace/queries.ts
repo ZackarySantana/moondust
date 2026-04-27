@@ -1,42 +1,40 @@
 import { useQuery } from "@tanstack/solid-query";
 import { queryKeys } from "@/lib/query-client";
 import {
-    GetProject,
+    GetWorkspace,
     GetThread,
-    ListProjects,
+    ListWorkspaces,
     ListThreads,
-    ListThreadsByProject,
+    ListThreadsByWorkspace,
     store,
 } from "@/lib/wails";
 
-export type Project = store.Project;
+export type Workspace = store.Workspace;
 export type Thread = store.Thread;
 
-/** All workspaces. Memoized via TanStack Query keyed by `["projects"]`. */
-export function useProjectsQuery() {
+export function useWorkspacesQuery() {
     return useQuery(() => ({
-        queryKey: queryKeys.projects.all,
-        queryFn: async (): Promise<Project[]> => {
-            const list = await ListProjects();
+        queryKey: queryKeys.workspaces.all,
+        queryFn: async (): Promise<Workspace[]> => {
+            const list = await ListWorkspaces();
             return list ?? [];
         },
     }));
 }
 
-export function useProjectQuery(id: () => string | undefined) {
+export function useWorkspaceQuery(id: () => string | undefined) {
     return useQuery(() => ({
-        queryKey: queryKeys.projects.detail(id() ?? ""),
-        queryFn: async (): Promise<Project | null> => {
-            const pid = id();
-            if (!pid) return null;
-            const p = await GetProject(pid);
-            return p ?? null;
+        queryKey: queryKeys.workspaces.detail(id() ?? ""),
+        queryFn: async (): Promise<Workspace | null> => {
+            const wid = id();
+            if (!wid) return null;
+            const w = await GetWorkspace(wid);
+            return w ?? null;
         },
         enabled: Boolean(id()),
     }));
 }
 
-/** All threads across all workspaces. */
 export function useThreadsQuery() {
     return useQuery(() => ({
         queryKey: queryKeys.threads.all,
@@ -47,16 +45,18 @@ export function useThreadsQuery() {
     }));
 }
 
-export function useThreadsByProjectQuery(projectId: () => string | undefined) {
+export function useThreadsByWorkspaceQuery(
+    workspaceId: () => string | undefined,
+) {
     return useQuery(() => ({
-        queryKey: queryKeys.threads.byProject(projectId() ?? ""),
+        queryKey: queryKeys.threads.byWorkspace(workspaceId() ?? ""),
         queryFn: async (): Promise<Thread[]> => {
-            const pid = projectId();
-            if (!pid) return [];
-            const list = await ListThreadsByProject(pid);
+            const wid = workspaceId();
+            if (!wid) return [];
+            const list = await ListThreadsByWorkspace(wid);
             return list ?? [];
         },
-        enabled: Boolean(projectId()),
+        enabled: Boolean(workspaceId()),
     }));
 }
 

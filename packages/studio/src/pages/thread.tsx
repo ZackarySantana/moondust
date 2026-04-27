@@ -25,7 +25,7 @@ import {
     Switch,
     type Component,
 } from "solid-js";
-import { paths, useProjectQuery, useThreadQuery } from "@/lib/workspace";
+import { paths, useThreadQuery, useWorkspaceQuery } from "@/lib/workspace";
 import {
     type ShortcutActionId,
     type ThreadViewId,
@@ -68,12 +68,12 @@ const VIEWS: readonly {
  * placeholder cards for now.
  */
 export const ThreadPage: Component = () => {
-    const params = useParams<{ projectId: string; threadId: string }>();
+    const params = useParams<{ workspaceId: string; threadId: string }>();
     const navigate = useNavigate();
     const ui = useUIState();
     const { formatCaps } = useShortcuts();
 
-    const projectQuery = useProjectQuery(() => params.projectId);
+    const workspaceQuery = useWorkspaceQuery(() => params.workspaceId);
     const threadQuery = useThreadQuery(() => params.threadId);
 
     const items = createMemo<ViewSwitcherItem[]>(() =>
@@ -172,7 +172,7 @@ export const ThreadPage: Component = () => {
                 />
             </div>
 
-            <Show when={projectQuery.isPending || threadQuery.isPending}>
+            <Show when={workspaceQuery.isPending || threadQuery.isPending}>
                 <div class="absolute right-4 top-4 z-10">
                     <Spinner />
                 </div>
@@ -180,9 +180,9 @@ export const ThreadPage: Component = () => {
 
             <NotFoundEffect
                 show={Boolean(
-                    !projectQuery.isPending &&
+                    !workspaceQuery.isPending &&
                     !threadQuery.isPending &&
-                    (!projectQuery.data || !threadQuery.data),
+                    (!workspaceQuery.data || !threadQuery.data),
                 )}
                 onMissing={() => navigate(paths.hub())}
             />

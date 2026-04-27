@@ -14,7 +14,7 @@ type Store[T any] interface {
 }
 
 type Stores struct {
-	Project   ProjectStore
+	Workspace WorkspaceStore
 	Thread    ThreadStore
 	ChatEvent ChatEventStore
 
@@ -29,8 +29,8 @@ type Stores struct {
 }
 
 func (s *Stores) Validate() error {
-	if s.Project == nil {
-		return fmt.Errorf("project store is required")
+	if s.Workspace == nil {
+		return fmt.Errorf("workspace store is required")
 	}
 	if s.Thread == nil {
 		return fmt.Errorf("thread store is required")

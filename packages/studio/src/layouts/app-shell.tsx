@@ -24,8 +24,8 @@ import { useUIState } from "@/lib/ui-state";
 import {
     paths,
     railThreadOrder,
-    useProjectsQuery,
     useThreadsQuery,
+    useWorkspacesQuery,
 } from "@/lib/workspace";
 import { StudioWorkspaceRail } from "./workspace-rail";
 import { StudioTitleBar } from "./title-bar";
@@ -39,7 +39,7 @@ export const AppShell: Component<RouteSectionProps> = (props) => {
     const { onAction } = useShortcuts();
     const navigate = useNavigate();
 
-    const projectsQuery = useProjectsQuery();
+    const workspacesQuery = useWorkspacesQuery();
     const threadsQuery = useThreadsQuery();
 
     const VIEW_TO_ACTION: Record<ThreadViewId, ShortcutActionId> = {
@@ -69,12 +69,12 @@ export const AppShell: Component<RouteSectionProps> = (props) => {
 
     function jumpToSlot(slot: number) {
         const order = railThreadOrder(
-            projectsQuery.data ?? [],
+            workspacesQuery.data ?? [],
             threadsQuery.data ?? [],
         );
         const entry = order[slot];
         if (!entry) return;
-        navigate(paths.thread(entry.projectId, entry.thread.ID));
+        navigate(paths.thread(entry.workspaceId, entry.thread.ID));
     }
 
     SLOT_ACTIONS.forEach((id, i) => {

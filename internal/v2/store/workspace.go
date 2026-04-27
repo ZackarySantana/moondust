@@ -2,13 +2,13 @@ package store
 
 import "time"
 
-type Project struct {
+type Workspace struct {
 	ID string
 
-	// Name is the human-readable project name shown in the workspace rail.
+	// Name is the human-readable label shown in the workspace rail.
 	Name string
 
-	// Directory is the absolute filesystem path to the project root.
+	// Directory is the absolute filesystem path to the workspace root.
 	Directory string
 
 	// Branch is the currently checked-out git branch, if known.
@@ -19,6 +19,6 @@ type Project struct {
 	UpdatedAt time.Time
 }
 
-type ProjectStore interface {
-	Store[Project]
+type WorkspaceStore interface {
+	Store[Workspace]
 }

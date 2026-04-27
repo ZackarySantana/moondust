@@ -6,8 +6,8 @@ import (
 )
 
 type Thread struct {
-	ID        string
-	ProjectID string
+	ID          string
+	WorkspaceID string
 
 	Title        string
 	WorktreeDir  string
@@ -21,5 +21,5 @@ type Thread struct {
 type ThreadStore interface {
 	Store[Thread]
 
-	ListByProject(ctx context.Context, projectID []byte) ([]*Thread, error)
+	ListByWorkspace(ctx context.Context, workspaceID []byte) ([]*Thread, error)
 }

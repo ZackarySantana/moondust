@@ -32,7 +32,7 @@ func Connect() (*bolt.DB, error) {
 
 func New(db *bbolt.DB) *store.Stores {
 	return &store.Stores{
-		Project:   newProject(db),
+		Workspace: newWorkspace(db),
 		Thread:    newThread(db),
 		ChatEvent: newChatEvent(db),
 		Settings: struct {

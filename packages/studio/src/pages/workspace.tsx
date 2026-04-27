@@ -15,11 +15,11 @@ import { useQueryClient } from "@tanstack/solid-query";
 import { createMemo, For, Show, type Component } from "solid-js";
 import { useToast } from "@/lib/toast";
 import {
-    createThreadInProject,
+    createThreadInWorkspace,
     paths,
-    sortThreadsForProject,
-    useProjectQuery,
-    useThreadsByProjectQuery,
+    sortThreadsForWorkspace,
+    useThreadsByWorkspaceQuery,
+    useWorkspaceQuery,
 } from "@/lib/workspace";
 import { relativeTime } from "@/lib/time";
 
@@ -35,23 +35,26 @@ function errMsg(e: unknown): string {
  * column only.
  */
 export const WorkspacePage: Component = () => {
-    const params = useParams<{ projectId: string }>();
+    const params = useParams<{ workspaceId: string }>();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const toast = useToast();
 
-    const projectQuery = useProjectQuery(() => params.projectId);
-    const threadsQuery = useThreadsByProjectQuery(() => params.projectId);
+    const workspaceQuery = useWorkspaceQuery(() => params.workspaceId);
+    const threadsQuery = useThreadsByWorkspaceQuery(() => params.workspaceId);
 
     const sortedThreads = createMemo(() =>
-        sortThreadsForProject(params.projectId, threadsQuery.data ?? []),
+        sortThreadsForWorkspace(
+            params.workspaceId,
+            threadsQuery.data ?? [],
+        ),
     );
 
     async function addThread() {
-        const pid = params.projectId;
-        if (!pid) return;
+        const wid = params.workspaceId;
+        if (!wid) return;
         try {
-            await createThreadInProject(queryClient, navigate, pid);
+            await createThreadInWorkspace(queryClient, navigate, wid);
         } catch (e) {
             toast.showToast({
                 title: "Could not create thread",
@@ -63,10 +66,10 @@ export const WorkspacePage: Component = () => {
     return (
         <div class="min-h-0 min-w-0 flex-1 overflow-y-auto">
             <Show
-                when={projectQuery.data}
+                when={workspaceQuery.data}
                 fallback={
                     <Show
-                        when={projectQuery.isPending}
+                        when={workspaceQuery.isPending}
                         fallback={
                             <div class="flex h-full items-center justify-center p-10">
                                 <EmptyState
@@ -93,15 +96,15 @@ export const WorkspacePage: Component = () => {
                     </Show>
                 }
             >
-                {(project) => (
+                {(workspace) => (
                     <div class="mx-auto flex max-w-5xl flex-col gap-8 px-8 py-10">
                         <header class="flex flex-col gap-2">
                             <Text variant="eyebrow">Workspace</Text>
                             <h1 class="text-2xl font-semibold tracking-tight text-void-50">
-                                {project().Name}
+                                {workspace().Name}
                             </h1>
                             <p class="text-[12px] font-mono text-void-500">
-                                {project().Directory}
+                                {workspace().Directory}
                             </p>
                             <div class="mt-2 flex flex-wrap items-center gap-2">
                                 <Chip
@@ -109,7 +112,7 @@ export const WorkspacePage: Component = () => {
                                     size="sm"
                                     icon={GitBranch}
                                 >
-                                    {project().Branch || "main"}
+                                    {workspace().Branch || "main"}
                                 </Chip>
                                 <Chip
                                     tone="neutral"
@@ -190,7 +193,7 @@ export const WorkspacePage: Component = () => {
                                                         id: "branch",
                                                         icon: GitBranch,
                                                         label:
-                                                            project().Branch ||
+                                                            workspace().Branch ||
                                                             "main",
                                                     },
                                                     {
@@ -205,7 +208,7 @@ export const WorkspacePage: Component = () => {
                                                 onClick={() =>
                                                     navigate(
                                                         paths.thread(
-                                                            project().ID,
+                                                            workspace().ID,
                                                             thread.ID,
                                                         ),
                                                     )

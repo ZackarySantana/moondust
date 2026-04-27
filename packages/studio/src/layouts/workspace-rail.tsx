@@ -30,14 +30,14 @@ import { type ShortcutActionId, useShortcuts } from "@/lib/shortcuts";
 import { useToast } from "@/lib/toast";
 import { useUIState } from "@/lib/ui-state";
 import {
-    createThreadInProject,
+    createThreadInWorkspace,
     paths,
     railThreadOrder,
     railThreadSlotIndex,
-    sortProjectsByLatestThread,
-    sortThreadsForProject,
-    useProjectsQuery,
+    sortThreadsForWorkspace,
+    sortWorkspacesByLatestThread,
     useThreadsQuery,
+    useWorkspacesQuery,
 } from "@/lib/workspace";
 import { relativeTime } from "@/lib/time";
 
@@ -59,15 +59,15 @@ const SLOT_ACTION_IDS: readonly ShortcutActionId[] = [
 
 /**
  * The persistent left rail. Wires the headless `WorkspaceRail` primitives
- * (from `@moondust/components`) to live project + thread data and pipes
+ * (from `@moondust/components`) to live workspace + thread data and pipes
  * keyboard actions (⌘N, ⌘⇧N, ⌘⇧, etc.) through the shortcut bus.
  */
 export const StudioWorkspaceRail: Component = () => {
-    const projectsQuery = useProjectsQuery();
+    const workspacesQuery = useWorkspacesQuery();
     const threadsQuery = useThreadsQuery();
     const location = useLocation();
     const navigate = useNavigate();
-    const params = useParams<{ projectId?: string; threadId?: string }>();
+    const params = useParams<{ workspaceId?: string; threadId?: string }>();
     const { formatCaps, onAction } = useShortcuts();
     const { openCommandPalette, openNewWorkspaceDialog } = useUIState();
     const queryClient = useQueryClient();
@@ -77,27 +77,27 @@ export const StudioWorkspaceRail: Component = () => {
     const timer = setInterval(() => setTick((n) => n + 1), TICK_INTERVAL_MS);
     onCleanup(() => clearInterval(timer));
 
-    const projects = () => projectsQuery.data ?? [];
+    const workspaces = () => workspacesQuery.data ?? [];
     const threads = () => threadsQuery.data ?? [];
 
-    const sortedProjects = createMemo(() =>
-        sortProjectsByLatestThread(projects(), threads()),
+    const sortedWorkspaces = createMemo(() =>
+        sortWorkspacesByLatestThread(workspaces(), threads()),
     );
     const slotByThread = createMemo(() =>
-        railThreadSlotIndex(projects(), threads()),
+        railThreadSlotIndex(workspaces(), threads()),
     );
     const recentThreads = createMemo(() =>
-        railThreadOrder(projects(), threads()).slice(0, 5),
+        railThreadOrder(workspaces(), threads()).slice(0, 5),
     );
 
-    const focusedProjectId = createMemo(() => {
+    const focusedWorkspaceId = createMemo(() => {
         const m = location.pathname.match(/^\/w\/([^/]+)/);
         return m?.[1] ?? null;
     });
 
     async function newThread() {
-        const pid = focusedProjectId();
-        if (!pid) {
+        const wid = focusedWorkspaceId();
+        if (!wid) {
             toast.showToast({
                 title: "No workspace in focus",
                 body: "Open a workspace from the hub or sidebar, then try again.",
@@ -105,7 +105,7 @@ export const StudioWorkspaceRail: Component = () => {
             return;
         }
         try {
-            await createThreadInProject(queryClient, navigate, pid);
+            await createThreadInWorkspace(queryClient, navigate, wid);
         } catch (e) {
             toast.showToast({
                 title: "Could not create thread",
@@ -153,7 +153,7 @@ export const StudioWorkspaceRail: Component = () => {
             }
             footer={
                 <div class="flex flex-col gap-1 px-2 py-2">
-                    <Show when={projectsQuery.isPending}>
+                    <Show when={workspacesQuery.isPending}>
                         <div class="flex items-center justify-center py-2">
                             <Spinner />
                         </div>
@@ -196,7 +196,7 @@ export const StudioWorkspaceRail: Component = () => {
                         {(entry) => (
                             <WorkspaceRailThread
                                 href={paths.thread(
-                                    entry.projectId,
+                                    entry.workspaceId,
                                     entry.thread.ID,
                                 )}
                                 title={entry.thread.Title || "Untitled thread"}
@@ -242,7 +242,7 @@ export const StudioWorkspaceRail: Component = () => {
                 }
             >
                 <Show
-                    when={sortedProjects().length > 0}
+                    when={sortedWorkspaces().length > 0}
                     fallback={
                         <EmptyState
                             size="sm"
@@ -260,25 +260,25 @@ export const StudioWorkspaceRail: Component = () => {
                         />
                     }
                 >
-                    <For each={sortedProjects()}>
-                        {(project) => (
+                    <For each={sortedWorkspaces()}>
+                        {(workspace) => (
                             <WorkspaceRailProject
-                                name={project.Name || project.ID}
-                                pathLabel={project.Directory}
+                                name={workspace.Name || workspace.ID}
+                                pathLabel={workspace.Directory}
                                 actions={
                                     <>
                                         <IconButton
-                                            aria-label={`New thread in ${project.Name}`}
+                                            aria-label={`New thread in ${workspace.Name}`}
                                             size="xs"
                                             onClick={(e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
                                                 void (async () => {
                                                     try {
-                                                        await createThreadInProject(
+                                                        await createThreadInWorkspace(
                                                             queryClient,
                                                             navigate,
-                                                            project.ID,
+                                                            workspace.ID,
                                                         );
                                                     } catch (err) {
                                                         toast.showToast({
@@ -295,14 +295,14 @@ export const StudioWorkspaceRail: Component = () => {
                                             />
                                         </IconButton>
                                         <IconButton
-                                            aria-label={`Settings for ${project.Name}`}
+                                            aria-label={`Settings for ${workspace.Name}`}
                                             size="xs"
                                             onClick={(e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
                                                 navigate(
                                                     paths.workspaceSettings(
-                                                        project.ID,
+                                                        workspace.ID,
                                                     ),
                                                 );
                                             }}
@@ -316,8 +316,8 @@ export const StudioWorkspaceRail: Component = () => {
                                 }
                             >
                                 <For
-                                    each={sortThreadsForProject(
-                                        project.ID,
+                                    each={sortThreadsForWorkspace(
+                                        workspace.ID,
                                         threads(),
                                     )}
                                 >
@@ -335,7 +335,7 @@ export const StudioWorkspaceRail: Component = () => {
                                         return (
                                             <WorkspaceRailThread
                                                 href={paths.thread(
-                                                    project.ID,
+                                                    workspace.ID,
                                                     thread.ID,
                                                 )}
                                                 title={

@@ -4,14 +4,14 @@ import { CreateThread } from "@/lib/wails";
 import { paths } from "./paths";
 import type { Thread } from "./queries";
 
-export async function createThreadInProject(
+export async function createThreadInWorkspace(
     qc: QueryClient,
     navigate: (to: string) => void | Promise<void>,
-    projectId: string,
+    workspaceId: string,
     title = "",
 ): Promise<Thread> {
-    const thread = await CreateThread(projectId, title);
+    const thread = await CreateThread(workspaceId, title);
     await invalidateThreads(qc);
-    await navigate(paths.thread(projectId, thread.ID));
+    await navigate(paths.thread(workspaceId, thread.ID));
     return thread;
 }

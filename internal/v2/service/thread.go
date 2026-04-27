@@ -23,8 +23,8 @@ func (t *Thread) Get(ctx context.Context, id string) (*store.Thread, error) {
 	return t.stores.Thread.Get(ctx, []byte(id))
 }
 
-func (t *Thread) ListByProject(ctx context.Context, projectID string) ([]*store.Thread, error) {
-	return t.stores.Thread.ListByProject(ctx, []byte(projectID))
+func (t *Thread) ListByWorkspace(ctx context.Context, workspaceID string) ([]*store.Thread, error) {
+	return t.stores.Thread.ListByWorkspace(ctx, []byte(workspaceID))
 }
 
 func (t *Thread) List(ctx context.Context) ([]*store.Thread, error) {
@@ -40,18 +40,18 @@ func (t *Thread) Rename(ctx context.Context, id string, title string) error {
 	return t.stores.Thread.Update(ctx, []byte(id), thread)
 }
 
-func (t *Thread) Create(ctx context.Context, projectID, title string) (*store.Thread, error) {
-	pid := strings.TrimSpace(projectID)
-	if pid == "" {
-		return nil, fmt.Errorf("project is required")
+func (t *Thread) Create(ctx context.Context, workspaceID, title string) (*store.Thread, error) {
+	wid := strings.TrimSpace(workspaceID)
+	if wid == "" {
+		return nil, fmt.Errorf("workspace is required")
 	}
-	if _, err := t.stores.Project.Get(ctx, []byte(pid)); err != nil {
-		return nil, fmt.Errorf("project: %w", err)
+	if _, err := t.stores.Workspace.Get(ctx, []byte(wid)); err != nil {
+		return nil, fmt.Errorf("workspace: %w", err)
 	}
 	id := rand.Text()
 	out := &store.Thread{
 		ID:           id,
-		ProjectID:    pid,
+		WorkspaceID:  wid,
 		Title:        strings.TrimSpace(title),
 		WorktreeDir:  "",
 		ChatProvider: "Cursor Agent",

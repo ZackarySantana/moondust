@@ -1,73 +1,70 @@
-import type { Project, Thread } from "./queries";
+import type { Thread, Workspace } from "./queries";
 
-export function threadTimestamp(t: Thread): number {
-    for (const field of [t.UpdatedAt, t.CreatedAt]) {
-        if (field == null || field === "") continue;
-        const d = typeof field === "string" ? new Date(field) : field;
-        if (d instanceof Date && !Number.isNaN(d.getTime())) {
-            return d.getTime();
-        }
-    }
-    return 0;
+function threadTimestamp(t: Thread): number {
+    const u = t.UpdatedAt ?? t.CreatedAt;
+    if (u == null) return 0;
+    const d = typeof u === "string" || u instanceof Date ? new Date(u) : null;
+    const ms = d && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
+    return ms;
 }
 
-/** Most recently active project first. */
-export function sortProjectsByLatestThread(
-    projects: readonly Project[],
+/** Most recently active workspace first. */
+export function sortWorkspacesByLatestThread(
+    workspaces: readonly Workspace[],
     threads: readonly Thread[],
-): Project[] {
+): Workspace[] {
     const latest = new Map<string, number>();
     for (const t of threads) {
         const ts = threadTimestamp(t);
-        const prev = latest.get(t.ProjectID) ?? 0;
-        if (ts > prev) latest.set(t.ProjectID, ts);
+        const prev = latest.get(t.WorkspaceID) ?? 0;
+        if (ts > prev) latest.set(t.WorkspaceID, ts);
     }
-    return [...projects].sort(
+    return [...workspaces].sort(
         (a, b) => (latest.get(b.ID) ?? 0) - (latest.get(a.ID) ?? 0),
     );
 }
 
-/** Threads in a single project, newest first. */
-export function sortThreadsForProject(
-    projectId: string,
+/** Threads in a single workspace, newest first. */
+export function sortThreadsForWorkspace(
+    workspaceId: string,
     threads: readonly Thread[],
 ): Thread[] {
     return threads
-        .filter((t) => t.ProjectID === projectId)
+        .filter((t) => t.WorkspaceID === workspaceId)
         .sort((a, b) => threadTimestamp(b) - threadTimestamp(a));
 }
 
 export interface RailThreadEntry {
-    projectId: string;
+    workspaceId: string;
     thread: Thread;
 }
 
 /**
- * Flat list of threads in rail order (most-recent project, then newest
- * thread). Used to drive ⌘⌥1..6 jumps and the "Recent threads" section
- * on the Hub.
+ * Flat list of threads in rail order (most-recent workspace, then newest
+ * thread within each workspace).
  */
 export function railThreadOrder(
-    projects: readonly Project[],
+    workspaces: readonly Workspace[],
     threads: readonly Thread[],
 ): RailThreadEntry[] {
     const out: RailThreadEntry[] = [];
-    for (const p of sortProjectsByLatestThread(projects, threads)) {
-        for (const t of sortThreadsForProject(p.ID, threads)) {
-            out.push({ projectId: p.ID, thread: t });
+    for (const w of sortWorkspacesByLatestThread(workspaces, threads)) {
+        for (const t of sortThreadsForWorkspace(w.ID, threads)) {
+            out.push({ workspaceId: w.ID, thread: t });
         }
     }
     return out;
 }
 
-/** Map thread id → 0-based slot index for the first 6 threads in rail order. */
+/** Map thread id → shortcut slot index (0-based) in {@link railThreadOrder}. */
 export function railThreadSlotIndex(
-    projects: readonly Project[],
+    workspaces: readonly Workspace[],
     threads: readonly Thread[],
 ): Map<string, number> {
-    const order = railThreadOrder(projects, threads);
+    const order = railThreadOrder(workspaces, threads);
     const m = new Map<string, number>();
-    const n = Math.min(6, order.length);
-    for (let i = 0; i < n; i++) m.set(order[i].thread.ID, i);
+    order.forEach((e, i) => m.set(e.thread.ID, i));
     return m;
 }
+
+export { threadTimestamp };

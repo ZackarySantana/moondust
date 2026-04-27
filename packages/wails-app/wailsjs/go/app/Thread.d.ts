@@ -9,7 +9,7 @@ export function Get(arg1:string):Promise<store.Thread>;
 
 export function List():Promise<Array<store.Thread>>;
 
-export function ListByProject(arg1:string):Promise<Array<store.Thread>>;
+export function ListByWorkspace(arg1:string):Promise<Array<store.Thread>>;
 
 export function Rename(arg1:string,arg2:string):Promise<void>;
 

@@ -11,15 +11,15 @@
 export {
     CreateWorkspaceFromFolder,
     CreateWorkspaceFromGit,
-    Get as GetProject,
-    List as ListProjects,
+    Get as GetWorkspace,
+    List as ListWorkspaces,
     SelectWorkspaceFolder,
-} from "@wails/go/app/Project";
+} from "@wails/go/app/Workspace";
 export {
     Create as CreateThread,
     Get as GetThread,
     List as ListThreads,
-    ListByProject as ListThreadsByProject,
+    ListByWorkspace as ListThreadsByWorkspace,
     Rename as RenameThread,
 } from "@wails/go/app/Thread";
 

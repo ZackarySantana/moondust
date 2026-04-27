@@ -12,7 +12,7 @@ import (
 	"moondust/internal/v2/store"
 )
 
-func (p *Project) CreateFromFolder(ctx context.Context, directory, name string) (*store.Project, error) {
+func (w *Workspace) CreateFromFolder(ctx context.Context, directory, name string) (*store.Workspace, error) {
 	dir := strings.TrimSpace(directory)
 	if dir == "" {
 		return nil, fmt.Errorf("directory is required")
@@ -28,16 +28,16 @@ func (p *Project) CreateFromFolder(ctx context.Context, directory, name string) 
 	if !fi.IsDir() {
 		return nil, fmt.Errorf("not a directory: %s", abs)
 	}
-	existing, err := p.stores.Project.List(ctx)
+	existing, err := w.stores.Workspace.List(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("list projects: %w", err)
+		return nil, fmt.Errorf("list workspaces: %w", err)
 	}
 	absClean := filepath.Clean(abs)
-	for _, proj := range existing {
-		if proj == nil {
+	for _, ws := range existing {
+		if ws == nil {
 			continue
 		}
-		if filepath.Clean(proj.Directory) == absClean {
+		if filepath.Clean(ws.Directory) == absClean {
 			return nil, fmt.Errorf("this folder is already opened as a workspace")
 		}
 	}
@@ -48,20 +48,20 @@ func (p *Project) CreateFromFolder(ctx context.Context, directory, name string) 
 	if displayName == "" || displayName == "." {
 		displayName = "Workspace"
 	}
-	branch := p.git.DefaultBranch(ctx, absClean)
-	out := &store.Project{
+	branch := w.git.DefaultBranch(ctx, absClean)
+	out := &store.Workspace{
 		ID:        rand.Text(),
 		Name:      displayName,
 		Directory: absClean,
 		Branch:    branch,
 	}
-	if err := p.stores.Project.Put(ctx, []byte(out.ID), out); err != nil {
-		return nil, fmt.Errorf("save project: %w", err)
+	if err := w.stores.Workspace.Put(ctx, []byte(out.ID), out); err != nil {
+		return nil, fmt.Errorf("save workspace: %w", err)
 	}
 	return out, nil
 }
 
-func (p *Project) CreateFromGit(ctx context.Context, remoteURL, name string) (*store.Project, error) {
+func (w *Workspace) CreateFromGit(ctx context.Context, remoteURL, name string) (*store.Workspace, error) {
 	url := strings.TrimSpace(remoteURL)
 	if url == "" {
 		return nil, fmt.Errorf("git URL is required")
@@ -78,11 +78,11 @@ func (p *Project) CreateFromGit(ctx context.Context, remoteURL, name string) (*s
 	targetDir := filepath.Join(cacheDir, "moondust", "repositories", id)
 
 	auth := git.AuthConfig{}
-	if gs, err := p.stores.Settings.Global.Get(ctx, []byte("global")); err == nil && gs != nil {
+	if gs, err := w.stores.Settings.Global.Get(ctx, []byte("global")); err == nil && gs != nil {
 		auth.SSHAuthSocketOverride = strings.TrimSpace(gs.SSHAuthsocket)
 	}
 
-	if err := p.git.Clone(ctx, git.CloneOptions{
+	if err := w.git.Clone(ctx, git.CloneOptions{
 		URL:       url,
 		TargetDir: targetDir,
 		Auth:      auth,
@@ -90,16 +90,16 @@ func (p *Project) CreateFromGit(ctx context.Context, remoteURL, name string) (*s
 		return nil, err
 	}
 
-	branch := p.git.DefaultBranch(ctx, targetDir)
-	out := &store.Project{
+	branch := w.git.DefaultBranch(ctx, targetDir)
+	out := &store.Workspace{
 		ID:        id,
 		Name:      displayName,
 		Directory: targetDir,
 		Branch:    branch,
 	}
-	if err := p.stores.Project.Put(ctx, []byte(id), out); err != nil {
+	if err := w.stores.Workspace.Put(ctx, []byte(id), out); err != nil {
 		_ = os.RemoveAll(targetDir)
-		return nil, fmt.Errorf("save project: %w", err)
+		return nil, fmt.Errorf("save workspace: %w", err)
 	}
 	return out, nil
 }

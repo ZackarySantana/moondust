@@ -40,6 +40,6 @@ func (t *ThreadStore) Delete(ctx context.Context, id []byte) error {
 	return t.store.Delete(ctx, id)
 }
 
-func (t *ThreadStore) ListByProject(ctx context.Context, projectID []byte) ([]*store.Thread, error) {
-	return t.store.ListByProject(ctx, projectID)
+func (t *ThreadStore) ListByWorkspace(ctx context.Context, workspaceID []byte) ([]*store.Thread, error) {
+	return t.store.ListByWorkspace(ctx, workspaceID)
 }

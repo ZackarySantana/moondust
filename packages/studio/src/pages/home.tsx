@@ -21,14 +21,14 @@ import { useShortcuts } from "@/lib/shortcuts";
 import { useToast } from "@/lib/toast";
 import { useUIState } from "@/lib/ui-state";
 import {
-    createThreadInProject,
+    createThreadInWorkspace,
     paths,
     railThreadOrder,
-    sortProjectsByLatestThread,
-    useProjectsQuery,
+    sortWorkspacesByLatestThread,
     useThreadsQuery,
-    type Project,
+    useWorkspacesQuery,
     type Thread,
+    type Workspace,
 } from "@/lib/workspace";
 import { relativeTime } from "@/lib/time";
 
@@ -57,7 +57,7 @@ const KEYBOARD_TIPS = [
  * a navigation surface, not a chat surface.
  */
 export const HomePage: Component = () => {
-    const projectsQuery = useProjectsQuery();
+    const workspacesQuery = useWorkspacesQuery();
     const threadsQuery = useThreadsQuery();
     const navigate = useNavigate();
     const location = useLocation();
@@ -66,24 +66,24 @@ export const HomePage: Component = () => {
     const { formatCaps } = useShortcuts();
     const { openCommandPalette, openNewWorkspaceDialog } = useUIState();
 
-    const projects = () => projectsQuery.data ?? [];
+    const workspaces = () => workspacesQuery.data ?? [];
     const threads = () => threadsQuery.data ?? [];
 
     const recent = createMemo(() =>
-        railThreadOrder(projects(), threads()).slice(0, 6),
+        railThreadOrder(workspaces(), threads()).slice(0, 6),
     );
-    const sortedProjects = createMemo(() =>
-        sortProjectsByLatestThread(projects(), threads()),
+    const sortedWorkspaces = createMemo(() =>
+        sortWorkspacesByLatestThread(workspaces(), threads()),
     );
 
-    const projectThreadCount = (id: string): number =>
-        threads().filter((t) => t.ProjectID === id).length;
+    const workspaceThreadCount = (id: string): number =>
+        threads().filter((t) => t.WorkspaceID === id).length;
 
     async function quickNewThread() {
         const m = location.pathname.match(/^\/w\/([^/]+)/);
         let pid = m?.[1];
         if (!pid) {
-            const list = sortedProjects();
+            const list = sortedWorkspaces();
             if (list.length === 0) {
                 toast.showToast({
                     title: "No workspaces yet",
@@ -102,7 +102,7 @@ export const HomePage: Component = () => {
             }
         }
         try {
-            await createThreadInProject(queryClient, navigate, pid);
+            await createThreadInWorkspace(queryClient, navigate, pid);
         } catch (e) {
             toast.showToast({
                 title: "Could not create thread",
@@ -125,7 +125,7 @@ export const HomePage: Component = () => {
                     </p>
                 </header>
 
-                <Show when={projectsQuery.isPending || threadsQuery.isPending}>
+                <Show when={workspacesQuery.isPending || threadsQuery.isPending}>
                     <div class="flex items-center justify-center py-10">
                         <Spinner />
                     </div>
@@ -142,15 +142,16 @@ export const HomePage: Component = () => {
                                 {(entry) => (
                                     <RecentThreadCard
                                         thread={entry.thread}
-                                        project={
-                                            projects().find(
-                                                (p) => p.ID === entry.projectId,
+                                        workspace={
+                                            workspaces().find(
+                                                (w) =>
+                                                    w.ID === entry.workspaceId,
                                             ) ?? null
                                         }
                                         onOpen={() =>
                                             navigate(
                                                 paths.thread(
-                                                    entry.projectId,
+                                                    entry.workspaceId,
                                                     entry.thread.ID,
                                                 ),
                                             )
@@ -183,7 +184,7 @@ export const HomePage: Component = () => {
                     />
 
                     <Show
-                        when={sortedProjects().length > 0}
+                        when={sortedWorkspaces().length > 0}
                         fallback={
                             <EmptyState
                                 icon={FolderPlus}
@@ -202,16 +203,16 @@ export const HomePage: Component = () => {
                         }
                     >
                         <HubCardGrid minCardWidth={260}>
-                            <For each={sortedProjects()}>
-                                {(project) => (
+                            <For each={sortedWorkspaces()}>
+                                {(workspace) => (
                                     <WorkspaceCard
-                                        project={project}
-                                        threadCount={projectThreadCount(
-                                            project.ID,
+                                        workspace={workspace}
+                                        threadCount={workspaceThreadCount(
+                                            workspace.ID,
                                         )}
                                         onOpen={() =>
                                             navigate(
-                                                paths.workspace(project.ID),
+                                                paths.workspace(workspace.ID),
                                             )
                                         }
                                     />
@@ -286,7 +287,7 @@ const SectionHeader: Component<SectionHeaderProps> = (props) => (
 
 interface RecentThreadCardProps {
     thread: Thread;
-    project: Project | null;
+    workspace: Workspace | null;
     onOpen: () => void;
 }
 
@@ -294,7 +295,7 @@ const RecentThreadCard: Component<RecentThreadCardProps> = (props) => (
     <HubCard
         eyebrow={
             <span class="inline-flex items-center gap-1.5">
-                {props.project?.Name ?? "Workspace"}
+                {props.workspace?.Name ?? "Workspace"}
                 <Chip
                     size="sm"
                     tone="outline"
@@ -319,7 +320,7 @@ const RecentThreadCard: Component<RecentThreadCardProps> = (props) => (
             {
                 id: "branch",
                 icon: GitBranch,
-                label: props.project?.Branch || "main",
+                label: props.workspace?.Branch || "main",
             },
             {
                 id: "time",
@@ -334,7 +335,7 @@ const RecentThreadCard: Component<RecentThreadCardProps> = (props) => (
 );
 
 interface WorkspaceCardProps {
-    project: Project;
+    workspace: Workspace;
     threadCount: number;
     onOpen: () => void;
 }
@@ -342,13 +343,13 @@ interface WorkspaceCardProps {
 const WorkspaceCard: Component<WorkspaceCardProps> = (props) => (
     <HubCard
         eyebrow="Workspace"
-        title={props.project.Name || props.project.ID}
-        preview={props.project.Directory}
+        title={props.workspace.Name || props.workspace.ID}
+        preview={props.workspace.Directory}
         meta={[
             {
                 id: "branch",
                 icon: GitBranch,
-                label: props.project.Branch || "main",
+                label: props.workspace.Branch || "main",
             },
             {
                 id: "threads",
@@ -359,7 +360,7 @@ const WorkspaceCard: Component<WorkspaceCardProps> = (props) => (
                 id: "updated",
                 icon: Clock,
                 label: relativeTime(
-                    props.project.UpdatedAt || props.project.CreatedAt,
+                    props.workspace.UpdatedAt || props.workspace.CreatedAt,
                 ),
             },
         ]}

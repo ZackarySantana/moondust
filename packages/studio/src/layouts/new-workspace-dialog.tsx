@@ -19,7 +19,7 @@ import {
     CreateWorkspaceFromGit,
     SelectWorkspaceFolder,
 } from "@/lib/wails";
-import { invalidateProjects } from "@/lib/query-client";
+import { invalidateWorkspaces } from "@/lib/query-client";
 import { paths } from "@/lib/workspace";
 import { useToast } from "@/lib/toast";
 import { useUIState } from "@/lib/ui-state";
@@ -92,7 +92,7 @@ export const NewWorkspaceDialog: Component = () => {
         setFormError("");
         try {
             const p = await CreateWorkspaceFromFolder(dir, folderName().trim());
-            await invalidateProjects(queryClient);
+            await invalidateWorkspaces(queryClient);
             close();
             navigate(paths.workspace(p.ID));
             toast.showToast({
@@ -116,7 +116,7 @@ export const NewWorkspaceDialog: Component = () => {
         setFormError("");
         try {
             const p = await CreateWorkspaceFromGit(url, gitName().trim());
-            await invalidateProjects(queryClient);
+            await invalidateWorkspaces(queryClient);
             close();
             navigate(paths.workspace(p.ID));
             toast.showToast({

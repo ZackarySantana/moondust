@@ -8,7 +8,7 @@
  * bindings (see `studio/src/index.tsx`).
  */
 
-interface MockProject {
+interface MockWorkspace {
     ID: string;
     Name: string;
     Directory: string;
@@ -19,7 +19,7 @@ interface MockProject {
 
 interface MockThread {
     ID: string;
-    ProjectID: string;
+    WorkspaceID: string;
     Title: string;
     WorktreeDir: string;
     ChatProvider: string;
@@ -33,7 +33,7 @@ const minutes = (m: number) => new Date(now - m * 60_000).toISOString();
 const hours = (h: number) => new Date(now - h * 3_600_000).toISOString();
 const days = (d: number) => new Date(now - d * 86_400_000).toISOString();
 
-const PROJECTS: MockProject[] = [
+const WORKSPACES: MockWorkspace[] = [
     {
         ID: "moondust",
         Name: "moondust",
@@ -63,7 +63,7 @@ const PROJECTS: MockProject[] = [
 const THREADS: MockThread[] = [
     {
         ID: "moon/refactor-router",
-        ProjectID: "moondust",
+        WorkspaceID: "moondust",
         Title: "Refactor router and replace floating-ui",
         WorktreeDir: "~/code/moondust.worktrees/moon-refactor-router",
         ChatProvider: "cursor",
@@ -73,7 +73,7 @@ const THREADS: MockThread[] = [
     },
     {
         ID: "moon/studio-ipc",
-        ProjectID: "moondust",
+        WorkspaceID: "moondust",
         Title: "Wire Wails IPC into studio",
         WorktreeDir: "~/code/moondust.worktrees/moon-studio-ipc",
         ChatProvider: "cursor",
@@ -83,7 +83,7 @@ const THREADS: MockThread[] = [
     },
     {
         ID: "moon/thread-tests",
-        ProjectID: "moondust",
+        WorkspaceID: "moondust",
         Title: "Tests for thread store",
         WorktreeDir: "~/code/moondust.worktrees/moon-thread-tests",
         ChatProvider: "cursor",
@@ -93,7 +93,7 @@ const THREADS: MockThread[] = [
     },
     {
         ID: "moon/theme-tokens",
-        ProjectID: "moondust",
+        WorkspaceID: "moondust",
         Title: "Notes on theme tokens",
         WorktreeDir: "~/code/moondust.worktrees/moon-theme-tokens",
         ChatProvider: "cursor",
@@ -103,7 +103,7 @@ const THREADS: MockThread[] = [
     },
     {
         ID: "studio/hub-page",
-        ProjectID: "studio-design",
+        WorkspaceID: "studio-design",
         Title: "Mock the Hub page",
         WorktreeDir: "~/code/studio-design.worktrees/hub-page",
         ChatProvider: "cursor",
@@ -113,7 +113,7 @@ const THREADS: MockThread[] = [
     },
     {
         ID: "studio/keyboard-cheatsheet",
-        ProjectID: "studio-design",
+        WorkspaceID: "studio-design",
         Title: "Draft keyboard cheatsheet",
         WorktreeDir: "~/code/studio-design.worktrees/keyboard-cheatsheet",
         ChatProvider: "claude",
@@ -129,10 +129,10 @@ function nameFromGitURLMock(url: string): string {
     return parts[parts.length - 1] || "repo";
 }
 
-const ProjectMock = {
-    Get: async (id: string): Promise<MockProject | null> =>
-        PROJECTS.find((p) => p.ID === id) ?? null,
-    List: async (): Promise<MockProject[]> => [...PROJECTS],
+const WorkspaceMock = {
+    Get: async (id: string): Promise<MockWorkspace | null> =>
+        WORKSPACES.find((p) => p.ID === id) ?? null,
+    List: async (): Promise<MockWorkspace[]> => [...WORKSPACES],
     SelectWorkspaceFolder: async (): Promise<string> => {
         if (typeof window === "undefined") return "";
         const v = window.prompt(
@@ -144,13 +144,13 @@ const ProjectMock = {
     CreateWorkspaceFromFolder: async (
         directory: string,
         name: string,
-    ): Promise<MockProject> => {
+    ): Promise<MockWorkspace> => {
         const dir = directory.trim();
         if (!dir) {
             throw new Error("directory is required");
         }
         const clean = dir.replace(/[/\\]+$/, "");
-        for (const p of PROJECTS) {
+        for (const p of WORKSPACES) {
             if (p.Directory.replace(/[/\\]+$/, "") === clean) {
                 throw new Error("this folder is already opened as a workspace");
             }
@@ -160,7 +160,7 @@ const ProjectMock = {
             name.trim() ||
             clean.split(/[/\\]/).filter(Boolean).pop() ||
             "Workspace";
-        const proj: MockProject = {
+        const ws: MockWorkspace = {
             ID: `dev-${Date.now().toString(36)}`,
             Name: base,
             Directory: clean,
@@ -168,20 +168,20 @@ const ProjectMock = {
             CreatedAt: ts,
             UpdatedAt: ts,
         };
-        PROJECTS.push(proj);
-        return proj;
+        WORKSPACES.push(ws);
+        return ws;
     },
     CreateWorkspaceFromGit: async (
         remoteURL: string,
         name: string,
-    ): Promise<MockProject> => {
+    ): Promise<MockWorkspace> => {
         const url = remoteURL.trim();
         if (!url) {
             throw new Error("git URL is required");
         }
         const ts = new Date().toISOString();
         const id = `dev-${Date.now().toString(36)}`;
-        const proj: MockProject = {
+        const ws: MockWorkspace = {
             ID: id,
             Name: name.trim() || nameFromGitURLMock(url),
             Directory: `~/.cache/moondust/repositories/${id}`,
@@ -189,28 +189,28 @@ const ProjectMock = {
             CreatedAt: ts,
             UpdatedAt: ts,
         };
-        PROJECTS.push(proj);
-        return proj;
+        WORKSPACES.push(ws);
+        return ws;
     },
 };
 
 const ThreadMock = {
     Create: async (
-        projectID: string,
+        workspaceID: string,
         title: string,
     ): Promise<MockThread> => {
-        const pid = projectID.trim();
-        if (!pid) {
-            throw new Error("project is required");
+        const wid = workspaceID.trim();
+        if (!wid) {
+            throw new Error("workspace is required");
         }
-        if (!PROJECTS.some((p) => p.ID === pid)) {
-            throw new Error("project: data not found");
+        if (!WORKSPACES.some((p) => p.ID === wid)) {
+            throw new Error("workspace: data not found");
         }
         const ts = new Date().toISOString();
         const id = `dev-thread-${Date.now().toString(36)}`;
         const t: MockThread = {
             ID: id,
-            ProjectID: pid,
+            WorkspaceID: wid,
             Title: title.trim(),
             WorktreeDir: "",
             ChatProvider: "Cursor Agent",
@@ -224,8 +224,8 @@ const ThreadMock = {
     Get: async (id: string): Promise<MockThread | null> =>
         THREADS.find((t) => t.ID === id) ?? null,
     List: async (): Promise<MockThread[]> => [...THREADS],
-    ListByProject: async (projectID: string): Promise<MockThread[]> =>
-        THREADS.filter((t) => t.ProjectID === projectID),
+    ListByWorkspace: async (workspaceID: string): Promise<MockThread[]> =>
+        THREADS.filter((t) => t.WorkspaceID === workspaceID),
     Rename: async (id: string, title: string): Promise<void> => {
         const idx = THREADS.findIndex((t) => t.ID === id);
         if (idx < 0) return;
@@ -261,18 +261,18 @@ export function isWailsDevMock(): boolean {
 }
 
 /**
- * Idempotent. Installs `window.go.app.{Project,Thread}` and a no-op runtime
+ * Idempotent. Installs `window.go.app.{Workspace,Thread}` and a no-op runtime
  * shim if the real Wails bridge isn't already present. Safe to call from
  * `index.tsx` before any module touches the bindings.
  */
 export function installWailsDevMock(): void {
     const w = getWailsWindow();
     if (!w) return;
-    if (w.go?.app?.Project && w.go?.app?.Thread) return;
+    if (w.go?.app?.Workspace && w.go?.app?.Thread) return;
 
     w.go = w.go ?? {};
     w.go.app = w.go.app ?? {};
-    w.go.app.Project = w.go.app.Project ?? (ProjectMock as never);
+    w.go.app.Workspace = w.go.app.Workspace ?? (WorkspaceMock as never);
     w.go.app.Thread = w.go.app.Thread ?? (ThreadMock as never);
 
     w.runtime = w.runtime ?? {

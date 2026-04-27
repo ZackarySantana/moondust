@@ -4,7 +4,7 @@ import "moondust/internal/v2/store"
 
 func Wrap(stores *store.Stores) *store.Stores {
 	return &store.Stores{
-		Project:   WrapProject(stores.Project),
+		Workspace: WrapWorkspace(stores.Workspace),
 		Thread:    WrapThread(stores.Thread),
 		ChatEvent: WrapChatEvent(stores.ChatEvent),
 		Settings: struct {

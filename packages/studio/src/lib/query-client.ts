@@ -13,20 +13,20 @@ export const queryClient = new QueryClient({
 
 /** Central key catalogue. Keep IDs in sync with invalidate helpers below. */
 export const queryKeys = {
-    projects: {
-        all: ["projects"] as const,
-        detail: (id: string) => ["projects", id] as const,
+    workspaces: {
+        all: ["workspaces"] as const,
+        detail: (id: string) => ["workspaces", id] as const,
     },
     threads: {
         all: ["threads"] as const,
-        byProject: (projectId: string) =>
-            ["threads", "by-project", projectId] as const,
+        byWorkspace: (workspaceId: string) =>
+            ["threads", "by-workspace", workspaceId] as const,
         detail: (id: string) => ["threads", id] as const,
     },
 };
 
-export async function invalidateProjects(qc: QueryClient): Promise<void> {
-    await qc.invalidateQueries({ queryKey: queryKeys.projects.all });
+export async function invalidateWorkspaces(qc: QueryClient): Promise<void> {
+    await qc.invalidateQueries({ queryKey: queryKeys.workspaces.all });
 }
 
 export async function invalidateThreads(qc: QueryClient): Promise<void> {

@@ -21,7 +21,7 @@ func newThread(db *bbolt.DB) *ThreadStore {
 	}
 }
 
-func (t *ThreadStore) ListByProject(ctx context.Context, projectID []byte) ([]*store.Thread, error) {
+func (t *ThreadStore) ListByWorkspace(ctx context.Context, workspaceID []byte) ([]*store.Thread, error) {
 	var threads []*store.Thread
 	return threads, t.db.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(t.bucket)
@@ -33,7 +33,7 @@ func (t *ThreadStore) ListByProject(ctx context.Context, projectID []byte) ([]*s
 			if err := json.Unmarshal(v, &thread); err != nil {
 				return fmt.Errorf("unmarshal thread: %w", err)
 			}
-			if thread.ProjectID != string(projectID) {
+			if thread.WorkspaceID != string(workspaceID) {
 				return nil
 			}
 			threads = append(threads, &thread)

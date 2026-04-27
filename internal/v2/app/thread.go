@@ -29,8 +29,8 @@ func (t *Thread) Get(id string) (*store.Thread, error) {
 	return t.service.Get(t.ctx, id)
 }
 
-func (t *Thread) ListByProject(projectID string) ([]*store.Thread, error) {
-	return t.service.ListByProject(t.ctx, projectID)
+func (t *Thread) ListByWorkspace(workspaceID string) ([]*store.Thread, error) {
+	return t.service.ListByWorkspace(t.ctx, workspaceID)
 }
 
 func (t *Thread) List() ([]*store.Thread, error) {
@@ -41,6 +41,6 @@ func (t *Thread) Rename(id string, title string) error {
 	return t.service.Rename(t.ctx, id, title)
 }
 
-func (t *Thread) Create(projectID string, title string) (*store.Thread, error) {
-	return t.service.Create(t.ctx, projectID, title)
+func (t *Thread) Create(workspaceID string, title string) (*store.Thread, error) {
+	return t.service.Create(t.ctx, workspaceID, title)
 }
