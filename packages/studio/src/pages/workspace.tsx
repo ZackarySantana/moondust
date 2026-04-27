@@ -5,10 +5,12 @@ import {
     EmptyState,
     HubCard,
     HubCardGrid,
+    IconButton,
     Spinner,
     Text,
 } from "@moondust/components";
 import GitBranch from "lucide-solid/icons/git-branch";
+import Settings from "lucide-solid/icons/settings";
 import Clock from "lucide-solid/icons/clock";
 import MessageSquarePlus from "lucide-solid/icons/message-square-plus";
 import { useQueryClient } from "@tanstack/solid-query";
@@ -44,10 +46,7 @@ export const WorkspacePage: Component = () => {
     const threadsQuery = useThreadsByWorkspaceQuery(() => params.workspaceId);
 
     const sortedThreads = createMemo(() =>
-        sortThreadsForWorkspace(
-            params.workspaceId,
-            threadsQuery.data ?? [],
-        ),
+        sortThreadsForWorkspace(params.workspaceId, threadsQuery.data ?? []),
     );
 
     async function addThread() {
@@ -99,13 +98,34 @@ export const WorkspacePage: Component = () => {
                 {(workspace) => (
                     <div class="mx-auto flex max-w-5xl flex-col gap-8 px-8 py-10">
                         <header class="flex flex-col gap-2">
-                            <Text variant="eyebrow">Workspace</Text>
-                            <h1 class="text-2xl font-semibold tracking-tight text-void-50">
-                                {workspace().Name}
-                            </h1>
-                            <p class="text-[12px] font-mono text-void-500">
-                                {workspace().Directory}
-                            </p>
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0 flex-1 flex flex-col gap-2">
+                                    <Text variant="eyebrow">Workspace</Text>
+                                    <h1 class="text-2xl font-semibold tracking-tight text-void-50">
+                                        {workspace().Name}
+                                    </h1>
+                                    <p class="text-[12px] font-mono text-void-500">
+                                        {workspace().Directory}
+                                    </p>
+                                </div>
+                                <IconButton
+                                    aria-label="Workspace settings"
+                                    size="sm"
+                                    tooltip="Workspace settings"
+                                    onClick={() =>
+                                        navigate(
+                                            paths.workspaceSettings(
+                                                workspace().ID,
+                                            ),
+                                        )
+                                    }
+                                >
+                                    <Settings
+                                        class="size-3.5"
+                                        stroke-width={1.75}
+                                    />
+                                </IconButton>
+                            </div>
                             <div class="mt-2 flex flex-wrap items-center gap-2">
                                 <Chip
                                     tone="outline"
@@ -193,7 +213,8 @@ export const WorkspacePage: Component = () => {
                                                         id: "branch",
                                                         icon: GitBranch,
                                                         label:
-                                                            workspace().Branch ||
+                                                            workspace()
+                                                                .Branch ||
                                                             "main",
                                                     },
                                                     {

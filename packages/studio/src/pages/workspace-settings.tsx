@@ -124,14 +124,14 @@ export const WorkspaceSettingsPage: Component = () => {
                 {(workspace) => {
                     const wid = () => workspace().ID;
                     return (
-                        <div class="mx-auto flex max-w-3xl flex-col gap-10 px-8 py-10">
-                            <header class="flex flex-col gap-3">
-                                <div class="flex flex-wrap items-end justify-between gap-3">
-                                    <div>
+                        <div class="mx-auto flex max-w-5xl flex-col gap-8 px-8 py-10">
+                            <header class="flex flex-col gap-2">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0 flex-1 flex flex-col gap-2">
                                         <Text variant="eyebrow">
                                             Workspace settings
                                         </Text>
-                                        <h1 class="mt-1 text-2xl font-semibold tracking-tight text-void-50">
+                                        <h1 class="text-2xl font-semibold tracking-tight text-void-50">
                                             {workspace().Name}
                                         </h1>
                                     </div>
@@ -145,7 +145,7 @@ export const WorkspaceSettingsPage: Component = () => {
                                         Back to overview
                                     </Button>
                                 </div>
-                                <p class="text-[13px] text-void-400">
+                                <p class="mt-2 text-[13px] text-void-400">
                                     The folder on disk is fixed when the
                                     workspace is added. You can change the
                                     display name and which git branch new
