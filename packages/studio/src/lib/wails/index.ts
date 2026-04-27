@@ -8,7 +8,13 @@
  *   `window.go` with deterministic stub data so the same code paths work.
  */
 
-export { Get as GetProject, List as ListProjects } from "@wails/go/app/Project";
+export {
+    CreateWorkspaceFromFolder,
+    CreateWorkspaceFromGit,
+    Get as GetProject,
+    List as ListProjects,
+    SelectWorkspaceFolder,
+} from "@wails/go/app/Project";
 export {
     Get as GetThread,
     List as ListThreads,

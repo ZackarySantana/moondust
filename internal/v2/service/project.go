@@ -2,16 +2,20 @@ package service
 
 import (
 	"context"
+
+	"moondust/internal/v2/git"
 	"moondust/internal/v2/store"
 )
 
 type Project struct {
 	stores *store.Stores
+	git    git.Client
 }
 
-func NewProject(stores *store.Stores) *Project {
+func NewProject(stores *store.Stores, g git.Client) *Project {
 	return &Project{
 		stores: stores,
+		git:    g,
 	}
 }
 

@@ -33,7 +33,7 @@ const minutes = (m: number) => new Date(now - m * 60_000).toISOString();
 const hours = (h: number) => new Date(now - h * 3_600_000).toISOString();
 const days = (d: number) => new Date(now - d * 86_400_000).toISOString();
 
-const PROJECTS: readonly MockProject[] = [
+const PROJECTS: MockProject[] = [
     {
         ID: "moondust",
         Name: "moondust",
@@ -123,10 +123,75 @@ const THREADS: MockThread[] = [
     },
 ];
 
+function nameFromGitURLMock(url: string): string {
+    const u = url.replace(/\.git$/i, "").replace(/\/+$/, "");
+    const parts = u.split(/[/:]/);
+    return parts[parts.length - 1] || "repo";
+}
+
 const ProjectMock = {
     Get: async (id: string): Promise<MockProject | null> =>
         PROJECTS.find((p) => p.ID === id) ?? null,
     List: async (): Promise<MockProject[]> => [...PROJECTS],
+    SelectWorkspaceFolder: async (): Promise<string> => {
+        if (typeof window === "undefined") return "";
+        const v = window.prompt(
+            "Dev mock: enter a folder path (cancel to skip)",
+            "/tmp/moondust-dev-workspace",
+        );
+        return v?.trim() ?? "";
+    },
+    CreateWorkspaceFromFolder: async (
+        directory: string,
+        name: string,
+    ): Promise<MockProject> => {
+        const dir = directory.trim();
+        if (!dir) {
+            throw new Error("directory is required");
+        }
+        const clean = dir.replace(/[/\\]+$/, "");
+        for (const p of PROJECTS) {
+            if (p.Directory.replace(/[/\\]+$/, "") === clean) {
+                throw new Error("this folder is already opened as a workspace");
+            }
+        }
+        const ts = new Date().toISOString();
+        const base =
+            name.trim() ||
+            clean.split(/[/\\]/).filter(Boolean).pop() ||
+            "Workspace";
+        const proj: MockProject = {
+            ID: `dev-${Date.now().toString(36)}`,
+            Name: base,
+            Directory: clean,
+            Branch: "main",
+            CreatedAt: ts,
+            UpdatedAt: ts,
+        };
+        PROJECTS.push(proj);
+        return proj;
+    },
+    CreateWorkspaceFromGit: async (
+        remoteURL: string,
+        name: string,
+    ): Promise<MockProject> => {
+        const url = remoteURL.trim();
+        if (!url) {
+            throw new Error("git URL is required");
+        }
+        const ts = new Date().toISOString();
+        const id = `dev-${Date.now().toString(36)}`;
+        const proj: MockProject = {
+            ID: id,
+            Name: name.trim() || nameFromGitURLMock(url),
+            Directory: `~/.cache/moondust/repositories/${id}`,
+            Branch: "main",
+            CreatedAt: ts,
+            UpdatedAt: ts,
+        };
+        PROJECTS.push(proj);
+        return proj;
+    },
 };
 
 const ThreadMock = {

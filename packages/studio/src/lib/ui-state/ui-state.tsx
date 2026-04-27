@@ -75,6 +75,10 @@ export interface UIStateContextValue {
     openCommandPalette: () => void;
     closeCommandPalette: () => void;
 
+    newWorkspaceDialogOpen: Accessor<boolean>;
+    openNewWorkspaceDialog: () => void;
+    closeNewWorkspaceDialog: () => void;
+
     focusRegion: Accessor<FocusRegion>;
     setFocusRegion: Setter<FocusRegion>;
     cycleFocusRegion: () => void;
@@ -107,6 +111,8 @@ export const UIStateProvider: ParentComponent = (props) => {
     );
     const [activeView, setActiveView] = createSignal<ThreadViewId>("chat");
     const [commandPaletteOpen, setCommandPaletteOpen] = createSignal(false);
+    const [newWorkspaceDialogOpen, setNewWorkspaceDialogOpen] =
+        createSignal(false);
     const [focusRegion, setFocusRegion] = createSignal<FocusRegion>("main");
 
     const snapshot = createMemo<PersistedUIState>(() => ({
@@ -160,6 +166,9 @@ export const UIStateProvider: ParentComponent = (props) => {
         commandPaletteOpen,
         openCommandPalette: () => setCommandPaletteOpen(true),
         closeCommandPalette: () => setCommandPaletteOpen(false),
+        newWorkspaceDialogOpen,
+        openNewWorkspaceDialog: () => setNewWorkspaceDialogOpen(true),
+        closeNewWorkspaceDialog: () => setNewWorkspaceDialogOpen(false),
         focusRegion,
         setFocusRegion,
         cycleFocusRegion: () =>

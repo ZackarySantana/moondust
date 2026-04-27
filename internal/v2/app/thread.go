@@ -19,6 +19,12 @@ func NewThread(service *service.Thread) *Thread {
 	}
 }
 
+func (t *Thread) SetContext(ctx context.Context) {
+	if ctx != nil {
+		t.ctx = ctx
+	}
+}
+
 func (t *Thread) Get(id string) (*store.Thread, error) {
 	return t.service.Get(t.ctx, id)
 }

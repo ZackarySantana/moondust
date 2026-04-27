@@ -91,6 +91,7 @@ export const AppShell: Component<RouteSectionProps> = (props) => {
         ),
     );
     onCleanup(onAction("open_command_palette", ui.openCommandPalette));
+    onCleanup(onAction("new_workspace", ui.openNewWorkspaceDialog));
 
     return (
         <AppShellFrame

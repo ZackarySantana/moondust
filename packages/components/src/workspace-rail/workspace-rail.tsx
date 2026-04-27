@@ -97,7 +97,7 @@ export const WorkspaceRailSection: ParentComponent<
     ]);
     return (
         <section
-            class={cn("group/section py-2", local.class)}
+            class={cn("group group/section py-2", local.class)}
             {...rest}
         >
             <Show when={local.label || local.actions}>
@@ -157,7 +157,7 @@ export const WorkspaceRailProject: Component<WorkspaceRailProjectProps> = (
             open={open()}
             {...rest}
         >
-            <summary class="group/row flex h-7 cursor-pointer list-none items-center gap-1.5 px-2 text-[13px] font-medium text-void-200 transition-colors hover:bg-void-800/60 [&::-webkit-details-marker]:hidden">
+            <summary class="group group/row flex h-7 cursor-pointer list-none items-center gap-1.5 px-2 text-[13px] font-medium text-void-200 transition-colors hover:bg-void-800/60 [&::-webkit-details-marker]:hidden">
                 <ChevronRight
                     class="size-3 shrink-0 text-void-500 transition-transform duration-150 group-open/project:rotate-90"
                     stroke-width={2.5}
@@ -236,7 +236,7 @@ export const WorkspaceRailThread: Component<WorkspaceRailThreadProps> = (
     const showDot = () => phase() !== "idle";
 
     const linkClass = cn(
-        "group/thread flex items-center gap-1.5 px-2 h-7 text-[12.5px] no-underline transition-colors",
+        "group group/thread flex items-center gap-1.5 px-2 h-7 text-[12.5px] no-underline transition-colors",
         local.active
             ? "bg-void-800 text-void-50"
             : "text-void-400 hover:bg-void-800/60 hover:text-void-100",

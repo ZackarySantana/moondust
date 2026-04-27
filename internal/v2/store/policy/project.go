@@ -2,6 +2,8 @@ package policy
 
 import (
 	"context"
+	"time"
+
 	"moondust/internal/v2/store"
 )
 
@@ -20,6 +22,9 @@ func (t *ProjectStore) Get(ctx context.Context, id []byte) (*store.Project, erro
 }
 
 func (t *ProjectStore) Put(ctx context.Context, id []byte, data *store.Project) error {
+	now := time.Now()
+	data.CreatedAt = now
+	data.UpdatedAt = now
 	return t.store.Put(ctx, id, data)
 }
 
@@ -28,6 +33,7 @@ func (t *ProjectStore) List(ctx context.Context) ([]*store.Project, error) {
 }
 
 func (t *ProjectStore) Update(ctx context.Context, id []byte, data *store.Project) error {
+	data.UpdatedAt = time.Now()
 	return t.store.Update(ctx, id, data)
 }
 

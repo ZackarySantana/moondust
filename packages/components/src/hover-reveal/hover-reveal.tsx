@@ -40,9 +40,9 @@ const transitionStyles: Record<HoverRevealTransition, string> = {
  * focused. Use to declutter dense lists with secondary actions (e.g. a
  * trash icon next to a row, or a kbd hint next to a menu item).
  *
- * The parent must use the `group` class. To scope to a named group, use
- * `class` to override the variants — the defaults assume a single anonymous
- * `group`.
+ * The parent must include the `group` class. If you also use a named group
+ * (e.g. `group/row`), add both: `group group/row` — otherwise `group-hover:`
+ * here will not match.
  */
 export const HoverReveal: Component<HoverRevealProps> = (props) => {
     const [local, rest] = splitProps(props, [

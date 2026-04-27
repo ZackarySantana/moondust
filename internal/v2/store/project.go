@@ -14,6 +14,7 @@ type Project struct {
 	// Branch is the currently checked-out git branch, if known.
 	Branch string
 
+	// CreatedAt and UpdatedAt are assigned by the store implementation on Put and Update; callers should leave them zero.
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

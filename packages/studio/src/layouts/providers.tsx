@@ -4,6 +4,7 @@ import { ToastProvider } from "@/lib/toast";
 import { ShortcutProvider } from "@/lib/shortcuts";
 import { UIStateProvider } from "@/lib/ui-state";
 import { AppShell } from "./app-shell";
+import { NewWorkspaceDialog } from "./new-workspace-dialog";
 
 /**
  * Mounts the studio shell once per session. Order matters:
@@ -18,6 +19,7 @@ export const ProvidersLayout: Component<RouteSectionProps> = (props) => (
         <UIStateProvider>
             <ShortcutProvider>
                 <AppShell {...props} />
+                <NewWorkspaceDialog />
             </ShortcutProvider>
         </UIStateProvider>
     </ToastProvider>

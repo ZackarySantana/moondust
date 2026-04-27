@@ -53,7 +53,7 @@ export const HomePage: Component = () => {
     const threadsQuery = useThreadsQuery();
     const navigate = useNavigate();
     const { formatCaps } = useShortcuts();
-    const { openCommandPalette } = useUIState();
+    const { openCommandPalette, openNewWorkspaceDialog } = useUIState();
 
     const projects = () => projectsQuery.data ?? [];
     const threads = () => threadsQuery.data ?? [];
@@ -127,7 +127,7 @@ export const HomePage: Component = () => {
                             <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={openCommandPalette}
+                                onClick={openNewWorkspaceDialog}
                             >
                                 <FolderPlus class="size-3.5" />
                                 Open folder
@@ -149,7 +149,7 @@ export const HomePage: Component = () => {
                                 actions={
                                     <Button
                                         variant="default"
-                                        onClick={openCommandPalette}
+                                        onClick={openNewWorkspaceDialog}
                                     >
                                         Open a folder
                                     </Button>
@@ -188,7 +188,7 @@ export const HomePage: Component = () => {
                             icon={FolderPlus}
                             title="Open folder as workspace"
                             shortcut={formatCaps("new_workspace")}
-                            onClick={openCommandPalette}
+                            onClick={openNewWorkspaceDialog}
                         />
                         <QuickCreateButton
                             icon={Plus}

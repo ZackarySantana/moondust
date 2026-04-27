@@ -21,8 +21,9 @@ func (t *ThreadStore) Get(ctx context.Context, id []byte) (*store.Thread, error)
 }
 
 func (t *ThreadStore) Put(ctx context.Context, id []byte, data *store.Thread) error {
-	data.CreatedAt = time.Now()
-	data.UpdatedAt = time.Now()
+	now := time.Now()
+	data.CreatedAt = now
+	data.UpdatedAt = now
 	return t.store.Put(ctx, id, data)
 }
 

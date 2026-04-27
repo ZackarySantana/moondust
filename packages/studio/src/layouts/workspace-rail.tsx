@@ -61,7 +61,7 @@ export const StudioWorkspaceRail: Component = () => {
     const navigate = useNavigate();
     const params = useParams<{ projectId?: string; threadId?: string }>();
     const { formatCaps, onAction } = useShortcuts();
-    const { openCommandPalette } = useUIState();
+    const { openCommandPalette, openNewWorkspaceDialog } = useUIState();
 
     const [tick, setTick] = createSignal(0);
     const timer = setInterval(() => setTick((n) => n + 1), TICK_INTERVAL_MS);
@@ -94,12 +94,10 @@ export const StudioWorkspaceRail: Component = () => {
     }
 
     function newWorkspace() {
-        // TODO: wire to a real "New workspace" picker.
-        openCommandPalette();
+        openNewWorkspaceDialog();
     }
 
     onCleanup(onAction("new_thread", newThread));
-    onCleanup(onAction("new_workspace", newWorkspace));
 
     const phaseFor = (threadId: string): ThreadStreamPhase => {
         // Placeholder: chat stream subsystem will set this per-thread once it
