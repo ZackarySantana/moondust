@@ -22,6 +22,7 @@ import {
     For,
     Show,
     onCleanup,
+    type Accessor,
     type Component,
 } from "solid-js";
 import { useQueryClient } from "@tanstack/solid-query";
@@ -58,6 +59,65 @@ const SLOT_ACTION_IDS: readonly ShortcutActionId[] = [
     "go_thread_slot_5",
     "go_thread_slot_6",
 ];
+
+interface StudioRailThreadRowProps {
+    workspaceId: string;
+    thread: Thread;
+    slotShortcut?: readonly string[];
+    renamingThreadId: Accessor<string | null>;
+    renameDraft: Accessor<string>;
+    setRenameDraft: (value: string) => void;
+    commitRenameThread: () => void;
+    cancelRenameThread: () => void;
+    startRenameThread: (thread: Thread) => void;
+    activeThreadId: Accessor<string | undefined>;
+    tick: Accessor<number>;
+    phaseFor: (threadId: string) => ThreadStreamPhase;
+}
+
+/**
+ * Per-row shell for `WorkspaceRailThread`. Must be a real component so reads
+ * of `renamingThreadId` / `renameDraft` subscribe — `<For>` only re-invokes
+ * its map fn when the list changes, so a plain helper returning JSX would
+ * never leave rename mode visually.
+ */
+const StudioRailThreadRow: Component<StudioRailThreadRowProps> = (props) => {
+    return (
+        <WorkspaceRailThread
+            href={paths.thread(props.workspaceId, props.thread.ID)}
+            title={props.thread.Title || "Untitled thread"}
+            timeLabel={
+                (props.tick(),
+                relativeTime(
+                    props.thread.UpdatedAt || props.thread.CreatedAt,
+                ))
+            }
+            phase={props.phaseFor(props.thread.ID)}
+            shortcut={props.slotShortcut}
+            active={props.activeThreadId() === props.thread.ID}
+            renaming={props.renamingThreadId() === props.thread.ID}
+            renameDraft={props.renameDraft()}
+            onRenameDraft={props.setRenameDraft}
+            onRenameCommit={() => void props.commitRenameThread()}
+            onRenameCancel={props.cancelRenameThread}
+            onDblClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                props.startRenameThread(props.thread);
+            }}
+            renderLink={(p) => (
+                <A
+                    href={p.href}
+                    class={p.class}
+                    activeClass="bg-void-800 text-void-50"
+                    onDblClick={p.onDblClick}
+                >
+                    {p.children}
+                </A>
+            )}
+        />
+    );
+};
 
 /**
  * The persistent left rail. Wires the headless `WorkspaceRail` primitives
@@ -170,47 +230,6 @@ export const StudioWorkspaceRail: Component = () => {
         }
     }
 
-    function railThreadRow(
-        workspaceId: string,
-        thread: Thread,
-        slotShortcut: readonly string[] | undefined,
-    ) {
-        const renaming = () => renamingThreadId() === thread.ID;
-        return (
-            <WorkspaceRailThread
-                href={paths.thread(workspaceId, thread.ID)}
-                title={thread.Title || "Untitled thread"}
-                timeLabel={
-                    (tick(),
-                    relativeTime(thread.UpdatedAt || thread.CreatedAt))
-                }
-                phase={phaseFor(thread.ID)}
-                shortcut={slotShortcut}
-                active={params.threadId === thread.ID}
-                renaming={renaming()}
-                renameDraft={renameDraft()}
-                onRenameDraft={setRenameDraft}
-                onRenameCommit={() => void commitRenameThread()}
-                onRenameCancel={cancelRenameThread}
-                onDblClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    startRenameThread(thread);
-                }}
-                renderLink={(p) => (
-                    <A
-                        href={p.href}
-                        class={p.class}
-                        activeClass="bg-void-800 text-void-50"
-                        onDblClick={p.onDblClick}
-                    >
-                        {p.children}
-                    </A>
-                )}
-            />
-        );
-    }
-
     return (
         <WorkspaceRail
             header={
@@ -264,13 +283,21 @@ export const StudioWorkspaceRail: Component = () => {
             <Show when={recentThreads().length > 0}>
                 <WorkspaceRailSection label="Recent">
                     <For each={recentThreads()}>
-                        {(entry) =>
-                            railThreadRow(
-                                entry.workspaceId,
-                                entry.thread,
-                                undefined,
-                            )
-                        }
+                        {(entry) => (
+                            <StudioRailThreadRow
+                                workspaceId={entry.workspaceId}
+                                thread={entry.thread}
+                                renamingThreadId={renamingThreadId}
+                                renameDraft={renameDraft}
+                                setRenameDraft={setRenameDraft}
+                                commitRenameThread={commitRenameThread}
+                                cancelRenameThread={cancelRenameThread}
+                                startRenameThread={startRenameThread}
+                                activeThreadId={() => params.threadId}
+                                tick={tick}
+                                phaseFor={phaseFor}
+                            />
+                        )}
                     </For>
                 </WorkspaceRailSection>
             </Show>
@@ -383,10 +410,31 @@ export const StudioWorkspaceRail: Component = () => {
                                                       SLOT_ACTION_IDS[slot],
                                                   )
                                                 : undefined;
-                                        return railThreadRow(
-                                            workspace.ID,
-                                            thread,
-                                            slotShortcut,
+                                        return (
+                                            <StudioRailThreadRow
+                                                workspaceId={workspace.ID}
+                                                thread={thread}
+                                                slotShortcut={slotShortcut}
+                                                renamingThreadId={
+                                                    renamingThreadId
+                                                }
+                                                renameDraft={renameDraft}
+                                                setRenameDraft={setRenameDraft}
+                                                commitRenameThread={
+                                                    commitRenameThread
+                                                }
+                                                cancelRenameThread={
+                                                    cancelRenameThread
+                                                }
+                                                startRenameThread={
+                                                    startRenameThread
+                                                }
+                                                activeThreadId={() =>
+                                                    params.threadId
+                                                }
+                                                tick={tick}
+                                                phaseFor={phaseFor}
+                                            />
                                         );
                                     }}
                                 </For>

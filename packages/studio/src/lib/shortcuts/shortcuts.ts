@@ -373,6 +373,11 @@ export function parseCombo(combo: string): ParsedCombo {
     };
 }
 
+/** True if this event is the Tab key (unshifted Tab or Shift+Tab / back-tab). */
+function eventIsTabKey(e: KeyboardEvent): boolean {
+    return e.code === "Tab" || e.key === "Tab" || e.key === "ISO_Left_Tab";
+}
+
 export function matchesCombo(e: KeyboardEvent, combo: string): boolean {
     const parsed = parseCombo(combo);
     if (e.ctrlKey !== parsed.ctrl) return false;
@@ -382,7 +387,11 @@ export function matchesCombo(e: KeyboardEvent, combo: string): boolean {
     if (parsed.key.length === 1) {
         return e.key.toLowerCase() === parsed.key.toLowerCase();
     }
-    return e.key === parsed.key;
+    // Shift+Tab is often `ISO_Left_Tab` on Linux/X11 (e.g. WSL), not `Tab`.
+    if (parsed.key.toLowerCase() === "tab") {
+        return eventIsTabKey(e);
+    }
+    return e.key.toLowerCase() === parsed.key.toLowerCase();
 }
 
 export function comboFromEvent(e: KeyboardEvent): string | null {
