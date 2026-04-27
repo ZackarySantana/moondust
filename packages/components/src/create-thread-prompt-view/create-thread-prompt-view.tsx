@@ -37,6 +37,7 @@ export const CreateThreadPromptView: Component<CreateThreadPromptViewProps> = (
         <Dialog
             open={props.open}
             onEscapeKeyDown={props.onEscapeKeyDown}
+            onClose={props.onCancel}
         >
             <DialogOverlay
                 aria-label="Close dialog"

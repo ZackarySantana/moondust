@@ -2,8 +2,8 @@
  * Single import surface for everything that crosses the Wails IPC boundary.
  *
  * - In a real Wails build, the `@wails/*` aliases resolve to the generated
- *   bindings in `packages/wails-app/wailsjs/...` which in turn call into
- *   `window.go.app.*`.
+ *   bindings in `packages/wails-app/wailsjs/...` (do not hand-edit those).
+ *   Global settings use `settings-ipc.ts` so generated models stay untouched.
  * - In dev (web preview / Storybook), `installWailsDevMock()` patches
  *   `window.go` with deterministic stub data so the same code paths work.
  */
@@ -23,7 +23,12 @@ export {
     ListByWorkspace as ListThreadsByWorkspace,
     Rename as RenameThread,
 } from "@wails/go/app/Thread";
-
 export { store } from "@wails/go/models";
+
+export {
+    GetGlobalSettings,
+    SaveGlobalSettings,
+    type GlobalSettingsRow,
+} from "./settings-ipc";
 
 export { installWailsDevMock, isWailsDevMock } from "./dev-mock";

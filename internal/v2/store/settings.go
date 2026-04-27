@@ -19,17 +19,17 @@ const (
 )
 
 type GlobalSettings struct {
-	// SSHAuthSocket is an optional path to the ssh-agent socket.
-	SSHAuthsocket string
+	// SSHAuthsocket is an optional path to the ssh-agent socket.
+	SSHAuthsocket string `json:"SSHAuthsocket"`
 
 	// DefaultWorktree is the default worktree option.
-	DefaultWorktree WorktreeOptions
+	DefaultWorktree WorktreeOptions `json:"DefaultWorktree"`
 
 	// UtilityProvider is the provider for utility LLM calls.
-	UtilityProvider Provider
+	UtilityProvider Provider `json:"UtilityProvider"`
 
 	// UpdatedAt is the last time the settings were updated.
-	UpdatedAt time.Time
+	UpdatedAt time.Time `json:"UpdatedAt"`
 }
 
 type GlobalSettingsStore interface {

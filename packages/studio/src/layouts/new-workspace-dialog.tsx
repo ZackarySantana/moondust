@@ -133,7 +133,7 @@ export const NewWorkspaceDialog: Component = () => {
     return (
         <Dialog
             open={ui.newWorkspaceDialogOpen()}
-            onEscapeKeyDown={close}
+            onClose={close}
         >
             <DialogOverlay
                 type="button"

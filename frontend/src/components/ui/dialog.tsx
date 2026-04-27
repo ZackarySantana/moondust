@@ -14,22 +14,32 @@ export interface DialogProps {
     /**
      * Called when Escape is pressed while this dialog is open.
      * Handlers are stacked: the most recently opened dialog receives Escape first.
+     * If omitted, `onClose` is used when provided.
      */
     onEscapeKeyDown?: () => void;
+    /** Used for Escape when `onEscapeKeyDown` is omitted. Match overlay dismiss. */
+    onClose?: () => void;
 }
 
 export const Dialog: Component<DialogProps> = (props) => {
-    const [local] = splitProps(props, ["open", "children", "onEscapeKeyDown"]);
+    const [local] = splitProps(props, [
+        "open",
+        "children",
+        "onEscapeKeyDown",
+        "onClose",
+    ]);
 
     createEffect(() => {
-        if (!local.open || !local.onEscapeKeyDown) return;
-        return pushModalEscapeHandler(() => local.onEscapeKeyDown?.());
+        if (!local.open) return;
+        const onEsc = local.onEscapeKeyDown ?? local.onClose;
+        if (!onEsc) return;
+        return pushModalEscapeHandler(() => onEsc());
     });
 
     return (
         <Show when={local.open}>
             <div
-                class="fixed inset-0 z-100 flex items-center justify-center p-4"
+                class="pointer-events-none fixed inset-0 z-100 flex items-center justify-center p-4"
                 role="presentation"
             >
                 {local.children}
@@ -48,7 +58,7 @@ export const DialogOverlay: Component<DialogOverlayProps> = (props) => {
         <button
             type="button"
             class={cn(
-                "absolute inset-0 cursor-pointer bg-black/65 backdrop-blur-xs animate-overlay-in",
+                "pointer-events-auto absolute inset-0 z-0 cursor-pointer bg-black/65 backdrop-blur-xs animate-overlay-in",
                 local.class,
             )}
             {...rest}
@@ -65,7 +75,7 @@ export const DialogContent: Component<DialogContentProps> = (props) => {
     return (
         <div
             class={cn(
-                "relative z-10 w-full max-w-md rounded-xl border border-slate-800/60 bg-app-panel p-5 shadow-2xl shadow-black/40 ring-1 ring-white/3 animate-dialog-in",
+                "pointer-events-auto relative z-10 w-full max-w-md rounded-xl border border-slate-800/60 bg-app-panel p-5 shadow-2xl shadow-black/40 ring-1 ring-white/3 animate-dialog-in",
                 local.class,
             )}
             {...rest}

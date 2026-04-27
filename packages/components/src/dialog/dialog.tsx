@@ -14,22 +14,35 @@ export interface DialogProps {
     /**
      * Called when Escape is pressed while this dialog is open.
      * Handlers are stacked: the most recently opened dialog receives Escape first.
+     * If omitted, {@link onClose} is used when provided.
      */
     onEscapeKeyDown?: () => void;
+    /**
+     * Dismiss callback used when `onEscapeKeyDown` is not set. Pair with
+     * `DialogOverlay` `onClick` for backdrop dismiss.
+     */
+    onClose?: () => void;
 }
 
 export const Dialog: Component<DialogProps> = (props) => {
-    const [local] = splitProps(props, ["open", "children", "onEscapeKeyDown"]);
+    const [local] = splitProps(props, [
+        "open",
+        "children",
+        "onEscapeKeyDown",
+        "onClose",
+    ]);
 
     createEffect(() => {
-        if (!local.open || !local.onEscapeKeyDown) return;
-        return pushModalEscapeHandler(() => local.onEscapeKeyDown?.());
+        if (!local.open) return;
+        const onEsc = local.onEscapeKeyDown ?? local.onClose;
+        if (!onEsc) return;
+        return pushModalEscapeHandler(() => onEsc());
     });
 
     return (
         <Show when={local.open}>
             <div
-                class="fixed inset-0 z-100 flex items-center justify-center p-4"
+                class="pointer-events-none fixed inset-0 z-100 flex items-center justify-center p-4"
                 role="presentation"
             >
                 {local.children}
@@ -38,8 +51,7 @@ export const Dialog: Component<DialogProps> = (props) => {
     );
 };
 
-export interface DialogOverlayProps
-    extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface DialogOverlayProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
     class?: string;
 }
 
@@ -49,7 +61,7 @@ export const DialogOverlay: Component<DialogOverlayProps> = (props) => {
         <button
             type="button"
             class={cn(
-                "absolute inset-0 cursor-pointer bg-void-950/75",
+                "pointer-events-auto absolute inset-0 z-0 cursor-pointer bg-void-950/75",
                 local.class,
             )}
             {...rest}
@@ -57,8 +69,7 @@ export const DialogOverlay: Component<DialogOverlayProps> = (props) => {
     );
 };
 
-export interface DialogContentProps
-    extends JSX.HTMLAttributes<HTMLDivElement> {
+export interface DialogContentProps extends JSX.HTMLAttributes<HTMLDivElement> {
     class?: string;
 }
 
@@ -67,7 +78,7 @@ export const DialogContent: Component<DialogContentProps> = (props) => {
     return (
         <div
             class={cn(
-                "relative z-10 w-full max-w-md rounded-none border border-void-600 bg-void-900 p-5",
+                "pointer-events-auto relative z-10 w-full max-w-md rounded-none border border-void-600 bg-void-900 p-5",
                 local.class,
             )}
             {...rest}
@@ -75,8 +86,7 @@ export const DialogContent: Component<DialogContentProps> = (props) => {
     );
 };
 
-export interface DialogTitleProps
-    extends JSX.HTMLAttributes<HTMLHeadingElement> {
+export interface DialogTitleProps extends JSX.HTMLAttributes<HTMLHeadingElement> {
     class?: string;
 }
 

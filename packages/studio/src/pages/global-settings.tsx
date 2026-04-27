@@ -1,18 +1,25 @@
-import { A, Navigate, useParams } from "@solidjs/router";
+import { A, Navigate, useLocation, useParams } from "@solidjs/router";
 import {
     EmptyState,
     FieldRow,
     Label,
+    SaveButton,
     Section,
     Select,
     Text,
     VerticalNav,
+    VerticalNavMain,
+    VerticalNavRail,
+    VerticalNavSplit,
 } from "@moondust/components";
 import {
     Match,
     Show,
     Switch,
+    batch,
+    createEffect,
     createMemo,
+    createResource,
     createSignal,
     type Component,
 } from "solid-js";
@@ -21,6 +28,8 @@ import {
     GLOBAL_SETTINGS_NAV,
     type GitSettingsSubsection,
 } from "@/lib/global-settings/sections";
+import { cn } from "@/lib/cn";
+import { GetGlobalSettings, SaveGlobalSettings } from "@/lib/wails";
 import { paths } from "@/lib/workspace";
 
 /** `/settings` → first tab */
@@ -35,6 +44,7 @@ export const GitSettingsRedirect: Component = () => (
 
 export const GlobalSettingsPage: Component = () => {
     const params = useParams<{ section?: string; gitSection?: string }>();
+    const location = useLocation();
 
     const view = createMemo(() => {
         const g = params.gitSection;
@@ -48,65 +58,297 @@ export const GlobalSettingsPage: Component = () => {
         return null;
     });
 
+    /** From pathname so the sidebar active state updates with navigation immediately. */
     const activeNavId = createMemo(() => {
-        const v = view();
-        if (!v) return "general";
-        return v.kind === "git" ? "git" : v.section;
+        const path = location.pathname;
+        if (path.startsWith("/settings/git")) return "git";
+        const m = path.match(/^\/settings\/([^/]+)$/);
+        if (m) {
+            const seg = m[1];
+            if (GLOBAL_SETTINGS_FLAT_SECTION_IDS.has(seg)) return seg;
+        }
+        if (path === "/settings" || path === "/settings/") return "general";
+        return "general";
     });
 
     const [newThreadWorktree, setNewThreadWorktree] = createSignal<
         "always" | "ask" | "never"
-    >("ask");
+    >("always");
     const [sshAuthSock, setSshAuthSock] = createSignal("");
+    const [utilityProvider, setUtilityProvider] = createSignal("openrouter");
+    const [initialWt, setInitialWt] = createSignal<"always" | "ask" | "never">(
+        "always",
+    );
+    const [initialSsh, setInitialSsh] = createSignal("");
+    const [savePending, setSavePending] = createSignal(false);
+    const [saveError, setSaveError] = createSignal<string | null>(null);
+
+    const [gitSettings] = createResource(
+        () => activeNavId() === "git",
+        async (isGit) => {
+            if (!isGit) return null;
+            return GetGlobalSettings();
+        },
+    );
+
+    createEffect(() => {
+        if (activeNavId() !== "git") return;
+        const d = gitSettings();
+        if (d == null) return;
+        const wt = worktreeFromStore(d.DefaultWorktree);
+        const ssh = d.SSHAuthsocket ?? "";
+        const util = d.UtilityProvider ?? "openrouter";
+        batch(() => {
+            setNewThreadWorktree(wt);
+            setSshAuthSock(ssh);
+            setUtilityProvider(util);
+            setInitialWt(wt);
+            setInitialSsh(ssh);
+            setSaveError(null);
+        });
+    });
+
+    const gitDirty = createMemo(() => {
+        if (activeNavId() !== "git") return false;
+        if (gitSettings.loading) return false;
+        const d = gitSettings();
+        if (d == null) return false;
+        return (
+            newThreadWorktree() !== initialWt() ||
+            sshAuthSock() !== initialSsh()
+        );
+    });
+
+    async function saveGitSettings() {
+        setSaveError(null);
+        setSavePending(true);
+        try {
+            await SaveGlobalSettings({
+                SSHAuthsocket: sshAuthSock(),
+                DefaultWorktree: worktreeToStore(newThreadWorktree()),
+                UtilityProvider: utilityProvider(),
+            });
+            batch(() => {
+                setInitialWt(newThreadWorktree());
+                setInitialSsh(sshAuthSock());
+            });
+        } catch (e) {
+            const msg =
+                e instanceof Error ? e.message : "Could not save settings.";
+            setSaveError(msg);
+        } finally {
+            setSavePending(false);
+        }
+    }
+
+    const gitNavLinkClass = (tab: GitSettingsSubsection) => {
+        const v = view();
+        const on = v?.kind === "git" && v.tab === tab;
+        return cn(
+            "flex w-full items-center rounded-md border-l-2 py-2 pr-2 pl-3 text-left text-[13px] font-medium no-underline transition-colors",
+            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-starlight-400/60",
+            on
+                ? "border-starlight-400 bg-void-800/90 text-void-50"
+                : "border-transparent text-void-400 hover:bg-void-800/55 hover:text-void-100",
+        );
+    };
+
+    const gitFormDisabled = () => gitSettings.loading || !!gitSettings.error;
 
     return (
         <Show
             when={view()}
             fallback={<Navigate href={paths.globalSettings()} />}
         >
-            <div class="flex min-h-0 min-w-0 flex-1">
-                <aside class="shrink-0 border-r border-void-700/80 bg-void-900/40 py-8 pl-6 pr-2">
-                    <VerticalNav
-                        items={GLOBAL_SETTINGS_NAV}
-                        baseHref="/settings"
-                        activeId={activeNavId()}
-                        navLabel="Global settings sections"
-                        renderLink={(p) => (
-                            <A
-                                href={p.href}
-                                class={p.class}
-                                end
-                                inactiveClass=""
-                                activeClass=""
-                            >
-                                {p.children}
-                            </A>
-                        )}
-                    />
-                </aside>
-                <div class="min-h-0 min-w-0 flex-1 overflow-y-auto">
-                    <div class="mx-auto flex max-w-5xl flex-col gap-8 px-8 py-10">
-                        <header class="flex flex-col gap-2">
-                            <Text variant="eyebrow">Settings</Text>
-                            <h1 class="text-2xl font-semibold tracking-tight text-void-50">
-                                {view()!.kind === "git"
-                                    ? "Git"
-                                    : sectionTitle(view()!.section!)}
-                            </h1>
-                            <p class="text-[13px] text-void-400">
-                                {view()!.kind === "git"
-                                    ? sectionBlurb("git")
-                                    : sectionBlurb(view()!.section!)}
-                            </p>
-                        </header>
+            <div class="min-h-0 min-w-0 flex-1 overflow-y-auto">
+                <div class="mx-auto max-w-5xl px-8 py-10">
+                    <header class="mb-8 flex flex-col gap-2">
+                        <Text variant="eyebrow">Settings</Text>
+                        <h1 class="text-2xl font-semibold tracking-tight text-void-50">
+                            {view()!.kind === "git"
+                                ? "Git"
+                                : sectionTitle(view()!.section!)}
+                        </h1>
+                        <p class="text-[13px] text-void-400">
+                            {view()!.kind === "git"
+                                ? sectionBlurb("git")
+                                : sectionBlurb(view()!.section!)}
+                        </p>
+                    </header>
 
-                        <Show when={view()!.kind === "git"}>
-                            <GitSubNav
-                                active={view()!.tab as GitSettingsSubsection}
+                    <VerticalNavSplit>
+                        <VerticalNavRail>
+                            <VerticalNav
+                                embedded
+                                items={GLOBAL_SETTINGS_NAV}
+                                baseHref="/settings"
+                                activeId={activeNavId()}
+                                navLabel="Global settings sections"
+                                renderLink={(p) => (
+                                    <A
+                                        href={p.href}
+                                        class={p.class}
+                                        end
+                                        inactiveClass=""
+                                        activeClass=""
+                                    >
+                                        {p.children}
+                                    </A>
+                                )}
                             />
-                        </Show>
-
-                        <Switch>
+                        </VerticalNavRail>
+                        <VerticalNavMain>
+                            <Switch>
+                            <Match when={view()!.kind === "git"}>
+                                <VerticalNavSplit class="gap-10">
+                                    <VerticalNavRail class="lg:w-44">
+                                        <nav
+                                            class="flex flex-col gap-0.5"
+                                            aria-label="Git settings"
+                                        >
+                                            <A
+                                                href={paths.globalSettingsGit(
+                                                    "worktrees",
+                                                )}
+                                                class={gitNavLinkClass(
+                                                    "worktrees",
+                                                )}
+                                                end
+                                                inactiveClass=""
+                                                activeClass=""
+                                            >
+                                                Worktrees
+                                            </A>
+                                            <A
+                                                href={paths.globalSettingsGit(
+                                                    "authentication",
+                                                )}
+                                                class={gitNavLinkClass(
+                                                    "authentication",
+                                                )}
+                                                end
+                                                inactiveClass=""
+                                                activeClass=""
+                                            >
+                                                Authentication
+                                            </A>
+                                        </nav>
+                                    </VerticalNavRail>
+                                    <VerticalNavMain class="space-y-6">
+                                        <div class="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:justify-end">
+                                            <Show when={saveError()}>
+                                                {(msg) => (
+                                                    <p class="max-w-md text-right text-[13px] text-red-400">
+                                                        {msg()}
+                                                    </p>
+                                                )}
+                                            </Show>
+                                            <SaveButton
+                                                dirty={gitDirty()}
+                                                isPending={savePending()}
+                                                onClick={() =>
+                                                    void saveGitSettings()
+                                                }
+                                                disabled={gitFormDisabled()}
+                                            />
+                                        </div>
+                                        <Show when={gitSettings.error}>
+                                            <p class="text-[13px] text-red-400">
+                                                Could not load Git settings.
+                                            </p>
+                                        </Show>
+                                        <Show
+                                            when={
+                                                gitSettings.loading &&
+                                                activeNavId() === "git"
+                                            }
+                                        >
+                                            <p class="text-[13px] text-void-400">
+                                                Loading…
+                                            </p>
+                                        </Show>
+                                        <Switch>
+                                            <Match
+                                                when={
+                                                    view()!.kind === "git" &&
+                                                    view()!.tab === "worktrees"
+                                                }
+                                            >
+                                                <Section
+                                                    title="Worktrees"
+                                                    description="How new threads use Git worktrees."
+                                                >
+                                                    <div class="grid grid-cols-[11rem_1fr] items-start gap-4">
+                                                        <Label
+                                                            for="gs-git-new-thread-default"
+                                                            class="mb-0 pt-2 text-right text-[13px] text-void-400"
+                                                        >
+                                                            New thread default
+                                                        </Label>
+                                                        <div class="space-y-1">
+                                                            <Select
+                                                                id="gs-git-new-thread-default"
+                                                                value={newThreadWorktree()}
+                                                                disabled={gitFormDisabled()}
+                                                                onChange={(e) =>
+                                                                    setNewThreadWorktree(
+                                                                        e
+                                                                            .currentTarget
+                                                                            .value as
+                                                                            | "always"
+                                                                            | "ask"
+                                                                            | "never",
+                                                                    )
+                                                                }
+                                                            >
+                                                                <option value="always">
+                                                                    Always use
+                                                                    worktree
+                                                                </option>
+                                                                <option value="ask">
+                                                                    Ask every
+                                                                    time
+                                                                </option>
+                                                                <option value="never">
+                                                                    Never use
+                                                                    worktree
+                                                                </option>
+                                                            </Select>
+                                                        </div>
+                                                    </div>
+                                                </Section>
+                                            </Match>
+                                            <Match
+                                                when={
+                                                    view()!.kind === "git" &&
+                                                    view()!.tab ===
+                                                        "authentication"
+                                                }
+                                            >
+                                                <Section
+                                                    title="Authentication"
+                                                    description="Environment used when Moondust runs Git and SSH."
+                                                >
+                                                    <FieldRow
+                                                        id="gs-git-ssh-auth-sock"
+                                                        label="SSH_AUTH_SOCK"
+                                                        value={sshAuthSock()}
+                                                        placeholder=""
+                                                        description="Path to SSH agent socket, e.g. ~/.1password/agent.sock for 1Password."
+                                                        disabled={gitFormDisabled()}
+                                                        onInput={(e) =>
+                                                            setSshAuthSock(
+                                                                e.currentTarget
+                                                                    .value,
+                                                            )
+                                                        }
+                                                    />
+                                                </Section>
+                                            </Match>
+                                        </Switch>
+                                    </VerticalNavMain>
+                                </VerticalNavSplit>
+                            </Match>
                             <Match
                                 when={
                                     view()!.kind === "flat" &&
@@ -215,114 +457,31 @@ export const GlobalSettingsPage: Component = () => {
                                     />
                                 </Section>
                             </Match>
-                            <Match
-                                when={
-                                    view()!.kind === "git" &&
-                                    view()!.tab === "worktrees"
-                                }
-                            >
-                                <Section
-                                    title="Worktrees"
-                                    description="How new threads use Git worktrees."
-                                >
-                                    <div class="grid grid-cols-[11rem_1fr] items-start gap-4">
-                                        <Label
-                                            for="gs-git-new-thread-default"
-                                            class="mb-0 pt-2 text-right text-[13px] text-void-400"
-                                        >
-                                            New thread default
-                                        </Label>
-                                        <div class="space-y-1">
-                                            <Select
-                                                id="gs-git-new-thread-default"
-                                                value={newThreadWorktree()}
-                                                onChange={(e) =>
-                                                    setNewThreadWorktree(
-                                                        e.currentTarget
-                                                            .value as
-                                                            | "always"
-                                                            | "ask"
-                                                            | "never",
-                                                    )
-                                                }
-                                            >
-                                                <option value="always">
-                                                    Always use worktree
-                                                </option>
-                                                <option value="ask">
-                                                    Ask every time
-                                                </option>
-                                                <option value="never">
-                                                    Never use worktree
-                                                </option>
-                                            </Select>
-                                        </div>
-                                    </div>
-                                </Section>
-                            </Match>
-                            <Match
-                                when={
-                                    view()!.kind === "git" &&
-                                    view()!.tab === "authentication"
-                                }
-                            >
-                                <Section
-                                    title="Authentication"
-                                    description="Environment used when Moondust runs Git and SSH."
-                                >
-                                    <FieldRow
-                                        id="gs-git-ssh-auth-sock"
-                                        label="SSH_AUTH_SOCK"
-                                        value={sshAuthSock()}
-                                        placeholder=""
-                                        description="Path to SSH agent socket, e.g. ~/.1password/agent.sock for 1Password."
-                                        onInput={(e) =>
-                                            setSshAuthSock(
-                                                e.currentTarget.value,
-                                            )
-                                        }
-                                    />
-                                </Section>
-                            </Match>
-                        </Switch>
-                    </div>
+                            </Switch>
+                        </VerticalNavMain>
+                    </VerticalNavSplit>
                 </div>
             </div>
         </Show>
     );
 };
 
-const GitSubNav: Component<{ active: GitSettingsSubsection }> = (props) => {
-    const linkCls = (tab: GitSettingsSubsection) =>
-        props.active === tab
-            ? "rounded-md px-3 py-1.5 text-[13px] font-medium no-underline transition-colors bg-void-800 text-void-50"
-            : "rounded-md px-3 py-1.5 text-[13px] font-medium no-underline transition-colors text-void-400 hover:bg-void-800/60 hover:text-void-100";
-    return (
-        <nav
-            class="flex flex-wrap gap-1 border-b border-void-700 pb-3"
-            aria-label="Git settings sections"
-        >
-            <A
-                href={paths.globalSettingsGit("worktrees")}
-                class={linkCls("worktrees")}
-                end
-                inactiveClass=""
-                activeClass=""
-            >
-                Worktrees
-            </A>
-            <A
-                href={paths.globalSettingsGit("authentication")}
-                class={linkCls("authentication")}
-                end
-                inactiveClass=""
-                activeClass=""
-            >
-                Authentication
-            </A>
-        </nav>
-    );
-};
+function worktreeFromStore(v: string | undefined): "always" | "ask" | "never" {
+    switch (String(v ?? "on").toLowerCase()) {
+        case "off":
+            return "never";
+        case "ask":
+            return "ask";
+        default:
+            return "always";
+    }
+}
+
+function worktreeToStore(u: "always" | "ask" | "never"): string {
+    if (u === "never") return "off";
+    if (u === "ask") return "ask";
+    return "on";
+}
 
 function sectionTitle(id: string): string {
     switch (id) {

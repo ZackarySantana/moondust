@@ -211,6 +211,31 @@ const WorkspaceMock = {
     },
 };
 
+/** In-memory global settings for dev / Storybook (lost on full reload). */
+let mockGlobalSettings = {
+    SSHAuthsocket: "",
+    DefaultWorktree: "on",
+    UtilityProvider: "openrouter",
+    UpdatedAt: new Date().toISOString(),
+};
+
+const SettingsMock = {
+    GetGlobal: async (): Promise<typeof mockGlobalSettings> => ({
+        ...mockGlobalSettings,
+    }),
+    SaveGlobal: async (incoming: {
+        SSHAuthsocket?: string;
+        DefaultWorktree?: string;
+        UtilityProvider?: string;
+    }): Promise<void> => {
+        mockGlobalSettings = {
+            ...mockGlobalSettings,
+            ...incoming,
+            UpdatedAt: new Date().toISOString(),
+        };
+    },
+};
+
 const ThreadMock = {
     Create: async (workspaceID: string, title: string): Promise<MockThread> => {
         const wid = workspaceID.trim();
@@ -275,19 +300,19 @@ export function isWailsDevMock(): boolean {
 }
 
 /**
- * Idempotent. Installs `window.go.app.{Workspace,Thread}` and a no-op runtime
+ * Idempotent. Installs `window.go.app.{Workspace,Thread,Settings}` and a no-op runtime
  * shim if the real Wails bridge isn't already present. Safe to call from
  * `index.tsx` before any module touches the bindings.
  */
 export function installWailsDevMock(): void {
     const w = getWailsWindow();
     if (!w) return;
-    if (w.go?.app?.Workspace && w.go?.app?.Thread) return;
 
     w.go = w.go ?? {};
     w.go.app = w.go.app ?? {};
     w.go.app.Workspace = w.go.app.Workspace ?? (WorkspaceMock as never);
     w.go.app.Thread = w.go.app.Thread ?? (ThreadMock as never);
+    w.go.app.Settings = w.go.app.Settings ?? (SettingsMock as never);
 
     w.runtime = w.runtime ?? {
         EventsOn: () => () => {},

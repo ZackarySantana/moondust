@@ -10,7 +10,7 @@ import {
     type JSX,
 } from "solid-js";
 import { Dynamic } from "solid-js/web";
-import { Dialog, DialogContent, DialogOverlay } from "../dialog/dialog";
+import { pushModalEscapeHandler } from "../dialog/modal-escape-stack";
 import { Text } from "../text/text";
 import { cn } from "../utils";
 
@@ -29,8 +29,8 @@ export interface CommandPaletteItem {
 const defaultId = (prefix: string, id: string) =>
     `${prefix}-${id.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
 
-/** Capped height when &gt;5 results so a scrollbar appears only for the 6th+ item. */
-const LIST_MAX_SCROLL_CLASS = "h-60 min-h-60 max-h-60 w-full min-w-0 shrink-0";
+/** ~5 option rows (label + one description line) + list vertical padding. */
+const LIST_MAX_HEIGHT_CLASS = "max-h-[18.5rem]";
 
 /**
  * Substring match on label, description, and keywords. Case-insensitive;
@@ -110,15 +110,17 @@ export const CommandPalette: Component<CommandPaletteProps> = (props) => {
 
     const filtered = createMemo(() => filterFn()(local.query, local.items));
 
-    /** Scrollbar only when a sixth (or more) row would be needed. */
-    const listNeedsMaxScroll = createMemo(() => filtered().length > 5);
-
     const [activeIndex, setActiveIndex] = createSignal(0);
     let inputRef: HTMLInputElement | undefined;
 
     createEffect(() => {
         filtered();
         setActiveIndex(0);
+    });
+
+    createEffect(() => {
+        if (!local.open) return;
+        return pushModalEscapeHandler(() => local.onClose());
     });
 
     createEffect(() => {
@@ -166,180 +168,199 @@ export const CommandPalette: Component<CommandPaletteProps> = (props) => {
     };
 
     return (
-        <Dialog
-            open={local.open}
-            onEscapeKeyDown={local.onClose}
-        >
-            <DialogOverlay
-                type="button"
-                aria-label="Close command palette"
-                onClick={local.onClose}
-            />
-            <DialogContent
-                class={cn(
-                    "mx-auto flex w-full max-w-lg flex-col self-center border-void-600 bg-void-900 p-0 shadow-2xl shadow-void-950/80",
-                    local.class,
-                )}
-                role="dialog"
-                aria-modal="true"
-                aria-label={local.title ?? "Command palette"}
-                {...rest}
+        <Show when={local.open}>
+            <div
+                class="pointer-events-none fixed inset-0 z-100"
+                role="presentation"
             >
-                <div class="w-full min-w-0 shrink-0 border-b border-void-700/80 px-3 py-2.5">
-                    <Show when={local.title}>
-                        <Text
-                            variant="eyebrow"
-                            class="mb-2"
-                        >
-                            {local.title}
-                        </Text>
-                    </Show>
-                    <input
-                        ref={(el) => {
-                            inputRef = el;
-                        }}
-                        id={inputId()}
-                        type="search"
-                        class="h-9 w-full border border-void-600 bg-void-950 px-2.5 text-[13px] text-void-100 placeholder:text-void-500 focus-visible:border-starlight-400/70 focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-starlight-400/40"
-                        placeholder={local.placeholder ?? "Search…"}
-                        value={local.query}
-                        onInput={(e) =>
-                            local.onQueryChange(e.currentTarget.value)
-                        }
-                        onKeyDown={onInputKeyDown}
-                        autocomplete="off"
-                        autocorrect="off"
-                        spellcheck={false}
-                        role="combobox"
-                        aria-autocomplete="list"
-                        aria-controls={listboxId()}
-                        aria-expanded={local.open}
-                        aria-activedescendant={activeDescendant()}
-                    />
-                </div>
-
-                <div
-                    class={cn(
-                        "w-full min-w-0 shrink-0 bg-void-900/20",
-                        listNeedsMaxScroll() ? LIST_MAX_SCROLL_CLASS : "",
-                    )}
-                >
+                <button
+                    type="button"
+                    class="pointer-events-auto absolute inset-0 z-0 cursor-pointer bg-void-950/75"
+                    aria-label="Close command palette"
+                    onClick={local.onClose}
+                />
+                <div class="pointer-events-none relative z-10 flex h-dvh w-full min-h-0 max-h-dvh flex-col">
                     <div
+                        {...rest}
                         class={cn(
-                            "w-full min-h-0",
-                            listNeedsMaxScroll()
-                                ? "h-full overflow-y-auto overflow-x-hidden"
-                                : "overflow-x-hidden overflow-y-visible",
+                            "pointer-events-auto mx-auto flex h-full min-h-0 w-full max-w-lg flex-1 flex-col px-3 sm:px-4",
+                            local.class,
                         )}
-                        id={listboxId()}
-                        role="listbox"
-                        aria-label="Commands"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label={local.title ?? "Command palette"}
                     >
-                        <Show
-                            when={local.items.length > 0}
-                            fallback={
-                                <p
-                                    class={cn(
-                                        "flex items-center justify-center px-3 py-8 text-center text-[12px] text-void-500",
-                                        listNeedsMaxScroll()
-                                            ? "h-full"
-                                            : "min-h-32",
-                                    )}
-                                >
-                                    {local.emptyLabel ??
-                                        "No commands available."}
-                                </p>
-                            }
-                        >
-                            <Show
-                                when={filtered().length > 0}
-                                fallback={
-                                    <p
-                                        class={cn(
-                                            "flex items-center justify-center px-3 py-8 text-center text-[12px] text-void-500",
-                                            listNeedsMaxScroll()
-                                                ? "h-full"
-                                                : "min-h-32",
-                                        )}
+                        {/*
+                          Equal flex-1 spacers above and below the search keep the
+                          field vertically centered. Only the list region scrolls;
+                          filtering does not change the search position. */}
+                        <div
+                            class="min-h-0 w-full flex-1"
+                            aria-hidden="true"
+                        />
+                        <div class="w-full shrink-0">
+                            <div class="w-full border border-void-600 border-b-0 bg-void-900 px-3 pb-2.5 pt-2.5 shadow-2xl shadow-void-950/50 sm:rounded-t-sm">
+                                <Show when={local.title}>
+                                    <Text
+                                        variant="eyebrow"
+                                        class="mb-2"
                                     >
-                                        {local.noMatchLabel ?? "No matches."}
-                                    </p>
-                                }
-                            >
-                                <ul class="py-1">
-                                    <For each={filtered()}>
-                                        {(item, i) => (
-                                            <li role="none">
-                                                <button
-                                                    type="button"
-                                                    id={defaultId(
-                                                        "cmd-opt",
-                                                        item.id,
-                                                    )}
-                                                    class={cn(
-                                                        "flex w-full min-h-10 cursor-default items-start gap-2.5 border-0 bg-transparent px-3 py-1.5 text-left text-[13px] leading-snug transition-colors",
-                                                        i() === activeIndex()
-                                                            ? "bg-void-800 text-void-50"
-                                                            : "text-void-200 hover:bg-void-800/50",
-                                                    )}
-                                                    role="option"
-                                                    tabIndex={-1}
-                                                    aria-selected={
-                                                        i() === activeIndex()
-                                                    }
-                                                    onMouseEnter={() =>
-                                                        setActiveIndex(i())
-                                                    }
-                                                    onClick={() =>
-                                                        selectByIndex(i())
-                                                    }
-                                                >
-                                                    <Show when={item.icon}>
-                                                        {(IconCmp) => {
-                                                            const Cmp =
-                                                                IconCmp();
-                                                            return (
-                                                                <span class="mt-0.5 shrink-0 text-void-400">
-                                                                    <Dynamic
-                                                                        component={
-                                                                            Cmp
-                                                                        }
-                                                                        class="size-4"
-                                                                        stroke-width={
-                                                                            1.75
-                                                                        }
-                                                                        aria-hidden
-                                                                    />
-                                                                </span>
-                                                            );
-                                                        }}
-                                                    </Show>
-                                                    <span class="min-w-0 flex-1">
-                                                        <span class="block truncate font-medium">
-                                                            {item.label}
-                                                        </span>
-                                                        <Show
-                                                            when={
-                                                                item.description
-                                                            }
-                                                        >
-                                                            <span class="mt-0.5 block line-clamp-1 text-[11px] text-void-500">
-                                                                {
-                                                                    item.description
+                                        {local.title}
+                                    </Text>
+                                </Show>
+                                <input
+                                    ref={(el) => {
+                                        inputRef = el;
+                                    }}
+                                    id={inputId()}
+                                    type="search"
+                                    class="h-9 w-full border border-void-600 bg-void-950 px-2.5 text-[13px] text-void-100 placeholder:text-void-500 focus-visible:border-starlight-400/70 focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-starlight-400/40"
+                                    placeholder={local.placeholder ?? "Search…"}
+                                    value={local.query}
+                                    onInput={(e) =>
+                                        local.onQueryChange(
+                                            e.currentTarget.value,
+                                        )
+                                    }
+                                    onKeyDown={onInputKeyDown}
+                                    autocomplete="off"
+                                    autocorrect="off"
+                                    spellcheck={false}
+                                    role="combobox"
+                                    aria-autocomplete="list"
+                                    aria-controls={listboxId()}
+                                    aria-expanded={local.open}
+                                    aria-activedescendant={activeDescendant()}
+                                />
+                            </div>
+                        </div>
+
+                        <div class="w-full shrink-0">
+                            <div class="w-full overflow-hidden border border-void-600 border-t-void-700/80 bg-void-900/20 sm:rounded-b-sm">
+                                <div
+                                    class={cn(
+                                        "w-full overflow-y-auto overflow-x-hidden",
+                                        "px-0 py-1.5",
+                                        LIST_MAX_HEIGHT_CLASS,
+                                    )}
+                                    id={listboxId()}
+                                    role="listbox"
+                                    aria-label="Commands"
+                                >
+                                    <Show
+                                        when={local.items.length > 0}
+                                        fallback={
+                                            <p class="flex min-h-24 w-full items-center justify-center px-3 py-6 text-center text-[12px] text-void-500">
+                                                {local.emptyLabel ??
+                                                    "No commands available."}
+                                            </p>
+                                        }
+                                    >
+                                        <Show
+                                            when={filtered().length > 0}
+                                            fallback={
+                                                <p class="flex min-h-24 w-full items-center justify-center px-3 py-6 text-center text-[12px] text-void-500">
+                                                    {local.noMatchLabel ??
+                                                        "No matches."}
+                                                </p>
+                                            }
+                                        >
+                                            <ul class="py-0.5">
+                                                <For each={filtered()}>
+                                                    {(item, i) => (
+                                                        <li role="none">
+                                                            <button
+                                                                type="button"
+                                                                id={defaultId(
+                                                                    "cmd-opt",
+                                                                    item.id,
+                                                                )}
+                                                                class={cn(
+                                                                    "flex w-full min-h-10 cursor-default items-start gap-2.5 border-0 bg-transparent px-3 py-1.5 text-left text-[13px] leading-snug transition-colors",
+                                                                    i() ===
+                                                                        activeIndex()
+                                                                        ? "bg-void-800 text-void-50"
+                                                                        : "text-void-200 hover:bg-void-800/50",
+                                                                )}
+                                                                role="option"
+                                                                tabIndex={-1}
+                                                                aria-selected={
+                                                                    i() ===
+                                                                    activeIndex()
                                                                 }
-                                                            </span>
-                                                        </Show>
-                                                    </span>
-                                                </button>
-                                            </li>
-                                        )}
-                                    </For>
-                                </ul>
-                            </Show>
-                        </Show>
+                                                                onMouseEnter={() =>
+                                                                    setActiveIndex(
+                                                                        i(),
+                                                                    )
+                                                                }
+                                                                onClick={() =>
+                                                                    selectByIndex(
+                                                                        i(),
+                                                                    )
+                                                                }
+                                                            >
+                                                                <Show
+                                                                    when={
+                                                                        item.icon
+                                                                    }
+                                                                >
+                                                                    {(
+                                                                        IconCmp,
+                                                                    ) => {
+                                                                        const Cmp =
+                                                                            IconCmp();
+                                                                        return (
+                                                                            <span class="mt-0.5 shrink-0 text-void-400">
+                                                                                <Dynamic
+                                                                                    component={
+                                                                                        Cmp
+                                                                                    }
+                                                                                    class="size-4"
+                                                                                    stroke-width={
+                                                                                        1.75
+                                                                                    }
+                                                                                    aria-hidden
+                                                                                />
+                                                                            </span>
+                                                                        );
+                                                                    }}
+                                                                </Show>
+                                                                <span class="min-w-0 flex-1">
+                                                                    <span class="block truncate font-medium">
+                                                                        {
+                                                                            item.label
+                                                                        }
+                                                                    </span>
+                                                                    <Show
+                                                                        when={
+                                                                            item.description
+                                                                        }
+                                                                    >
+                                                                        <span class="mt-0.5 block line-clamp-1 text-[11px] text-void-500">
+                                                                            {
+                                                                                item.description
+                                                                            }
+                                                                        </span>
+                                                                    </Show>
+                                                                </span>
+                                                            </button>
+                                                        </li>
+                                                    )}
+                                                </For>
+                                            </ul>
+                                        </Show>
+                                    </Show>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            class="min-h-0 w-full flex-1"
+                            aria-hidden="true"
+                        />
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+            </div>
+        </Show>
     );
 };

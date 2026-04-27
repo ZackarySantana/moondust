@@ -31,7 +31,7 @@ export interface ViewSwitcherProps extends Omit<
 }
 
 const baseItemClass =
-    "group/view inline-flex shrink-0 cursor-pointer items-center gap-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-starlight-400/60 disabled:pointer-events-none disabled:opacity-40";
+    "group/view inline-flex shrink-0 cursor-pointer select-none items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-starlight-400/60 disabled:pointer-events-none disabled:opacity-40";
 
 const chipItemClass = (active: boolean) =>
     cn(

@@ -10,7 +10,12 @@ import Wrench from "lucide-solid/icons/wrench";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
 
 import type { VerticalNavItem } from "./vertical-nav";
-import { VerticalNav } from "./vertical-nav";
+import {
+    VerticalNav,
+    VerticalNavMain,
+    VerticalNavRail,
+    VerticalNavSplit,
+} from "./vertical-nav";
 import { Badge } from "../badge/badge";
 import { Button } from "../button/button";
 import { Separator } from "../separator/separator";
@@ -97,6 +102,41 @@ export const TextOnly: Story = {
                 navLabel="Sections"
             />
         </Frame>
+    ),
+};
+
+/** Nav + body in one column (no app chrome sidebar). */
+export const EmbeddedInPage: Story = {
+    render: () => (
+        <div class="min-h-screen bg-void-950 p-10">
+            <div class="mx-auto max-w-5xl px-8">
+                <p class="mb-6 font-mono text-[10px] uppercase tracking-[0.16em] text-void-500">
+                    settings / in-page rail
+                </p>
+                <header class="mb-8">
+                    <h1 class="text-xl font-semibold text-void-50">Settings</h1>
+                    <p class="mt-1 text-[13px] text-void-400">
+                        Rail shares the same surface as the content.
+                    </p>
+                </header>
+                <VerticalNavSplit>
+                    <VerticalNavRail>
+                        <VerticalNav
+                            embedded
+                            items={PROJECT_SECTIONS}
+                            baseHref="/settings"
+                            activeId="git"
+                            navLabel="Sections"
+                        />
+                    </VerticalNavRail>
+                    <VerticalNavMain>
+                        <p class="text-[13px] text-void-300">
+                            Main column content (forms, sections, etc.).
+                        </p>
+                    </VerticalNavMain>
+                </VerticalNavSplit>
+            </div>
+        </div>
     ),
 };
 

@@ -30,7 +30,10 @@ interface TabsContextValue {
     size: Accessor<TabsSize>;
     register: (reg: TabRegistration) => void;
     unregister: (value: string) => void;
-    moveFocus: (currentValue: string, dir: "next" | "prev" | "first" | "last") => void;
+    moveFocus: (
+        currentValue: string,
+        dir: "next" | "prev" | "first" | "last",
+    ) => void;
 }
 
 const TabsContext = createContext<TabsContextValue>();
@@ -123,9 +126,7 @@ export const TabsRoot: Component<TabsRootProps> = (props) => {
 
     return (
         <TabsContext.Provider value={ctxValue}>
-            <div class={cn("flex flex-col", props.class)}>
-                {props.children}
-            </div>
+            <div class={cn("flex flex-col", props.class)}>{props.children}</div>
         </TabsContext.Provider>
     );
 };
@@ -161,8 +162,10 @@ export const TabsList: Component<TabsListProps> = (props) => {
     );
 };
 
-export interface TabsTriggerProps
-    extends Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "value"> {
+export interface TabsTriggerProps extends Omit<
+    JSX.ButtonHTMLAttributes<HTMLButtonElement>,
+    "value"
+> {
     value: string;
 }
 
@@ -174,14 +177,13 @@ const triggerSizeStyles: Record<TabsSize, string> = {
 const triggerVariantStyles: Record<TabsVariant, (active: boolean) => string> = {
     underline: (active) =>
         cn(
-            "border-b-2 -mb-px transition-colors duration-100",
+            "border-b-2 -mb-px",
             active
                 ? "border-starlight-400 text-void-50"
                 : "border-transparent text-void-400 hover:text-void-100 hover:border-void-600",
         ),
     segmented: (active) =>
         cn(
-            "transition-colors duration-100",
             active
                 ? "bg-void-800 text-starlight-300"
                 : "bg-transparent text-void-400 hover:bg-void-800/60 hover:text-void-200",
@@ -209,19 +211,23 @@ export const TabsTrigger: Component<TabsTriggerProps> = (props) => {
 
     const active = () => ctx.value() === local.value;
 
-    const callUserClick = (e: MouseEvent & {
-        currentTarget: HTMLButtonElement;
-        target: Element;
-    }) => {
+    const callUserClick = (
+        e: MouseEvent & {
+            currentTarget: HTMLButtonElement;
+            target: Element;
+        },
+    ) => {
         const handler = local.onClick;
         if (typeof handler === "function") handler(e);
         else if (Array.isArray(handler)) handler[0](handler[1], e);
     };
 
-    const callUserKeyDown = (e: KeyboardEvent & {
-        currentTarget: HTMLButtonElement;
-        target: Element;
-    }) => {
+    const callUserKeyDown = (
+        e: KeyboardEvent & {
+            currentTarget: HTMLButtonElement;
+            target: Element;
+        },
+    ) => {
         const handler = local.onKeyDown;
         if (typeof handler === "function") handler(e);
         else if (Array.isArray(handler)) handler[0](handler[1], e);
@@ -277,8 +283,10 @@ export const TabsTrigger: Component<TabsTriggerProps> = (props) => {
     );
 };
 
-export interface TabsContentProps
-    extends Omit<JSX.HTMLAttributes<HTMLDivElement>, "value"> {
+export interface TabsContentProps extends Omit<
+    JSX.HTMLAttributes<HTMLDivElement>,
+    "value"
+> {
     value: string;
     /**
      * Keep the panel mounted (just hidden) when not active. Useful when

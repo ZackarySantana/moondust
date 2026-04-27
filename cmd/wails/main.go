@@ -31,6 +31,7 @@ func Main(assets embed.FS) {
 
 	workspaceApp := app.NewWorkspace(service.NewWorkspace(stores, gitClient))
 	threadApp := app.NewThread(service.NewThread(stores))
+	settingsApp := app.NewSettings(service.NewGlobalSettingsService(stores))
 
 	err = wails.Run(&options.App{
 		Title:  "Moondust",
@@ -45,6 +46,7 @@ func Main(assets embed.FS) {
 		OnStartup: func(ctx context.Context) {
 			workspaceApp.SetContext(ctx)
 			threadApp.SetContext(ctx)
+			settingsApp.SetContext(ctx)
 			slog.InfoContext(ctx, "startup started...")
 			slog.InfoContext(ctx, "startup completed...")
 		},
@@ -55,6 +57,7 @@ func Main(assets embed.FS) {
 		Bind: []interface{}{
 			workspaceApp,
 			threadApp,
+			settingsApp,
 		},
 	})
 
