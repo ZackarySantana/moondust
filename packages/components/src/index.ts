@@ -11,6 +11,7 @@ export * from "./chip/chip";
 export * from "./code/code";
 export * from "./collapsible-section/collapsible-section";
 export * from "./command-launcher/command-launcher";
+export * from "./command-palette/command-palette";
 export * from "./commit-graph/commit-graph";
 export * from "./confirm-dialog/confirm-dialog";
 export * from "./create-project-form-view/create-project-form-view";

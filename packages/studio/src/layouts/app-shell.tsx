@@ -27,7 +27,7 @@ import {
 import { useUIState } from "@/lib/ui-state";
 import {
     paths,
-    railThreadOrder,
+    recentThreadOrder,
     useThreadsQuery,
     useWorkspacesQuery,
 } from "@/lib/workspace";
@@ -87,7 +87,7 @@ export const AppShell: Component<RouteSectionProps> = (props) => {
     ];
 
     function jumpToSlot(slot: number) {
-        const order = railThreadOrder(
+        const order = recentThreadOrder(
             workspacesQuery.data ?? [],
             threadsQuery.data ?? [],
         );

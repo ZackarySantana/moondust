@@ -67,4 +67,20 @@ export function railThreadSlotIndex(
     return m;
 }
 
+/**
+ * Recent threads in global rail order, capped for the sidebar “Recent” list and
+ * for Alt+1… (see {@link DEFAULT_SHORTCUTS} `go_thread_slot_*`).
+ */
+export const RECENT_THREAD_SLOT_COUNT = 6 as const;
+
+export function recentThreadOrder(
+    workspaces: readonly Workspace[],
+    threads: readonly Thread[],
+): RailThreadEntry[] {
+    return railThreadOrder(workspaces, threads).slice(
+        0,
+        RECENT_THREAD_SLOT_COUNT,
+    );
+}
+
 export { threadTimestamp };

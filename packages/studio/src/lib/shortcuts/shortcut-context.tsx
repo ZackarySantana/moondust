@@ -99,11 +99,16 @@ export const ShortcutProvider: ParentComponent<ShortcutProviderProps> = (
             if (action.tier === COMPOSER_TIER) {
                 if (!inInput) continue;
             } else if (inInput) {
-                // While typing, still honor chords that use Ctrl/Meta so hub,
-                // view switching, and rail navigation work from the composer.
-                // Bare shortcuts (e.g. Shift+/?, F6) stay with the field.
+                // While typing, still honor Ctrl/Meta chords; also Alt+digit
+                // for recent-thread jumps (go_thread_slot_*), which use Alt+1…6.
                 const parsed = parseCombo(combo);
-                if (!parsed.ctrl && !parsed.meta) continue;
+                const isRecentThreadSlot =
+                    action.id.startsWith("go_thread_slot_") &&
+                    parsed.alt &&
+                    /^[1-9]$/.test(parsed.key);
+                if (!parsed.ctrl && !parsed.meta && !isRecentThreadSlot) {
+                    continue;
+                }
             }
 
             const list = handlers.get(action.id);

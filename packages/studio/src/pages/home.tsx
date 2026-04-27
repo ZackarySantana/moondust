@@ -23,7 +23,7 @@ import { useUIState } from "@/lib/ui-state";
 import {
     createThreadInWorkspace,
     paths,
-    railThreadOrder,
+    recentThreadOrder,
     sortWorkspacesByLatestThread,
     useThreadsQuery,
     useWorkspacesQuery,
@@ -69,9 +69,7 @@ export const HomePage: Component = () => {
     const workspaces = () => workspacesQuery.data ?? [];
     const threads = () => threadsQuery.data ?? [];
 
-    const recent = createMemo(() =>
-        railThreadOrder(workspaces(), threads()).slice(0, 6),
-    );
+    const recent = createMemo(() => recentThreadOrder(workspaces(), threads()));
     const sortedWorkspaces = createMemo(() =>
         sortWorkspacesByLatestThread(workspaces(), threads()),
     );
@@ -125,7 +123,9 @@ export const HomePage: Component = () => {
                     </p>
                 </header>
 
-                <Show when={workspacesQuery.isPending || threadsQuery.isPending}>
+                <Show
+                    when={workspacesQuery.isPending || threadsQuery.isPending}
+                >
                     <div class="flex items-center justify-center py-10">
                         <Spinner />
                     </div>

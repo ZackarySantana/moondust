@@ -8,6 +8,11 @@ import { ProvidersLayout } from "@/layouts/providers";
 import { HomePage } from "@/pages/home";
 import { ThreadPage } from "@/pages/thread";
 import { WorkspacePage } from "@/pages/workspace";
+import {
+    GitSettingsRedirect,
+    GlobalSettingsPage,
+    GlobalSettingsRedirect,
+} from "@/pages/global-settings";
 import { WorkspaceSettingsPage } from "@/pages/workspace-settings";
 
 installWailsDevMock();
@@ -34,7 +39,19 @@ render(
                 />
                 <Route
                     path="/settings"
-                    component={SettingsStubPage}
+                    component={GlobalSettingsRedirect}
+                />
+                <Route
+                    path="/settings/git"
+                    component={GitSettingsRedirect}
+                />
+                <Route
+                    path="/settings/git/:gitSection"
+                    component={GlobalSettingsPage}
+                />
+                <Route
+                    path="/settings/:section"
+                    component={GlobalSettingsPage}
                 />
                 <Route
                     path="*"
@@ -45,16 +62,6 @@ render(
     ),
     document.getElementById("root")!,
 );
-
-function SettingsStubPage() {
-    return (
-        <div class="flex min-h-0 min-w-0 flex-1 items-center justify-center p-8 text-center text-void-400">
-            <div>
-                <p class="text-[13px]">Global settings — coming soon.</p>
-            </div>
-        </div>
-    );
-}
 
 function NotFoundPage() {
     return (

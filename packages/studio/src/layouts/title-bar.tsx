@@ -11,6 +11,7 @@ import GitBranch from "lucide-solid/icons/git-branch";
 import PanelRight from "lucide-solid/icons/panel-right";
 import PanelBottom from "lucide-solid/icons/panel-bottom";
 import { createMemo, Show, type Component } from "solid-js";
+import { labelForGlobalSettingsSection } from "@/lib/global-settings/sections";
 import { THREAD_VIEW_ORDER, useShortcuts } from "@/lib/shortcuts";
 import { useUIState } from "@/lib/ui-state";
 import { paths, useThreadQuery, useWorkspaceQuery } from "@/lib/workspace";
@@ -59,6 +60,37 @@ export const StudioTitleBar: Component = () => {
                 label: "Settings",
                 href: paths.globalSettings(),
             });
+            const git = location.pathname.match(
+                /^\/settings\/git(?:\/(worktrees|authentication))?\/?$/,
+            );
+            if (git) {
+                segs.push({
+                    id: "global-settings-git",
+                    label: "Git",
+                    href: paths.globalSettingsGit("worktrees"),
+                });
+                if (git[1] === "worktrees" || git[1] === "authentication") {
+                    segs.push({
+                        id: "global-settings-git-sub",
+                        label:
+                            git[1] === "worktrees"
+                                ? "Worktrees"
+                                : "Authentication",
+                        href: paths.globalSettingsGit(git[1]),
+                    });
+                }
+            } else {
+                const flat = location.pathname.match(
+                    /^\/settings\/(general|cursor|claude|openrouter)\/?$/,
+                );
+                if (flat?.[1]) {
+                    segs.push({
+                        id: "global-settings-section",
+                        label: labelForGlobalSettingsSection(flat[1]),
+                        href: paths.globalSettingsSection(flat[1]),
+                    });
+                }
+            }
         } else {
             segs.push({
                 id: "hub",

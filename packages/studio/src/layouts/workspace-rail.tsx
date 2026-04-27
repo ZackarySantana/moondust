@@ -13,6 +13,7 @@ import {
     WorkspaceRailThread,
     type ThreadStreamPhase,
 } from "@moondust/components";
+import LayoutGrid from "lucide-solid/icons/layout-grid";
 import Plus from "lucide-solid/icons/plus";
 import Settings from "lucide-solid/icons/settings";
 import Moon from "lucide-solid/icons/moon";
@@ -34,8 +35,7 @@ import { RenameThread } from "@/lib/wails";
 import {
     createThreadInWorkspace,
     paths,
-    railThreadOrder,
-    railThreadSlotIndex,
+    recentThreadOrder,
     sortThreadsForWorkspace,
     sortWorkspacesByLatestThread,
     type Thread,
@@ -88,9 +88,7 @@ const StudioRailThreadRow: Component<StudioRailThreadRowProps> = (props) => {
             title={props.thread.Title || "Untitled thread"}
             timeLabel={
                 (props.tick(),
-                relativeTime(
-                    props.thread.UpdatedAt || props.thread.CreatedAt,
-                ))
+                relativeTime(props.thread.UpdatedAt || props.thread.CreatedAt))
             }
             phase={props.phaseFor(props.thread.ID)}
             shortcut={props.slotShortcut}
@@ -110,7 +108,6 @@ const StudioRailThreadRow: Component<StudioRailThreadRowProps> = (props) => {
                     href={p.href}
                     class={p.class}
                     activeClass="bg-void-800 text-void-50"
-                    onDblClick={p.onDblClick}
                 >
                     {p.children}
                 </A>
@@ -149,11 +146,11 @@ export const StudioWorkspaceRail: Component = () => {
     const sortedWorkspaces = createMemo(() =>
         sortWorkspacesByLatestThread(workspaces(), threads()),
     );
-    const slotByThread = createMemo(() =>
-        railThreadSlotIndex(workspaces(), threads()),
-    );
-    const recentThreads = createMemo(() =>
-        railThreadOrder(workspaces(), threads()).slice(0, 5),
+    const recentRowsForRail = createMemo(() =>
+        recentThreadOrder(workspaces(), threads()).map((entry, slotIndex) => ({
+            entry,
+            slotIndex,
+        })),
     );
 
     const focusedWorkspaceId = createMemo(() => {
@@ -280,24 +277,33 @@ export const StudioWorkspaceRail: Component = () => {
                 </div>
             }
         >
-            <Show when={recentThreads().length > 0}>
+            <Show when={recentRowsForRail().length > 0}>
                 <WorkspaceRailSection label="Recent">
-                    <For each={recentThreads()}>
-                        {(entry) => (
-                            <StudioRailThreadRow
-                                workspaceId={entry.workspaceId}
-                                thread={entry.thread}
-                                renamingThreadId={renamingThreadId}
-                                renameDraft={renameDraft}
-                                setRenameDraft={setRenameDraft}
-                                commitRenameThread={commitRenameThread}
-                                cancelRenameThread={cancelRenameThread}
-                                startRenameThread={startRenameThread}
-                                activeThreadId={() => params.threadId}
-                                tick={tick}
-                                phaseFor={phaseFor}
-                            />
-                        )}
+                    <For each={recentRowsForRail()}>
+                        {(row) => {
+                            const slotShortcut =
+                                row.slotIndex < SLOT_ACTION_IDS.length
+                                    ? formatCaps(
+                                          SLOT_ACTION_IDS[row.slotIndex]!,
+                                      )
+                                    : undefined;
+                            return (
+                                <StudioRailThreadRow
+                                    workspaceId={row.entry.workspaceId}
+                                    thread={row.entry.thread}
+                                    slotShortcut={slotShortcut}
+                                    renamingThreadId={renamingThreadId}
+                                    renameDraft={renameDraft}
+                                    setRenameDraft={setRenameDraft}
+                                    commitRenameThread={commitRenameThread}
+                                    cancelRenameThread={cancelRenameThread}
+                                    startRenameThread={startRenameThread}
+                                    activeThreadId={() => params.threadId}
+                                    tick={tick}
+                                    phaseFor={phaseFor}
+                                />
+                            );
+                        }}
                     </For>
                 </WorkspaceRailSection>
             </Show>
@@ -373,6 +379,25 @@ export const StudioWorkspaceRail: Component = () => {
                                             />
                                         </IconButton>
                                         <IconButton
+                                            aria-label={`Workspace overview for ${workspace.Name}`}
+                                            size="xs"
+                                            tooltip="Workspace overview"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                navigate(
+                                                    paths.workspace(
+                                                        workspace.ID,
+                                                    ),
+                                                );
+                                            }}
+                                        >
+                                            <LayoutGrid
+                                                class="size-3.5"
+                                                stroke-width={1.75}
+                                            />
+                                        </IconButton>
+                                        <IconButton
                                             aria-label={`Settings for ${workspace.Name}`}
                                             size="xs"
                                             onClick={(e) => {
@@ -399,44 +424,29 @@ export const StudioWorkspaceRail: Component = () => {
                                         threads(),
                                     )}
                                 >
-                                    {(thread) => {
-                                        const slot = slotByThread().get(
-                                            thread.ID,
-                                        );
-                                        const slotShortcut =
-                                            slot != null &&
-                                            slot < SLOT_ACTION_IDS.length
-                                                ? formatCaps(
-                                                      SLOT_ACTION_IDS[slot],
-                                                  )
-                                                : undefined;
-                                        return (
-                                            <StudioRailThreadRow
-                                                workspaceId={workspace.ID}
-                                                thread={thread}
-                                                slotShortcut={slotShortcut}
-                                                renamingThreadId={
-                                                    renamingThreadId
-                                                }
-                                                renameDraft={renameDraft}
-                                                setRenameDraft={setRenameDraft}
-                                                commitRenameThread={
-                                                    commitRenameThread
-                                                }
-                                                cancelRenameThread={
-                                                    cancelRenameThread
-                                                }
-                                                startRenameThread={
-                                                    startRenameThread
-                                                }
-                                                activeThreadId={() =>
-                                                    params.threadId
-                                                }
-                                                tick={tick}
-                                                phaseFor={phaseFor}
-                                            />
-                                        );
-                                    }}
+                                    {(thread) => (
+                                        <StudioRailThreadRow
+                                            workspaceId={workspace.ID}
+                                            thread={thread}
+                                            renamingThreadId={renamingThreadId}
+                                            renameDraft={renameDraft}
+                                            setRenameDraft={setRenameDraft}
+                                            commitRenameThread={
+                                                commitRenameThread
+                                            }
+                                            cancelRenameThread={
+                                                cancelRenameThread
+                                            }
+                                            startRenameThread={
+                                                startRenameThread
+                                            }
+                                            activeThreadId={() =>
+                                                params.threadId
+                                            }
+                                            tick={tick}
+                                            phaseFor={phaseFor}
+                                        />
+                                    )}
                                 </For>
                             </WorkspaceRailProject>
                         )}

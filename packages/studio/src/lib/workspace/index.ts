@@ -8,8 +8,10 @@ export {
     type Thread,
 } from "./queries";
 export {
+    RECENT_THREAD_SLOT_COUNT,
     railThreadOrder,
     railThreadSlotIndex,
+    recentThreadOrder,
     sortWorkspacesByLatestThread,
     sortThreadsForWorkspace,
     threadTimestamp,

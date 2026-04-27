@@ -207,10 +207,13 @@ export interface WorkspaceRailThreadProps extends Omit<
         href: string;
         class: string;
         children: JSX.Element;
-        onDblClick?: (e: MouseEvent) => void;
         onClick?: (e: MouseEvent) => void;
     }) => JSX.Element;
-    /** Double-click handler — typically for inline rename. */
+    /**
+     * Rename / advanced action: fired from the title span on the 2nd click of
+     * a double-click (`click` detail === 2). Using `dblclick` on `<a>` is
+     * unreliable with Solid Router’s document `click` delegation.
+     */
     onDblClick?: (e: MouseEvent) => void;
     /** Inline rename: controlled input replaces the title. Renders as a non-link row. */
     renaming?: boolean;
@@ -257,19 +260,38 @@ export const WorkspaceRailThread: Component<WorkspaceRailThreadProps> = (
 
     let renameInput: HTMLInputElement | undefined;
     let skipRenameBlurCommit = false;
+    /** Ignore blur briefly after opening rename — the tail end of a double-click often blurs the new input. */
+    let renameOpenedAtMs = 0;
 
     createEffect(() => {
-        if (local.renaming && renameInput) {
-            renameInput.focus();
-            renameInput.select();
-        }
+        if (!local.renaming) return;
+        renameOpenedAtMs = Date.now();
+        queueMicrotask(() => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    renameInput?.focus();
+                    renameInput?.select();
+                });
+            });
+        });
     });
 
     const titleEl = (
         <Show
             when={local.renaming}
             fallback={
-                <span class="min-w-0 flex-1 truncate">{local.title}</span>
+                <span
+                    class="min-w-0 flex-1 cursor-text truncate select-none"
+                    title="Double-click to rename"
+                    onClick={(e) => {
+                        if (e.detail !== 2) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        local.onDblClick?.(e);
+                    }}
+                >
+                    {local.title}
+                </span>
             }
         >
             <input
@@ -300,7 +322,9 @@ export const WorkspaceRailThread: Component<WorkspaceRailThreadProps> = (
                     }
                 }}
                 onBlur={() => {
-                    if (!skipRenameBlurCommit) local.onRenameCommit?.();
+                    if (skipRenameBlurCommit) return;
+                    if (Date.now() - renameOpenedAtMs < 280) return;
+                    local.onRenameCommit?.();
                 }}
                 onClick={(e) => e.stopPropagation()}
                 onMouseDown={(e) => e.stopPropagation()}
@@ -352,7 +376,6 @@ export const WorkspaceRailThread: Component<WorkspaceRailThreadProps> = (
             href: local.href,
             class: linkClass,
             children: inner,
-            onDblClick: local.onDblClick,
             onClick:
                 typeof local.onClick === "function"
                     ? (local.onClick as (e: MouseEvent) => void)
@@ -364,7 +387,6 @@ export const WorkspaceRailThread: Component<WorkspaceRailThreadProps> = (
         <a
             href={local.href}
             class={linkClass}
-            onDblClick={local.onDblClick}
             {...rest}
         >
             {inner}

@@ -11,6 +11,8 @@ export interface VerticalNavItem {
     id: string;
     label: string;
     icon?: IconComponent;
+    /** When set, used as the link target instead of `${baseHref}/${id}`. */
+    href?: string;
 }
 
 /**
@@ -74,7 +76,7 @@ export const VerticalNav: Component<VerticalNavProps> = (props) => {
                         const renderLink =
                             local.renderLink ?? defaultRenderLink;
                         return renderLink({
-                            href: `${local.baseHref}/${item.id}`,
+                            href: item.href ?? `${local.baseHref}/${item.id}`,
                             class: linkClass,
                             children: (
                                 <>
