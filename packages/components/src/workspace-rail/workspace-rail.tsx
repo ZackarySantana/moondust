@@ -1,6 +1,7 @@
 import ChevronRight from "lucide-solid/icons/chevron-right";
 import {
     Show,
+    createEffect,
     splitProps,
     type Component,
     type JSX,
@@ -211,6 +212,12 @@ export interface WorkspaceRailThreadProps extends Omit<
     }) => JSX.Element;
     /** Double-click handler — typically for inline rename. */
     onDblClick?: (e: MouseEvent) => void;
+    /** Inline rename: controlled input replaces the title. Renders as a non-link row. */
+    renaming?: boolean;
+    renameDraft?: string;
+    onRenameDraft?: (value: string) => void;
+    onRenameCommit?: () => void;
+    onRenameCancel?: () => void;
 }
 
 /**
@@ -231,6 +238,11 @@ export const WorkspaceRailThread: Component<WorkspaceRailThreadProps> = (
         "renderLink",
         "onDblClick",
         "onClick",
+        "renaming",
+        "renameDraft",
+        "onRenameDraft",
+        "onRenameCommit",
+        "onRenameCancel",
     ]);
     const phase = (): ThreadStreamPhase => local.phase ?? "idle";
     const showDot = () => phase() !== "idle";
@@ -241,6 +253,59 @@ export const WorkspaceRailThread: Component<WorkspaceRailThreadProps> = (
             ? "bg-void-800 text-void-50"
             : "text-void-400 hover:bg-void-800/60 hover:text-void-100",
         local.class,
+    );
+
+    let renameInput: HTMLInputElement | undefined;
+    let skipRenameBlurCommit = false;
+
+    createEffect(() => {
+        if (local.renaming && renameInput) {
+            renameInput.focus();
+            renameInput.select();
+        }
+    });
+
+    const titleEl = (
+        <Show
+            when={local.renaming}
+            fallback={
+                <span class="min-w-0 flex-1 truncate">{local.title}</span>
+            }
+        >
+            <input
+                ref={(el) => {
+                    renameInput = el;
+                }}
+                type="text"
+                class="h-5 min-w-0 flex-1 rounded border border-starlight-400/40 bg-void-950 px-1 font-sans text-[12.5px] text-void-50 outline-none focus-visible:border-starlight-300/70 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-starlight-400/50"
+                value={local.renameDraft ?? ""}
+                placeholder="Untitled thread"
+                aria-label="Thread name"
+                onInput={(e) =>
+                    local.onRenameDraft?.(
+                        (e.currentTarget as HTMLInputElement).value,
+                    )
+                }
+                onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        local.onRenameCommit?.();
+                    } else if (e.key === "Escape") {
+                        e.preventDefault();
+                        skipRenameBlurCommit = true;
+                        local.onRenameCancel?.();
+                        queueMicrotask(() => {
+                            skipRenameBlurCommit = false;
+                        });
+                    }
+                }}
+                onBlur={() => {
+                    if (!skipRenameBlurCommit) local.onRenameCommit?.();
+                }}
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+            />
+        </Show>
     );
 
     const inner = (
@@ -260,7 +325,7 @@ export const WorkspaceRailThread: Component<WorkspaceRailThreadProps> = (
                     />
                 </Show>
             </span>
-            <span class="min-w-0 flex-1 truncate">{local.title}</span>
+            {titleEl}
             <Show when={local.shortcut && local.shortcut.length > 0}>
                 <HoverReveal class="shrink-0">
                     <KbdHint combo={local.shortcut as readonly string[]} />
@@ -273,6 +338,14 @@ export const WorkspaceRailThread: Component<WorkspaceRailThreadProps> = (
             </Show>
         </>
     );
+
+    if (local.renaming) {
+        return (
+            <div class={cn(linkClass, "cursor-default hover:bg-void-800/30")}>
+                {inner}
+            </div>
+        );
+    }
 
     if (local.renderLink) {
         return local.renderLink({

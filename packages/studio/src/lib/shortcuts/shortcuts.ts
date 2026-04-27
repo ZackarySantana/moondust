@@ -178,6 +178,19 @@ export const SHORTCUT_ACTIONS: readonly ShortcutActionDef[] = [
         tier: "navigational",
         view: "git",
     },
+    {
+        id: "view_cycle_next",
+        label: "Next thread view",
+        description:
+            "Switch to the next thread tab (Chat, Diff, Files, …); wraps around",
+        tier: "navigational",
+    },
+    {
+        id: "view_cycle_prev",
+        label: "Previous thread view",
+        description: "Switch to the previous thread tab; wraps around",
+        tier: "navigational",
+    },
 
     {
         id: "go_thread_slot_1",
@@ -260,6 +273,8 @@ export type ShortcutActionId =
     | "view_review"
     | "view_pr"
     | "view_git"
+    | "view_cycle_next"
+    | "view_cycle_prev"
     | "go_thread_slot_1"
     | "go_thread_slot_2"
     | "go_thread_slot_3"
@@ -290,6 +305,8 @@ const MAC_DEFAULTS: Record<ShortcutActionId, string> = {
     view_review: "Meta+7",
     view_pr: "Meta+8",
     view_git: "Meta+9",
+    view_cycle_next: "Ctrl+Tab",
+    view_cycle_prev: "Ctrl+Shift+Tab",
     go_thread_slot_1: "Meta+Alt+1",
     go_thread_slot_2: "Meta+Alt+2",
     go_thread_slot_3: "Meta+Alt+3",
@@ -320,6 +337,8 @@ const OTHER_DEFAULTS: Record<ShortcutActionId, string> = {
     view_review: "Ctrl+7",
     view_pr: "Ctrl+8",
     view_git: "Ctrl+9",
+    view_cycle_next: "Ctrl+Tab",
+    view_cycle_prev: "Ctrl+Shift+Tab",
     go_thread_slot_1: "Ctrl+Alt+1",
     go_thread_slot_2: "Ctrl+Alt+2",
     go_thread_slot_3: "Ctrl+Alt+3",

@@ -63,6 +63,20 @@ export const AppShell: Component<RouteSectionProps> = (props) => {
         onCleanup(onAction(VIEW_TO_ACTION[view], () => ui.setActiveView(view)));
     }
 
+    const THREAD_PATH = /^\/w\/[^/]+\/t\/[^/]+$/;
+
+    function cycleThreadView(delta: 1 | -1) {
+        if (!THREAD_PATH.test(location.pathname)) return;
+        const order = THREAD_VIEW_ORDER;
+        const idx = order.indexOf(ui.activeView());
+        const i = idx >= 0 ? idx : 0;
+        const next = (i + delta + order.length) % order.length;
+        ui.setActiveView(order[next]!);
+    }
+
+    onCleanup(onAction("view_cycle_next", () => cycleThreadView(1)));
+    onCleanup(onAction("view_cycle_prev", () => cycleThreadView(-1)));
+
     const SLOT_ACTIONS: ShortcutActionId[] = [
         "go_thread_slot_1",
         "go_thread_slot_2",

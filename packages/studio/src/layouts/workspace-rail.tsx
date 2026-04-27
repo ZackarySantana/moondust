@@ -25,9 +25,11 @@ import {
     type Component,
 } from "solid-js";
 import { useQueryClient } from "@tanstack/solid-query";
+import { queryKeys } from "@/lib/query-client";
 import { type ShortcutActionId, useShortcuts } from "@/lib/shortcuts";
 import { useToast } from "@/lib/toast";
 import { useUIState } from "@/lib/ui-state";
+import { RenameThread } from "@/lib/wails";
 import {
     createThreadInWorkspace,
     paths,
@@ -35,6 +37,7 @@ import {
     railThreadSlotIndex,
     sortThreadsForWorkspace,
     sortWorkspacesByLatestThread,
+    type Thread,
     useThreadsQuery,
     useWorkspacesQuery,
 } from "@/lib/workspace";
@@ -73,6 +76,10 @@ export const StudioWorkspaceRail: Component = () => {
     const toast = useToast();
 
     const [tick, setTick] = createSignal(0);
+    const [renamingThreadId, setRenamingThreadId] = createSignal<string | null>(
+        null,
+    );
+    const [renameDraft, setRenameDraft] = createSignal("");
     const timer = setInterval(() => setTick((n) => n + 1), TICK_INTERVAL_MS);
     onCleanup(() => clearInterval(timer));
 
@@ -125,6 +132,84 @@ export const StudioWorkspaceRail: Component = () => {
         void threadId;
         return "idle";
     };
+
+    function startRenameThread(thread: Thread) {
+        setRenamingThreadId(thread.ID);
+        setRenameDraft(thread.Title);
+    }
+
+    function cancelRenameThread() {
+        setRenamingThreadId(null);
+    }
+
+    async function commitRenameThread() {
+        const id = renamingThreadId();
+        if (!id) return;
+        const thread = threads().find((t) => t.ID === id);
+        if (!thread) {
+            setRenamingThreadId(null);
+            return;
+        }
+        const prev = thread.Title;
+        const next = renameDraft().trim();
+        setRenamingThreadId(null);
+        if (next === prev) return;
+        try {
+            await RenameThread(id, next);
+            await queryClient.invalidateQueries({
+                queryKey: queryKeys.threads.all,
+            });
+            await queryClient.invalidateQueries({
+                queryKey: queryKeys.threads.detail(id),
+            });
+        } catch (err) {
+            toast.showToast({
+                title: "Could not rename thread",
+                body: errMsg(err),
+            });
+        }
+    }
+
+    function railThreadRow(
+        workspaceId: string,
+        thread: Thread,
+        slotShortcut: readonly string[] | undefined,
+    ) {
+        const renaming = () => renamingThreadId() === thread.ID;
+        return (
+            <WorkspaceRailThread
+                href={paths.thread(workspaceId, thread.ID)}
+                title={thread.Title || "Untitled thread"}
+                timeLabel={
+                    (tick(),
+                    relativeTime(thread.UpdatedAt || thread.CreatedAt))
+                }
+                phase={phaseFor(thread.ID)}
+                shortcut={slotShortcut}
+                active={params.threadId === thread.ID}
+                renaming={renaming()}
+                renameDraft={renameDraft()}
+                onRenameDraft={setRenameDraft}
+                onRenameCommit={() => void commitRenameThread()}
+                onRenameCancel={cancelRenameThread}
+                onDblClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    startRenameThread(thread);
+                }}
+                renderLink={(p) => (
+                    <A
+                        href={p.href}
+                        class={p.class}
+                        activeClass="bg-void-800 text-void-50"
+                        onDblClick={p.onDblClick}
+                    >
+                        {p.children}
+                    </A>
+                )}
+            />
+        );
+    }
 
     return (
         <WorkspaceRail
@@ -179,33 +264,13 @@ export const StudioWorkspaceRail: Component = () => {
             <Show when={recentThreads().length > 0}>
                 <WorkspaceRailSection label="Recent">
                     <For each={recentThreads()}>
-                        {(entry) => (
-                            <WorkspaceRailThread
-                                href={paths.thread(
-                                    entry.workspaceId,
-                                    entry.thread.ID,
-                                )}
-                                title={entry.thread.Title || "Untitled thread"}
-                                timeLabel={
-                                    (tick(),
-                                    relativeTime(
-                                        entry.thread.UpdatedAt ||
-                                            entry.thread.CreatedAt,
-                                    ))
-                                }
-                                phase={phaseFor(entry.thread.ID)}
-                                active={params.threadId === entry.thread.ID}
-                                renderLink={(p) => (
-                                    <A
-                                        href={p.href}
-                                        class={p.class}
-                                        activeClass="bg-void-800 text-void-50"
-                                    >
-                                        {p.children}
-                                    </A>
-                                )}
-                            />
-                        )}
+                        {(entry) =>
+                            railThreadRow(
+                                entry.workspaceId,
+                                entry.thread,
+                                undefined,
+                            )
+                        }
                     </For>
                 </WorkspaceRailSection>
             </Show>
@@ -318,39 +383,10 @@ export const StudioWorkspaceRail: Component = () => {
                                                       SLOT_ACTION_IDS[slot],
                                                   )
                                                 : undefined;
-                                        return (
-                                            <WorkspaceRailThread
-                                                href={paths.thread(
-                                                    workspace.ID,
-                                                    thread.ID,
-                                                )}
-                                                title={
-                                                    thread.Title ||
-                                                    "Untitled thread"
-                                                }
-                                                timeLabel={
-                                                    (tick(),
-                                                    relativeTime(
-                                                        thread.UpdatedAt ||
-                                                            thread.CreatedAt,
-                                                    ))
-                                                }
-                                                phase={phaseFor(thread.ID)}
-                                                shortcut={slotShortcut}
-                                                active={
-                                                    params.threadId ===
-                                                    thread.ID
-                                                }
-                                                renderLink={(p) => (
-                                                    <A
-                                                        href={p.href}
-                                                        class={p.class}
-                                                        activeClass="bg-void-800 text-void-50"
-                                                    >
-                                                        {p.children}
-                                                    </A>
-                                                )}
-                                            />
+                                        return railThreadRow(
+                                            workspace.ID,
+                                            thread,
+                                            slotShortcut,
                                         );
                                     }}
                                 </For>
