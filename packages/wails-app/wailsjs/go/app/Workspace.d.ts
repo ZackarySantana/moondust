@@ -14,3 +14,5 @@ export function List():Promise<Array<store.Workspace>>;
 export function SelectWorkspaceFolder():Promise<string>;
 
 export function SetContext(arg1:context.Context):Promise<void>;
+
+export function UpdateDetails(arg1:string,arg2:string,arg3:string):Promise<void>;

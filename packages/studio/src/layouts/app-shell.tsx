@@ -1,4 +1,8 @@
-import { useNavigate, type RouteSectionProps } from "@solidjs/router";
+import {
+    useLocation,
+    useNavigate,
+    type RouteSectionProps,
+} from "@solidjs/router";
 import {
     AppShellFrame,
     ContextRailColumn,
@@ -38,6 +42,7 @@ export const AppShell: Component<RouteSectionProps> = (props) => {
     const ui = useUIState();
     const { onAction } = useShortcuts();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const workspacesQuery = useWorkspacesQuery();
     const threadsQuery = useThreadsQuery();
@@ -89,6 +94,13 @@ export const AppShell: Component<RouteSectionProps> = (props) => {
         onAction("open_global_settings", () =>
             navigate(paths.globalSettings()),
         ),
+    );
+    onCleanup(
+        onAction("open_workspace_settings", () => {
+            const m = location.pathname.match(/^\/w\/([^/]+)/);
+            const wid = m?.[1];
+            if (wid) navigate(paths.workspaceSettings(wid));
+        }),
     );
     onCleanup(onAction("open_command_palette", ui.openCommandPalette));
     onCleanup(onAction("new_workspace", ui.openNewWorkspaceDialog));

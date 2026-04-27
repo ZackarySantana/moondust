@@ -48,3 +48,7 @@ func (w *Workspace) CreateWorkspaceFromFolder(directory, name string) (*store.Wo
 func (w *Workspace) CreateWorkspaceFromGit(remoteURL, name string) (*store.Workspace, error) {
 	return w.service.CreateFromGit(w.ctx, remoteURL, name)
 }
+
+func (w *Workspace) UpdateDetails(id, name, baseBranch string) error {
+	return w.service.UpdateDetails(w.ctx, id, name, baseBranch)
+}

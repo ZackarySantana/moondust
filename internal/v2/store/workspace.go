@@ -11,7 +11,7 @@ type Workspace struct {
 	// Directory is the absolute filesystem path to the workspace root.
 	Directory string
 
-	// Branch is the currently checked-out git branch, if known.
+	// Branch is the git branch new worktrees are created from (integration / default base).
 	Branch string
 
 	// CreatedAt and UpdatedAt are assigned by the store implementation on Put and Update; callers should leave them zero.

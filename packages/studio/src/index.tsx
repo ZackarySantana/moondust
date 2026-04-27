@@ -8,6 +8,7 @@ import { ProvidersLayout } from "@/layouts/providers";
 import { HomePage } from "@/pages/home";
 import { ThreadPage } from "@/pages/thread";
 import { WorkspacePage } from "@/pages/workspace";
+import { WorkspaceSettingsPage } from "@/pages/workspace-settings";
 
 installWailsDevMock();
 
@@ -20,12 +21,16 @@ render(
                     component={HomePage}
                 />
                 <Route
-                    path="/w/:workspaceId"
-                    component={WorkspacePage}
-                />
-                <Route
                     path="/w/:workspaceId/t/:threadId"
                     component={ThreadPage}
+                />
+                <Route
+                    path="/w/:workspaceId/settings"
+                    component={WorkspaceSettingsPage}
+                />
+                <Route
+                    path="/w/:workspaceId"
+                    component={WorkspacePage}
                 />
                 <Route
                     path="/settings"

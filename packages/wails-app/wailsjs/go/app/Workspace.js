@@ -25,3 +25,7 @@ export function SelectWorkspaceFolder() {
 export function SetContext(arg1) {
   return window['go']['app']['Workspace']['SetContext'](arg1);
 }
+
+export function UpdateDetails(arg1, arg2, arg3) {
+  return window['go']['app']['Workspace']['UpdateDetails'](arg1, arg2, arg3);
+}

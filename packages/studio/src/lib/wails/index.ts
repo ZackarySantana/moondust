@@ -14,6 +14,7 @@ export {
     Get as GetWorkspace,
     List as ListWorkspaces,
     SelectWorkspaceFolder,
+    UpdateDetails as UpdateWorkspaceDetails,
 } from "@wails/go/app/Workspace";
 export {
     Create as CreateThread,

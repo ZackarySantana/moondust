@@ -67,7 +67,17 @@ export const StudioTitleBar: Component = () => {
             });
         }
 
-        if (wid && tid) {
+        if (
+            wid &&
+            location.pathname.endsWith("/settings") &&
+            !location.pathname.includes("/t/")
+        ) {
+            segs.push({
+                id: "workspace-settings",
+                label: "Settings",
+                href: paths.workspaceSettings(wid),
+            });
+        } else if (wid && tid) {
             segs.push({
                 id: "thread",
                 label: threadQuery.data?.Title || "Thread",

@@ -192,13 +192,27 @@ const WorkspaceMock = {
         WORKSPACES.push(ws);
         return ws;
     },
+    UpdateDetails: async (
+        id: string,
+        name: string,
+        baseBranch: string,
+    ): Promise<void> => {
+        const wid = id.trim();
+        const n = name.trim();
+        const b = baseBranch.trim();
+        if (!wid) throw new Error("workspace id is required");
+        if (!n) throw new Error("name is required");
+        if (!b) throw new Error("base branch is required");
+        const ws = WORKSPACES.find((w) => w.ID === wid);
+        if (!ws) throw new Error("workspace not found");
+        ws.Name = n;
+        ws.Branch = b;
+        ws.UpdatedAt = new Date().toISOString();
+    },
 };
 
 const ThreadMock = {
-    Create: async (
-        workspaceID: string,
-        title: string,
-    ): Promise<MockThread> => {
+    Create: async (workspaceID: string, title: string): Promise<MockThread> => {
         const wid = workspaceID.trim();
         if (!wid) {
             throw new Error("workspace is required");
