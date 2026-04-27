@@ -16,7 +16,6 @@ import {
 import Plus from "lucide-solid/icons/plus";
 import Settings from "lucide-solid/icons/settings";
 import Moon from "lucide-solid/icons/moon";
-import FolderPlus from "lucide-solid/icons/folder-plus";
 import {
     createMemo,
     createSignal,
@@ -174,19 +173,6 @@ export const StudioWorkspaceRail: Component = () => {
                             />
                         </span>
                     </A>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        class="!h-7 !px-2 justify-start gap-2 text-[12.5px]"
-                        onClick={newWorkspace}
-                    >
-                        <FolderPlus
-                            class="size-3.5"
-                            stroke-width={1.75}
-                        />
-                        <span class="flex-1 text-left">New workspace</span>
-                        <KbdHint combo={formatCaps("new_workspace")} />
-                    </Button>
                 </div>
             }
         >

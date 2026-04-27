@@ -9,6 +9,7 @@ import {
     DEFAULT_SHORTCUTS,
     formatCombo,
     matchesCombo,
+    parseCombo,
     SHORTCUT_ACTIONS,
     comboToCaps,
     type ShortcutActionDef,
@@ -94,11 +95,16 @@ export const ShortcutProvider: ParentComponent<ShortcutProviderProps> = (
             if (!combo) continue;
             if (!matchesCombo(e, combo)) continue;
 
-            // Composer-tier shortcuts are only allowed *inside* inputs;
-            // everything else must be outside one (we don't want ⌘1 to
-            // hijack the composer).
-            if (action.tier === COMPOSER_TIER && !inInput) continue;
-            if (action.tier !== COMPOSER_TIER && inInput) continue;
+            // Composer-tier shortcuts are only allowed *inside* inputs.
+            if (action.tier === COMPOSER_TIER) {
+                if (!inInput) continue;
+            } else if (inInput) {
+                // While typing, still honor chords that use Ctrl/Meta so hub,
+                // view switching, and rail navigation work from the composer.
+                // Bare shortcuts (e.g. Shift+/?, F6) stay with the field.
+                const parsed = parseCombo(combo);
+                if (!parsed.ctrl && !parsed.meta) continue;
+            }
 
             const list = handlers.get(action.id);
             if (!list || list.length === 0) continue;
