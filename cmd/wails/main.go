@@ -44,15 +44,15 @@ func Main(assets embed.FS) {
 		},
 		BackgroundColour: &options.RGBA{R: 5, G: 6, B: 16, A: 1},
 		OnStartup: func(ctx context.Context) {
+			slog.InfoContext(ctx, "startup started...")
+			defer slog.InfoContext(ctx, "startup completed...")
 			workspaceApp.SetContext(ctx)
 			threadApp.SetContext(ctx)
 			settingsApp.SetContext(ctx)
-			slog.InfoContext(ctx, "startup started...")
-			slog.InfoContext(ctx, "startup completed...")
 		},
 		OnShutdown: func(ctx context.Context) {
 			slog.InfoContext(ctx, "shutdown started...")
-			slog.InfoContext(ctx, "shutdown completed...")
+			defer slog.InfoContext(ctx, "shutdown completed...")
 		},
 		Bind: []interface{}{
 			workspaceApp,
