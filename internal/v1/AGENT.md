@@ -18,7 +18,7 @@ For comment style on new or heavily edited exported APIs, see [`.cursor/skills/g
 ## Commands
 
 - `go test ./internal/v1/...` or `go test ./...` from the repository root.
-- Broader workflows: `make dev` (Wails + frontend) is defined in the root [`Makefile`](../../Makefile).
+- Broader workflows: `task dev` (Sash + Studio) uses the root [`Taskfile.yml`](../../Taskfile.yml); the desktop entry is [`main.go`](../../main.go) + [`sash.json`](../../sash.json).
 
 ## Don’t
 

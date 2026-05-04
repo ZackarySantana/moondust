@@ -1,0 +1,59 @@
+version: "3"
+
+tasks:
+    default:
+        desc: List available tasks
+        cmds:
+            - task --list
+
+    frontend:
+        desc: bun install workspaces and build embedded studio UI (packages/studio/dist)
+        dir: packages
+        cmds:
+            - bun install
+            - bun run --filter @moondust/studio build
+
+    dev:
+        desc: sash dev — Vite HMR plus Go sash API (needs sash CLI on PATH)
+        cmds:
+            - PATH="$(go env GOPATH)/bin:$PATH" sash dev
+
+    dist-linux-amd64:
+        desc: RELEASE_LABEL optional env — linux/amd64 binary to ./bin/
+        deps: [frontend]
+        cmds:
+            - |-
+                test -z "$RELEASE_LABEL" || export GOFLAGS="-ldflags=-X moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_LABEL"
+                PATH="$(go env GOPATH)/bin:$PATH" GOOS=linux GOARCH=amd64 sash build
+
+    dist-linux-arm64:
+        desc: RELEASE_LABEL optional env — linux/arm64 binary to ./bin/
+        deps: [frontend]
+        cmds:
+            - |-
+                test -z "$RELEASE_LABEL" || export GOFLAGS="-ldflags=-X moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_LABEL"
+                PATH="$(go env GOPATH)/bin:$PATH" GOOS=linux GOARCH=arm64 sash build
+
+    dist-windows-amd64:
+        desc: RELEASE_LABEL optional env — windows/amd64 binary to ./bin/
+        deps: [frontend]
+        cmds:
+            - |-
+                test -z "$RELEASE_LABEL" || export GOFLAGS="-ldflags=-X moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_LABEL"
+                PATH="$(go env GOPATH)/bin:$PATH" GOOS=windows GOARCH=amd64 sash build
+
+    dist-windows-arm64:
+        desc: RELEASE_LABEL optional env — windows/arm64 binary to ./bin/
+        deps: [frontend]
+        cmds:
+            - |-
+                test -z "$RELEASE_LABEL" || export GOFLAGS="-ldflags=-X moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_LABEL"
+                PATH="$(go env GOPATH)/bin:$PATH" GOOS=windows GOARCH=arm64 sash build
+
+    dist-darwin-arm64:
+        desc: RELEASE_LABEL optional env — darwin/arm64 binary to ./bin/
+        deps: [frontend]
+        cmds:
+            - |-
+                test -z "$RELEASE_LABEL" || export GOFLAGS="-ldflags=-X moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_LABEL"
+                PATH="$(go env GOPATH)/bin:$PATH" GOOS=darwin GOARCH=arm64 sash build

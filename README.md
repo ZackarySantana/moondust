@@ -32,20 +32,12 @@ User docs (providers, Git sidebar, installation) live at **[docs.moondust.pro](h
 
 ## Linux
 
-The desktop app links against **WebKit2GTK** at runtime. Install it first (names vary by distro). On Debian/Ubuntu:
+Released binaries ship as a normal **executable** plus embedded static UI. **[Sash](https://github.com/zackarysantana/sash)** serves the bundle on **`127.0.0.1`** and launches your **default browser** as the desktop surface (no bundled WebKit / GTK dependency for that shell).
 
-```bash
-sudo apt update
-sudo apt install libwebkit2gtk-4.1-0
-```
-
-If that package is missing, search for the one that provides `libwebkit2gtk-4.1.so.0` (e.g. `apt-cache search libwebkit2gtk`).
+If **`zenity`** (or your OS’s dialogs) isn’t installed, **Pick folder** dialogs from the UI may misbehave; install your distro’s `zenity` package if prompted.
 
 ## Desktop app icon (developers)
 
-Wails bundles the window and OS icon from **`build/appicon.png`** (square **PNG**, typically **1024×1024** with transparency). Export it from **`assets/brand/icon-app.svg`** (or the logo mark) in Figma, Inkscape, or ImageMagick, then run **`wails build`**.
+Use **`build/appicon.png`** (square **PNG**, typically **1024×1024** with transparency) as the raster app icon referenced by packaging metadata under **`build/`**. Export from **`assets/brand/icon-app.svg`** (or the logo mark).
 
-- Put the file at **`build/appicon.png`** (repository root `build/` folder).
-- Windows also uses **`build/windows/icon.ico`**; Wails can generate it from `appicon.png` during build when that file is absent. To supply your own `.ico`, replace the generated file and keep sizes common for the taskbar (16–256px).
-
-If `appicon.png` is missing, Wails creates a default placeholder on first build.
+- **`build/windows/icon.ico`** remains optional for downstream Windows tooling (common sizes **16–256px** for taskbars).

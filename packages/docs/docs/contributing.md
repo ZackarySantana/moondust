@@ -8,43 +8,50 @@ Moondust is open source. Bug reports, doc fixes, and code contributions are welc
 
 ## Repository layout
 
-| Path                                                                            | Role                                                           |
-| ------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| [`frontend/`](https://github.com/zackarysantana/moondust/tree/main/frontend)    | SolidJS + Vite UI, Wails bindings under `wailsjs/`.            |
-| [`internal/`](https://github.com/zackarysantana/moondust/tree/main/internal)    | Go services: app API, storage, OpenRouter, git, terminal, etc. |
-| [`main.go`](https://github.com/zackarysantana/moondust/blob/main/main.go)       | Wails entrypoint.                                              |
-| [`wails.json`](https://github.com/zackarysantana/moondust/blob/main/wails.json) | Wails project config (frontend install/build commands).        |
-| [`Makefile`](https://github.com/zackarysantana/moondust/blob/main/Makefile)     | Common **dev** and **release** build targets.                  |
+| Path                                                                                       | Role                                                                                                                                        |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`packages/studio/`](https://github.com/zackarysantana/moondust/tree/main/packages/studio) | Current desktop UI (SolidJS + Vite); embedded by the Go shell and served locally by Sash.                                                   |
+| [`frontend/`](https://github.com/zackarysantana/moondust/tree/main/frontend)               | Older Solid app + Wails-generated `wailsjs/` (not used by [`main.go`](https://github.com/zackarysantana/moondust/blob/main/main.go) today). |
+| [`internal/`](https://github.com/zackarysantana/moondust/tree/main/internal)               | Go services: app API, storage, git, terminal, legacy v1 stacks, etc.                                                                        |
+| [`main.go`](https://github.com/zackarysantana/moondust/blob/main/main.go)                  | Sash entry (`sash.Run`); embeds `packages/studio/dist`.                                                                                     |
+| [`sash.json`](https://github.com/zackarysantana/moondust/blob/main/sash.json)              | Sash project config (frontend install/build/dev, codegen for RPC bindings).                                                                 |
+| [`Taskfile.yml`](https://github.com/zackarysantana/moondust/blob/main/Taskfile.yml)        | Repo tasks: dev, frontend build, cross-compile `dist-*` (same flows as CI).                                                                 |
 
 ## Prerequisites
 
 - **Go** (see `go.mod` for the toolchain line used by the module).
-- **Wails v2** CLI: [install](https://wails.io/docs/gettingstarted/installation) for your OS.
-- **Bun** (or Node + npm): the repo pins Bun for the frontend and docs; `wails.json` uses `bun` for `frontend:install` and `frontend:build`.
-
-On **Linux**, WebKit2GTK is required at runtime for the desktop shell (same as [installation](getting-started/installation#linux)).
+- **[Sash](https://github.com/zackarysantana/sash)** CLI (`go install github.com/zackarysantana/sash/cmd/sash@latest`).
+- **[Task](https://taskfile.dev/install/)** (optional; root `task` shortcuts mirror CI).
+- **Bun**: the workspace uses Bun under `packages/` (see [`sash.json`](https://github.com/zackarysantana/moondust/blob/main/sash.json) `frontend.install` / `frontend.build` / `frontend.dev`).
 
 ## Run from source (development)
 
-From the repository root:
+From the repository root (with **`sash` on `PATH`**; Task prepends **`$(go env GOPATH)/bin`** in the Taskfile):
 
 ```bash
-make dev
+task dev
 ```
 
-This runs `wails dev` with the WebKit tag used by the project. Hot reload applies to the frontend as configured by Wails.
+(or `PATH="$(go env GOPATH)/bin:$PATH" sash dev`)
 
-To build only the frontend assets:
+This builds/starts Studio via **Vite**, runs the Go API on the loopback listener from **`sash.json`**, and opens the app URL in your default browser.
+
+To build **only** the bundled UI (what `embed` consumes):
 
 ```bash
-make frontend
+task frontend
 ```
 
-That runs `bun install` and `bun run build` under `frontend/`.
+That runs **`bun install`** and **`bun run --filter @moondust/studio build`** under `packages/` (matching `sash build` frontend steps).
 
 ## Production-like binary
 
-Release-style targets are in the `Makefile` (e.g. `dist-linux-amd64`, `dist-darwin-arm64`). They build the frontend then invoke `wails build` for the requested platform. See the Makefile comments and CI workflows for details.
+Cross-platform **`dist-*`** tasks live in the root **`Taskfile.yml`** (aligned with **[`.github/workflows/release.yml`](https://github.com/zackarysantana/moondust/blob/main/.github/workflows/release.yml)**):
+
+```bash
+task dist-linux-amd64
+RELEASE_LABEL=v1.2.3 task dist-darwin-arm64   # embeds semver into internal/v2/buildinfo
+```
 
 ## Documentation site
 
