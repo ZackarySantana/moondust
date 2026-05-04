@@ -24,7 +24,7 @@ jobs:
                   RELEASE_TAG: ${{ github.ref_name }}
               run: |
                   export PATH="$(go env GOPATH)/bin:$PATH"
-                  export GOFLAGS="-ldflags=-X moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_TAG"
+                  export GOFLAGS="-ldflags=-X=moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_TAG"
                   sash build
             - name: Pack
               run: |
@@ -50,7 +50,7 @@ jobs:
                   RELEASE_TAG: ${{ github.ref_name }}
               run: |
                   export PATH="$(go env GOPATH)/bin:$PATH"
-                  export GOFLAGS="-ldflags=-X moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_TAG"
+                  export GOFLAGS="-ldflags=-X=moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_TAG"
                   sash build
             - name: Pack
               run: |
@@ -77,7 +77,7 @@ jobs:
                   RELEASE_TAG: ${{ github.ref_name }}
               run: |
                   $env:PATH += ";" + (go env GOPATH) + "\bin"
-                  $env:GOFLAGS = "-ldflags=-X moondust/internal/v2/buildinfo.DisplayLabel=$env:RELEASE_TAG"
+                  $env:GOFLAGS = "-ldflags=-X=moondust/internal/v2/buildinfo.DisplayLabel=$env:RELEASE_TAG"
                   sash build
             - name: Pack
               shell: pwsh
@@ -108,7 +108,7 @@ jobs:
                   RELEASE_TAG: ${{ github.ref_name }}
               run: |
                   $env:PATH += ";" + (go env GOPATH) + "\bin"
-                  $env:GOFLAGS = "-ldflags=-X moondust/internal/v2/buildinfo.DisplayLabel=$env:RELEASE_TAG"
+                  $env:GOFLAGS = "-ldflags=-X=moondust/internal/v2/buildinfo.DisplayLabel=$env:RELEASE_TAG"
                   sash build
             - name: Pack
               shell: pwsh
@@ -138,7 +138,7 @@ jobs:
                   RELEASE_TAG: ${{ github.ref_name }}
               run: |
                   export PATH="$(go env GOPATH)/bin:$PATH"
-                  export GOFLAGS="-ldflags=-X moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_TAG"
+                  export GOFLAGS="-ldflags=-X=moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_TAG"
                   sash build
             - name: Pack
               run: |

@@ -23,7 +23,7 @@ tasks:
         deps: [frontend]
         cmds:
             - |-
-                test -z "$RELEASE_LABEL" || export GOFLAGS="-ldflags=-X moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_LABEL"
+                test -z "$RELEASE_LABEL" || export GOFLAGS="-ldflags=-X=moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_LABEL"
                 PATH="$(go env GOPATH)/bin:$PATH" GOOS=linux GOARCH=amd64 sash build
 
     dist-linux-arm64:
@@ -31,7 +31,7 @@ tasks:
         deps: [frontend]
         cmds:
             - |-
-                test -z "$RELEASE_LABEL" || export GOFLAGS="-ldflags=-X moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_LABEL"
+                test -z "$RELEASE_LABEL" || export GOFLAGS="-ldflags=-X=moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_LABEL"
                 PATH="$(go env GOPATH)/bin:$PATH" GOOS=linux GOARCH=arm64 sash build
 
     dist-windows-amd64:
@@ -39,7 +39,7 @@ tasks:
         deps: [frontend]
         cmds:
             - |-
-                test -z "$RELEASE_LABEL" || export GOFLAGS="-ldflags=-X moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_LABEL"
+                test -z "$RELEASE_LABEL" || export GOFLAGS="-ldflags=-X=moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_LABEL"
                 PATH="$(go env GOPATH)/bin:$PATH" GOOS=windows GOARCH=amd64 sash build
 
     dist-windows-arm64:
@@ -47,7 +47,7 @@ tasks:
         deps: [frontend]
         cmds:
             - |-
-                test -z "$RELEASE_LABEL" || export GOFLAGS="-ldflags=-X moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_LABEL"
+                test -z "$RELEASE_LABEL" || export GOFLAGS="-ldflags=-X=moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_LABEL"
                 PATH="$(go env GOPATH)/bin:$PATH" GOOS=windows GOARCH=arm64 sash build
 
     dist-darwin-arm64:
@@ -55,5 +55,5 @@ tasks:
         deps: [frontend]
         cmds:
             - |-
-                test -z "$RELEASE_LABEL" || export GOFLAGS="-ldflags=-X moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_LABEL"
+                test -z "$RELEASE_LABEL" || export GOFLAGS="-ldflags=-X=moondust/internal/v2/buildinfo.DisplayLabel=$RELEASE_LABEL"
                 PATH="$(go env GOPATH)/bin:$PATH" GOOS=darwin GOARCH=arm64 sash build
