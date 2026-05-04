@@ -18,7 +18,7 @@ import {
     CreateWorkspaceFromFolder,
     CreateWorkspaceFromGit,
     SelectWorkspaceFolder,
-} from "@/lib/wails";
+} from "@/lib/ipc";
 import { invalidateWorkspaces } from "@/lib/query-client";
 import { paths } from "@/lib/workspace";
 import { useToast } from "@/lib/toast";

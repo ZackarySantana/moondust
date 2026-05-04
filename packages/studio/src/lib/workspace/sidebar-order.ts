@@ -2,8 +2,13 @@ import type { Thread, Workspace } from "./queries";
 
 function threadTimestamp(t: Thread): number {
     const u = t.UpdatedAt ?? t.CreatedAt;
-    if (u == null) return 0;
-    const d = typeof u === "string" || u instanceof Date ? new Date(u) : null;
+    if (u == null || u === "") return 0;
+    const d =
+        typeof u === "string"
+            ? new Date(u)
+            : typeof u === "number"
+              ? new Date(u)
+              : null;
     const ms = d && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
     return ms;
 }

@@ -3,7 +3,7 @@ import { Route, Router } from "@solidjs/router";
 import { render } from "solid-js/web";
 import "./style.css";
 import { queryClient } from "@/lib/query-client";
-import { installWailsDevMock } from "@/lib/wails";
+import { installIPCDevMock } from "@/lib/ipc";
 import { ProvidersLayout } from "@/layouts/providers";
 import { HomePage } from "@/pages/home";
 import { ThreadPage } from "@/pages/thread";
@@ -15,7 +15,7 @@ import {
 } from "@/pages/global-settings";
 import { WorkspaceSettingsPage } from "@/pages/workspace-settings";
 
-installWailsDevMock();
+installIPCDevMock();
 
 render(
     () => (

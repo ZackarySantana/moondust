@@ -7,40 +7,29 @@ import (
 )
 
 type Thread struct {
-	ctx context.Context
-
 	service *service.Thread
 }
 
 func NewThread(service *service.Thread) *Thread {
-	return &Thread{
-		ctx:     context.Background(),
-		service: service,
-	}
+	return &Thread{service: service}
 }
 
-func (t *Thread) SetContext(ctx context.Context) {
-	if ctx != nil {
-		t.ctx = ctx
-	}
+func (t *Thread) Get(ctx context.Context, id string) (*store.Thread, error) {
+	return t.service.Get(ctx, id)
 }
 
-func (t *Thread) Get(id string) (*store.Thread, error) {
-	return t.service.Get(t.ctx, id)
+func (t *Thread) ListByWorkspace(ctx context.Context, workspaceID string) ([]*store.Thread, error) {
+	return t.service.ListByWorkspace(ctx, workspaceID)
 }
 
-func (t *Thread) ListByWorkspace(workspaceID string) ([]*store.Thread, error) {
-	return t.service.ListByWorkspace(t.ctx, workspaceID)
+func (t *Thread) List(ctx context.Context) ([]*store.Thread, error) {
+	return t.service.List(ctx)
 }
 
-func (t *Thread) List() ([]*store.Thread, error) {
-	return t.service.List(t.ctx)
+func (t *Thread) Rename(ctx context.Context, id string, title string) error {
+	return t.service.Rename(ctx, id, title)
 }
 
-func (t *Thread) Rename(id string, title string) error {
-	return t.service.Rename(t.ctx, id, title)
-}
-
-func (t *Thread) Create(workspaceID string, title string) (*store.Thread, error) {
-	return t.service.Create(t.ctx, workspaceID, title)
+func (t *Thread) Create(ctx context.Context, workspaceID string, title string) (*store.Thread, error) {
+	return t.service.Create(ctx, workspaceID, title)
 }

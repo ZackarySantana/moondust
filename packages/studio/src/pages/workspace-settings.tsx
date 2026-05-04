@@ -11,7 +11,7 @@ import { useQueryClient } from "@tanstack/solid-query";
 import { createEffect, createSignal, Show, type Component } from "solid-js";
 import { queryKeys } from "@/lib/query-client";
 import { useToast } from "@/lib/toast";
-import { UpdateWorkspaceDetails } from "@/lib/wails";
+import { UpdateWorkspaceDetails } from "@/lib/ipc";
 import { paths, useWorkspaceQuery } from "@/lib/workspace";
 
 function errMsg(e: unknown): string {

@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/solid-query";
 import { invalidateThreads } from "@/lib/query-client";
-import { CreateThread } from "@/lib/wails";
+import { CreateThread } from "@/lib/ipc";
 import { paths } from "./paths";
 import type { Thread } from "./queries";
 

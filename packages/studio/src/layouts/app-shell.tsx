@@ -211,7 +211,7 @@ const BottomDockDefault: Component = () => {
                     <DockEmpty
                         icon={ScrollText}
                         title="Logs are quiet"
-                        copy="Backend events will stream here once the Wails runtime is running."
+                        copy="Backend events will stream here once the Moondust sash server is connected."
                     />
                 </TabsContent>
                 <TabsContent value="agent">

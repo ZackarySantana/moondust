@@ -5,8 +5,7 @@
     "workspaces": [
         "components",
         "docs",
-        "studio",
-        "wails-app"
+        "studio"
     ],
     "dependencies": {
         "clsx": "^2.1.1",

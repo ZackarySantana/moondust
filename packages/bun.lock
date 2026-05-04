@@ -50,7 +50,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@moondust/components": "workspace:*",
-        "@moondust/wails-app": "workspace:*",
         "@solidjs/router": "^0.16.1",
         "@tanstack/solid-query": "^5.99.2",
         "clsx": "^2.1.1",
@@ -60,10 +59,6 @@
       "devDependencies": {
         "vitest": "^4.1.5",
       },
-    },
-    "wails-app": {
-      "name": "@moondust/wails-app",
-      "version": "0.0.0",
     },
   },
   "overrides": {
@@ -597,8 +592,6 @@
     "@moondust/docs": ["@moondust/docs@workspace:docs"],
 
     "@moondust/studio": ["@moondust/studio@workspace:studio"],
-
-    "@moondust/wails-app": ["@moondust/wails-app@workspace:wails-app"],
 
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.1.4", "", { "dependencies": { "@tybys/wasm-util": "^0.10.1" }, "peerDependencies": { "@emnapi/core": "^1.7.1", "@emnapi/runtime": "^1.7.1" } }, "sha512-3NQNNgA1YSlJb/kMH1ildASP9HW7/7kYnRI2szWJaofaS1hWmbGI4H+d3+22aGzXXN9IJ+n+GiFVcGipJP18ow=="],
 

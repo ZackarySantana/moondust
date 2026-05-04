@@ -29,7 +29,7 @@ import {
     type GitSettingsSubsection,
 } from "@/lib/global-settings/sections";
 import { cn } from "@/lib/cn";
-import { GetGlobalSettings, SaveGlobalSettings } from "@/lib/wails";
+import { GetGlobalSettings, SaveGlobalSettings } from "@/lib/ipc";
 import { paths } from "@/lib/workspace";
 
 /** `/settings` → first tab */
@@ -199,264 +199,274 @@ export const GlobalSettingsPage: Component = () => {
                         </VerticalNavRail>
                         <VerticalNavMain>
                             <Switch>
-                            <Match when={view()!.kind === "git"}>
-                                <VerticalNavSplit class="gap-10">
-                                    <VerticalNavRail class="lg:w-44">
-                                        <nav
-                                            class="flex flex-col gap-0.5"
-                                            aria-label="Git settings"
-                                        >
-                                            <A
-                                                href={paths.globalSettingsGit(
-                                                    "worktrees",
-                                                )}
-                                                class={gitNavLinkClass(
-                                                    "worktrees",
-                                                )}
-                                                end
-                                                inactiveClass=""
-                                                activeClass=""
+                                <Match when={view()!.kind === "git"}>
+                                    <VerticalNavSplit class="gap-10">
+                                        <VerticalNavRail class="lg:w-44">
+                                            <nav
+                                                class="flex flex-col gap-0.5"
+                                                aria-label="Git settings"
                                             >
-                                                Worktrees
-                                            </A>
-                                            <A
-                                                href={paths.globalSettingsGit(
-                                                    "authentication",
-                                                )}
-                                                class={gitNavLinkClass(
-                                                    "authentication",
-                                                )}
-                                                end
-                                                inactiveClass=""
-                                                activeClass=""
-                                            >
-                                                Authentication
-                                            </A>
-                                        </nav>
-                                    </VerticalNavRail>
-                                    <VerticalNavMain class="space-y-6">
-                                        <div class="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:justify-end">
-                                            <Show when={saveError()}>
-                                                {(msg) => (
-                                                    <p class="max-w-md text-right text-[13px] text-red-400">
-                                                        {msg()}
-                                                    </p>
-                                                )}
+                                                <A
+                                                    href={paths.globalSettingsGit(
+                                                        "worktrees",
+                                                    )}
+                                                    class={gitNavLinkClass(
+                                                        "worktrees",
+                                                    )}
+                                                    end
+                                                    inactiveClass=""
+                                                    activeClass=""
+                                                >
+                                                    Worktrees
+                                                </A>
+                                                <A
+                                                    href={paths.globalSettingsGit(
+                                                        "authentication",
+                                                    )}
+                                                    class={gitNavLinkClass(
+                                                        "authentication",
+                                                    )}
+                                                    end
+                                                    inactiveClass=""
+                                                    activeClass=""
+                                                >
+                                                    Authentication
+                                                </A>
+                                            </nav>
+                                        </VerticalNavRail>
+                                        <VerticalNavMain class="space-y-6">
+                                            <div class="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:justify-end">
+                                                <Show when={saveError()}>
+                                                    {(msg) => (
+                                                        <p class="max-w-md text-right text-[13px] text-red-400">
+                                                            {msg()}
+                                                        </p>
+                                                    )}
+                                                </Show>
+                                                <SaveButton
+                                                    dirty={gitDirty()}
+                                                    isPending={savePending()}
+                                                    onClick={() =>
+                                                        void saveGitSettings()
+                                                    }
+                                                    disabled={gitFormDisabled()}
+                                                />
+                                            </div>
+                                            <Show when={gitSettings.error}>
+                                                <p class="text-[13px] text-red-400">
+                                                    Could not load Git settings.
+                                                </p>
                                             </Show>
-                                            <SaveButton
-                                                dirty={gitDirty()}
-                                                isPending={savePending()}
-                                                onClick={() =>
-                                                    void saveGitSettings()
-                                                }
-                                                disabled={gitFormDisabled()}
-                                            />
-                                        </div>
-                                        <Show when={gitSettings.error}>
-                                            <p class="text-[13px] text-red-400">
-                                                Could not load Git settings.
-                                            </p>
-                                        </Show>
-                                        <Show
-                                            when={
-                                                gitSettings.loading &&
-                                                activeNavId() === "git"
-                                            }
-                                        >
-                                            <p class="text-[13px] text-void-400">
-                                                Loading…
-                                            </p>
-                                        </Show>
-                                        <Switch>
-                                            <Match
+                                            <Show
                                                 when={
-                                                    view()!.kind === "git" &&
-                                                    view()!.tab === "worktrees"
+                                                    gitSettings.loading &&
+                                                    activeNavId() === "git"
                                                 }
                                             >
-                                                <Section
-                                                    title="Worktrees"
-                                                    description="How new threads use Git worktrees."
+                                                <p class="text-[13px] text-void-400">
+                                                    Loading…
+                                                </p>
+                                            </Show>
+                                            <Switch>
+                                                <Match
+                                                    when={
+                                                        view()!.kind ===
+                                                            "git" &&
+                                                        view()!.tab ===
+                                                            "worktrees"
+                                                    }
                                                 >
-                                                    <div class="grid grid-cols-[11rem_1fr] items-start gap-4">
-                                                        <Label
-                                                            for="gs-git-new-thread-default"
-                                                            class="mb-0 pt-2 text-right text-[13px] text-void-400"
-                                                        >
-                                                            New thread default
-                                                        </Label>
-                                                        <div class="space-y-1">
-                                                            <Select
-                                                                id="gs-git-new-thread-default"
-                                                                value={newThreadWorktree()}
-                                                                disabled={gitFormDisabled()}
-                                                                onChange={(e) =>
-                                                                    setNewThreadWorktree(
-                                                                        e
-                                                                            .currentTarget
-                                                                            .value as
-                                                                            | "always"
-                                                                            | "ask"
-                                                                            | "never",
-                                                                    )
-                                                                }
+                                                    <Section
+                                                        title="Worktrees"
+                                                        description="How new threads use Git worktrees."
+                                                    >
+                                                        <div class="grid grid-cols-[11rem_1fr] items-start gap-4">
+                                                            <Label
+                                                                for="gs-git-new-thread-default"
+                                                                class="mb-0 pt-2 text-right text-[13px] text-void-400"
                                                             >
-                                                                <option value="always">
-                                                                    Always use
-                                                                    worktree
-                                                                </option>
-                                                                <option value="ask">
-                                                                    Ask every
-                                                                    time
-                                                                </option>
-                                                                <option value="never">
-                                                                    Never use
-                                                                    worktree
-                                                                </option>
-                                                            </Select>
+                                                                New thread
+                                                                default
+                                                            </Label>
+                                                            <div class="space-y-1">
+                                                                <Select
+                                                                    id="gs-git-new-thread-default"
+                                                                    value={newThreadWorktree()}
+                                                                    disabled={gitFormDisabled()}
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) =>
+                                                                        setNewThreadWorktree(
+                                                                            e
+                                                                                .currentTarget
+                                                                                .value as
+                                                                                | "always"
+                                                                                | "ask"
+                                                                                | "never",
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <option value="always">
+                                                                        Always
+                                                                        use
+                                                                        worktree
+                                                                    </option>
+                                                                    <option value="ask">
+                                                                        Ask
+                                                                        every
+                                                                        time
+                                                                    </option>
+                                                                    <option value="never">
+                                                                        Never
+                                                                        use
+                                                                        worktree
+                                                                    </option>
+                                                                </Select>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </Section>
-                                            </Match>
-                                            <Match
-                                                when={
-                                                    view()!.kind === "git" &&
-                                                    view()!.tab ===
-                                                        "authentication"
-                                                }
-                                            >
-                                                <Section
-                                                    title="Authentication"
-                                                    description="Environment used when Moondust runs Git and SSH."
+                                                    </Section>
+                                                </Match>
+                                                <Match
+                                                    when={
+                                                        view()!.kind ===
+                                                            "git" &&
+                                                        view()!.tab ===
+                                                            "authentication"
+                                                    }
                                                 >
-                                                    <FieldRow
-                                                        id="gs-git-ssh-auth-sock"
-                                                        label="SSH_AUTH_SOCK"
-                                                        value={sshAuthSock()}
-                                                        placeholder=""
-                                                        description="Path to SSH agent socket, e.g. ~/.1password/agent.sock for 1Password."
-                                                        disabled={gitFormDisabled()}
-                                                        onInput={(e) =>
-                                                            setSshAuthSock(
-                                                                e.currentTarget
-                                                                    .value,
-                                                            )
-                                                        }
-                                                    />
-                                                </Section>
-                                            </Match>
-                                        </Switch>
-                                    </VerticalNavMain>
-                                </VerticalNavSplit>
-                            </Match>
-                            <Match
-                                when={
-                                    view()!.kind === "flat" &&
-                                    view()!.section === "general"
-                                }
-                            >
-                                <Section
-                                    title="Appearance & behavior"
-                                    description="Preferences that apply everywhere in Moondust."
+                                                    <Section
+                                                        title="Authentication"
+                                                        description="Environment used when Moondust runs Git and SSH."
+                                                    >
+                                                        <FieldRow
+                                                            id="gs-git-ssh-auth-sock"
+                                                            label="SSH_AUTH_SOCK"
+                                                            value={sshAuthSock()}
+                                                            placeholder=""
+                                                            description="Path to SSH agent socket, e.g. ~/.1password/agent.sock for 1Password."
+                                                            disabled={gitFormDisabled()}
+                                                            onInput={(e) =>
+                                                                setSshAuthSock(
+                                                                    e
+                                                                        .currentTarget
+                                                                        .value,
+                                                                )
+                                                            }
+                                                        />
+                                                    </Section>
+                                                </Match>
+                                            </Switch>
+                                        </VerticalNavMain>
+                                    </VerticalNavSplit>
+                                </Match>
+                                <Match
+                                    when={
+                                        view()!.kind === "flat" &&
+                                        view()!.section === "general"
+                                    }
                                 >
-                                    <FieldRow
-                                        id="gs-theme"
-                                        label="Theme"
-                                        value="System"
-                                        description="Follow OS light/dark. Per-theme controls will land with the design system pass."
-                                    />
-                                    <FieldRow
-                                        id="gs-locale"
-                                        label="Language"
-                                        value="English (US)"
-                                        description="Locale for dates and UI copy."
-                                    />
-                                </Section>
-                                <Section
-                                    title="Shortcuts"
-                                    description="Keyboard bindings are defined in the shortcut registry; user overrides will sync here once settings storage is wired."
+                                    <Section
+                                        title="Appearance & behavior"
+                                        description="Preferences that apply everywhere in Moondust."
+                                    >
+                                        <FieldRow
+                                            id="gs-theme"
+                                            label="Theme"
+                                            value="System"
+                                            description="Follow OS light/dark. Per-theme controls will land with the design system pass."
+                                        />
+                                        <FieldRow
+                                            id="gs-locale"
+                                            label="Language"
+                                            value="English (US)"
+                                            description="Locale for dates and UI copy."
+                                        />
+                                    </Section>
+                                    <Section
+                                        title="Shortcuts"
+                                        description="Keyboard bindings are defined in the shortcut registry; user overrides will sync here once settings storage is wired."
+                                    >
+                                        <EmptyState
+                                            size="sm"
+                                            title="No overrides yet"
+                                            description="Open the command palette (⌘K) to see actions. Custom keymaps are coming soon."
+                                            bordered
+                                        />
+                                    </Section>
+                                </Match>
+                                <Match
+                                    when={
+                                        view()!.kind === "flat" &&
+                                        view()!.section === "cursor"
+                                    }
                                 >
-                                    <EmptyState
-                                        size="sm"
-                                        title="No overrides yet"
-                                        description="Open the command palette (⌘K) to see actions. Custom keymaps are coming soon."
-                                        bordered
-                                    />
-                                </Section>
-                            </Match>
-                            <Match
-                                when={
-                                    view()!.kind === "flat" &&
-                                    view()!.section === "cursor"
-                                }
-                            >
-                                <Section
-                                    title="Cursor Agent CLI"
-                                    description="Moondust shells out to the Cursor Agent CLI (`agent`) when a thread uses Cursor."
+                                    <Section
+                                        title="Cursor Agent CLI"
+                                        description="Moondust shells out to the Cursor Agent CLI (`agent`) when a thread uses Cursor."
+                                    >
+                                        <FieldRow
+                                            id="gs-cursor-path"
+                                            label="CLI detection"
+                                            value="PATH (auto)"
+                                            description="Install from cursor.com/install. The app probes `agent` on startup."
+                                        />
+                                        <FieldRow
+                                            id="gs-cursor-default-model"
+                                            label="Default model"
+                                            value="From Cursor defaults"
+                                            description="Per-thread model picks will stay in the thread composer once the catalog is connected."
+                                        />
+                                    </Section>
+                                </Match>
+                                <Match
+                                    when={
+                                        view()!.kind === "flat" &&
+                                        view()!.section === "claude"
+                                    }
                                 >
-                                    <FieldRow
-                                        id="gs-cursor-path"
-                                        label="CLI detection"
-                                        value="PATH (auto)"
-                                        description="Install from cursor.com/install. The app probes `agent` on startup."
-                                    />
-                                    <FieldRow
-                                        id="gs-cursor-default-model"
-                                        label="Default model"
-                                        value="From Cursor defaults"
-                                        description="Per-thread model picks will stay in the thread composer once the catalog is connected."
-                                    />
-                                </Section>
-                            </Match>
-                            <Match
-                                when={
-                                    view()!.kind === "flat" &&
-                                    view()!.section === "claude"
-                                }
-                            >
-                                <Section
-                                    title="Claude Code"
-                                    description="Anthropic Claude via the Claude Code integration."
+                                    <Section
+                                        title="Claude Code"
+                                        description="Anthropic Claude via the Claude Code integration."
+                                    >
+                                        <FieldRow
+                                            id="gs-claude-auth"
+                                            label="Authentication"
+                                            value="Not configured"
+                                            description="API keys and `claude` CLI login will be managed here."
+                                        />
+                                        <FieldRow
+                                            id="gs-claude-model"
+                                            label="Default model"
+                                            value="claude-sonnet-4.6"
+                                            description="Matches new thread defaults in the backend; editable once persistence exists."
+                                        />
+                                    </Section>
+                                </Match>
+                                <Match
+                                    when={
+                                        view()!.kind === "flat" &&
+                                        view()!.section === "openrouter"
+                                    }
                                 >
-                                    <FieldRow
-                                        id="gs-claude-auth"
-                                        label="Authentication"
-                                        value="Not configured"
-                                        description="API keys and `claude` CLI login will be managed here."
-                                    />
-                                    <FieldRow
-                                        id="gs-claude-model"
-                                        label="Default model"
-                                        value="claude-sonnet-4.6"
-                                        description="Matches new thread defaults in the backend; editable once persistence exists."
-                                    />
-                                </Section>
-                            </Match>
-                            <Match
-                                when={
-                                    view()!.kind === "flat" &&
-                                    view()!.section === "openrouter"
-                                }
-                            >
-                                <Section
-                                    title="OpenRouter"
-                                    description="Route requests through OpenRouter for multi-model access."
-                                >
-                                    <FieldRow
-                                        id="gs-or-key"
-                                        label="API key"
-                                        value=""
-                                        placeholder="sk-or-…"
-                                        description="Stored securely on disk in a later milestone; this row is a placeholder."
-                                    />
-                                    <FieldRow
-                                        id="gs-or-default"
-                                        label="Default model"
-                                        value="anthropic/claude-sonnet-4.6"
-                                        description="Used when a thread picks OpenRouter without an explicit model."
-                                    />
-                                </Section>
-                            </Match>
+                                    <Section
+                                        title="OpenRouter"
+                                        description="Route requests through OpenRouter for multi-model access."
+                                    >
+                                        <FieldRow
+                                            id="gs-or-key"
+                                            label="API key"
+                                            value=""
+                                            placeholder="sk-or-…"
+                                            description="Stored securely on disk in a later milestone; this row is a placeholder."
+                                        />
+                                        <FieldRow
+                                            id="gs-or-default"
+                                            label="Default model"
+                                            value="anthropic/claude-sonnet-4.6"
+                                            description="Used when a thread picks OpenRouter without an explicit model."
+                                        />
+                                    </Section>
+                                </Match>
                             </Switch>
                         </VerticalNavMain>
                     </VerticalNavSplit>

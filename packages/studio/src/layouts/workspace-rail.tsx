@@ -31,7 +31,7 @@ import { queryKeys } from "@/lib/query-client";
 import { type ShortcutActionId, useShortcuts } from "@/lib/shortcuts";
 import { useToast } from "@/lib/toast";
 import { useUIState } from "@/lib/ui-state";
-import { RenameThread } from "@/lib/wails";
+import { RenameThread } from "@/lib/ipc";
 import {
     createThreadInWorkspace,
     paths,

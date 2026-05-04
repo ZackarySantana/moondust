@@ -6,11 +6,10 @@ import {
     ListWorkspaces,
     ListThreads,
     ListThreadsByWorkspace,
-    store,
-} from "@/lib/wails";
+} from "@/lib/ipc";
 
-export type Workspace = store.Workspace;
-export type Thread = store.Thread;
+export type Workspace = import("@/lib/ipc").Workspace;
+export type Thread = import("@/lib/ipc").Thread;
 
 export function useWorkspacesQuery() {
     return useQuery(() => ({

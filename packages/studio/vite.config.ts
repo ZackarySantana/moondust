@@ -8,7 +8,13 @@ export default defineConfig({
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "./src"),
-            "@wails": path.resolve(__dirname, "../wails-app/wailsjs"),
         },
+    },
+    server: {
+        port:
+            typeof process.env.PORT === "string" &&
+            Number.isFinite(Number(process.env.PORT))
+                ? Number(process.env.PORT)
+                : 5173,
     },
 });
