@@ -26,14 +26,19 @@ func (s spaFS) Open(name string) (http.File, error) {
 		return nil, fs.ErrNotExist
 	}
 
-	if name != "" && name != "." {
-		f, err := s.root.Open(name)
-		if err == nil {
-			return f, nil
-		}
-		if !errors.Is(err, fs.ErrNotExist) {
-			return nil, err
-		}
+	// Root must open as a directory so http.serveFile's redirect logic does not
+	// treat a trailing "/" on r.URL.Path as "directory URL" while the opened node
+	// is index.html (file) — that yields "http: attempting to traverse a non-directory".
+	if name == "" || name == "." {
+		return s.root.Open(".")
+	}
+
+	f, err := s.root.Open(name)
+	if err == nil {
+		return f, nil
+	}
+	if !errors.Is(err, fs.ErrNotExist) {
+		return nil, err
 	}
 	return s.root.Open("index.html")
 }
